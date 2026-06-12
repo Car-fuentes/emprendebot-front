@@ -13,10 +13,10 @@ interface BusinessContextType {
 }
 
 const DEFAULT_STATS: DashboardStats = {
-  consultasPendientes: 3,
-  presupuestosPendientes: 2,
-  consultasResueltas: 8,
-  porcentajeAutomatizacion: 67,
+  consultasPendientes: 0,
+  presupuestosPendientes: 0,
+  consultasResueltas: 0,
+  porcentajeAutomatizacion: 0,
 }
 
 const BusinessContext = createContext<BusinessContextType | null>(null)

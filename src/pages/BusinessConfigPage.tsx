@@ -157,7 +157,7 @@ export function BusinessConfigPage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: '40px',
         }}>
-          🤖✅
+          <img src="/isoBot-transparente.png" alt="success" style={{ width: 100, height: 100 }} />
         </div>
         <div>
           <h2 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '8px' }}>
