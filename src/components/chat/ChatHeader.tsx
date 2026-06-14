@@ -9,7 +9,7 @@ interface ChatHeaderProps {
 
 export function ChatHeader({ business, onRefresh, onClose }: ChatHeaderProps) {
   return (
-    <header style={{
+    <header className="public-chat__header" style={{
       display: 'flex',
       alignItems: 'center',
       gap: '12px',
@@ -17,6 +17,9 @@ export function ChatHeader({ business, onRefresh, onClose }: ChatHeaderProps) {
       background: 'var(--color-secondary)',
       borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
       flexShrink: 0,
+      position: 'sticky',
+      top: 0,
+      zIndex: 3,
     }}>
       <Avatar name={business.nombre} src={business.logo} size={40} />
 
@@ -47,22 +50,27 @@ export function ChatHeader({ business, onRefresh, onClose }: ChatHeaderProps) {
       <div style={{ display: 'flex', gap: '8px' }}>
         {onRefresh && (
           <button
+            type="button"
             onClick={onRefresh}
-            title="Reiniciar conversación"
+            title="Reiniciar chat"
+            aria-label="Reiniciar chat"
             style={{
-              width: 32, height: 32,
-              borderRadius: '50%',
+              minHeight: 34,
+              padding: '0 11px',
+              borderRadius: 'var(--radius-full)',
               background: 'rgba(255,255,255,0.2)',
               border: 'none',
               color: '#fff',
               cursor: 'pointer',
-              fontSize: '16px',
+              fontSize: '12px',
+              fontWeight: 600,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              whiteSpace: 'nowrap',
             }}
           >
-            ↺
+            Reiniciar chat
           </button>
         )}
         {onClose && (
