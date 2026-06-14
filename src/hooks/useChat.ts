@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { AwaitingInput, Business, Message } from '../types'
+import type { AwaitingInput, Business, FAQ, Message } from '../types'
 import {
   clearChatHistory,
   clearChatState,
@@ -44,6 +44,53 @@ function isMenuCommand(message: string): boolean {
   return MENU_COMMANDS.includes(message) || message === 'volver al menu' || message === 'menu principal'
 }
 
+function isFaqMenuCommand(message: string): boolean {
+  return message === 'faq'
+    || message === 'faqs'
+    || message === 'volver a faq'
+    || message === 'volver a faqs'
+    || message === 'preguntas frecuentes'
+    || message === 'ver preguntas frecuentes'
+}
+
+function getActiveFaqs(business: Business): FAQ[] {
+  return business.faq
+    .filter(faq => faq.activa)
+    .sort((left, right) => left.orden - right.orden)
+}
+
+function getFaqMenuText(faqs: FAQ[]): string {
+  const numberedQuestions = faqs
+    .map((faq, index) => `${index + 1}. ${faq.pregunta}`)
+    .join('\n')
+
+  return `Seleccioná qué querés saber escribiendo el número de la opción:\n\n${numberedQuestions}`
+}
+
+function createFaqMenuResponse(business: Business): BotResponse {
+  const activeFaqs = getActiveFaqs(business)
+
+  if (activeFaqs.length === 0) {
+    return {
+      text: 'No hay preguntas frecuentes activas en este momento. Podés volver al menú principal.',
+      quickReplies: ['Menú principal'],
+    }
+  }
+
+  return {
+    text: getFaqMenuText(activeFaqs),
+    awaitingInput: 'faq-selection',
+  }
+}
+
+function findSelectedFaq(userMessage: string, faqs: FAQ[]): FAQ | null {
+  const normalizedSelection = normalizeMessage(userMessage)
+  if (!/^\d+$/.test(normalizedSelection)) return null
+
+  const selectedIndex = Number(normalizedSelection) - 1
+  return faqs[selectedIndex] ?? null
+}
+
 function generateBotResponse(
   userMessage: string,
   business: Business,
@@ -59,6 +106,10 @@ function generateBotResponse(
     }
   }
 
+  if (isFaqMenuCommand(normalizedMessage)) {
+    return createFaqMenuResponse(business)
+  }
+
   if (awaitingInput === 'contact') {
     return {
       text: '¡Gracias! Registramos tus datos para que alguien del equipo pueda contactarte.',
@@ -70,6 +121,25 @@ function generateBotResponse(
     return {
       text: '¡Gracias! Registramos el detalle de tu solicitud de presupuesto. El equipo podrá revisarlo y contactarte.',
       continuation: '¿Querés consultar algo más mientras tanto?',
+    }
+  }
+
+  if (awaitingInput === 'faq-selection') {
+    const activeFaqs = getActiveFaqs(business)
+    if (activeFaqs.length === 0) return createFaqMenuResponse(business)
+
+    const selectedFaq = findSelectedFaq(userMessage, activeFaqs)
+
+    if (!selectedFaq) {
+      return {
+        text: `No encontré esa opción. Elegí un número válido de la lista.\n\n${getFaqMenuText(activeFaqs)}`,
+        awaitingInput: 'faq-selection',
+      }
+    }
+
+    return {
+      text: selectedFaq.respuesta,
+      quickReplies: ['Ver preguntas frecuentes', 'Volver al menú principal'],
     }
   }
 
@@ -110,11 +180,7 @@ function generateBotResponse(
   }
 
   if (msg.includes('frecuente') || msg.includes('faq') || msg.includes('pregunta')) {
-    if (business.faq.length === 0) {
-      return { text: 'No hay preguntas frecuentes configuradas aún. ¿Puedo ayudarte con otra cosa?' }
-    }
-    const texto = business.faq.map(f => `❓ ${f.pregunta}\n💬 ${f.respuesta}`).join('\n\n')
-    return { text: texto }
+    return createFaqMenuResponse(business)
   }
 
   if (msg.includes('persona') || msg.includes('asesor') || msg.includes('hablar')) {

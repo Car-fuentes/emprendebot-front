@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
+import { getStoredBusinesses } from '../services/businessStorage'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -32,8 +33,7 @@ export function LoginPage() {
       if (user) {
         loadBusiness(user.id)
         // Si ya tiene negocio → dashboard, si no → setup
-        const businesses = JSON.parse(localStorage.getItem('eb_businesses') ?? '[]')
-        const hasBusiness = businesses.some((b: { userId: string }) => b.userId === user.id)
+        const hasBusiness = getStoredBusinesses().some(business => business.userId === user.id)
         navigate(hasBusiness ? '/dashboard' : '/configurar')
       }
     } catch (err) {

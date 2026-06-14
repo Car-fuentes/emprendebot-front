@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react'
 
 interface ChatInputProps {
   onSend: (text: string) => void
@@ -11,6 +11,16 @@ const TEXTAREA_MAX_HEIGHT = 120
 export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const wasDisabledRef = useRef(disabled)
+
+  useEffect(() => {
+    const wasDisabled = wasDisabledRef.current
+    wasDisabledRef.current = disabled
+
+    if (wasDisabled && !disabled) {
+      textareaRef.current?.focus({ preventScroll: true })
+    }
+  }, [disabled])
 
   const resetTextareaHeight = () => {
     const textarea = textareaRef.current
@@ -27,6 +37,7 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
     onSend(text)
     setValue('')
     resetTextareaHeight()
+    textareaRef.current?.focus({ preventScroll: true })
   }
 
   const handleSubmit = (e: FormEvent) => {

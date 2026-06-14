@@ -27,8 +27,14 @@ export interface Product {
 
 export interface FAQ {
   id: string
+  businessId: string
   pregunta: string
   respuesta: string
+  categoria?: string
+  activa: boolean
+  orden: number
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Business {
@@ -49,7 +55,7 @@ export interface Business {
 
 // ===== CHAT =====
 export type MessageRole = 'bot' | 'user'
-export type AwaitingInput = 'budget' | 'contact'
+export type AwaitingInput = 'budget' | 'contact' | 'faq-selection'
 
 export interface Message {
   id: string
