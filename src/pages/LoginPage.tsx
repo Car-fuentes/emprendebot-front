@@ -62,7 +62,7 @@ export function LoginPage() {
             fontFamily: 'var(--font-family)',
           }}
         >
-          ← Iniciar sesión
+          ← Crear cuenta
         </button>
       </div>
 
