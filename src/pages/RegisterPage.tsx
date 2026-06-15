@@ -13,6 +13,8 @@ const RUBROS: { value: Rubro; label: string }[] = [
   { value: 'servicios', label: 'Servicios profesionales' },
   { value: 'salud', label: 'Salud / Bienestar' },
   { value: 'educacion', label: 'Educación' },
+  { value: 'artesanias', label: 'Artesanías' },
+  { value: 'oficios', label: 'Oficios' },
   { value: 'otro', label: 'Otro' },
 ]
 

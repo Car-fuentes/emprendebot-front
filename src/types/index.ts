@@ -15,7 +15,9 @@ export type Rubro =
   | 'servicios'
   | 'salud'
   | 'educacion'
-  | 'otro'
+    'artesanias'
+    'oficios'
+    | 'otro'
 
 export interface Product {
   id: string
