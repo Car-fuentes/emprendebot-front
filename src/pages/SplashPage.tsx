@@ -35,7 +35,8 @@ export function SplashPage() {
           justifyContent: 'center',
           animation: 'pulse 1.8s ease infinite',
         }}>
-        <img src="/isoBot-transparente.png" alt="EmprendeBot" style={{ width: 60, height: 60 }} />
+
+        <img src="/imagoBotCirculo.png" alt="EmprendeBot" style={{ width: 60, height: 60 }} />
         </div>
 
         <p style={{

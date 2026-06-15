@@ -24,6 +24,8 @@ export function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [rubro, setRubro] = useState<Rubro | ''>('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -105,21 +107,33 @@ export function RegisterPage() {
 
           <Input
             label="Contraseña"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             placeholder="Mínimo 6 caracteres"
             value={password}
             onChange={e => setPassword(e.target.value)}
             autoComplete="new-password"
+            endAdornment={(
+              <PasswordVisibilityButton
+                visible={showPassword}
+                onClick={() => setShowPassword(value => !value)}
+              />
+            )}
           />
 
           <Input
             label="Repetir contraseña"
-            type="password"
+            type={showConfirmPassword ? 'text' : 'password'}
             placeholder="Repetí tu contraseña"
             value={confirmPassword}
             onChange={e => setConfirmPassword(e.target.value)}
             autoComplete="new-password"
             error={confirmPassword && password !== confirmPassword ? 'Las contraseñas no coinciden' : undefined}
+            endAdornment={(
+              <PasswordVisibilityButton
+                visible={showConfirmPassword}
+                onClick={() => setShowConfirmPassword(value => !value)}
+              />
+            )}
           />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -178,5 +192,40 @@ export function RegisterPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+function PasswordVisibilityButton({ visible, onClick }: { visible: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+      title={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+      style={{
+        width: '52px',
+        height: '52px',
+        display: 'grid',
+        placeItems: 'center',
+        border: 'none',
+        background: 'transparent',
+        color: 'var(--color-text-secondary)',
+        cursor: 'pointer',
+      }}
+    >
+      {visible ? (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <path d="m3 3 18 18" />
+          <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+          <path d="M9.9 4.2A10.8 10.8 0 0 1 12 4c5 0 9 4.5 10 8a13.7 13.7 0 0 1-2.1 4.2" />
+          <path d="M6.6 6.6A13.6 13.6 0 0 0 2 12c1 3.5 5 8 10 8a10.7 10.7 0 0 0 5.4-1.5" />
+        </svg>
+      ) : (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      )}
+    </button>
   )
 }
