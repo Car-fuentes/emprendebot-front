@@ -77,7 +77,7 @@ export function RegisterPage() {
             fontFamily: 'var(--font-family)',
           }}
         >
-          ← Crear cuenta
+          ← Iniciar sesion
         </button>
       </div>
 

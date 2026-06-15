@@ -56,25 +56,35 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
 export function TypingIndicator() {
   return (
-    <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '4px' }}>
+    <div
+      role="status"
+      aria-live="polite"
+      aria-label="EmprendeBot está escribiendo"
+      style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '4px' }}
+    >
       <div style={{
-        padding: '12px 16px',
+        padding: '10px 14px',
         borderRadius: '4px var(--radius-md) var(--radius-md) var(--radius-md)',
         background: 'var(--color-bg)',
         boxShadow: 'var(--shadow-sm)',
         display: 'flex',
-        gap: '4px',
+        gap: '8px',
         alignItems: 'center',
       }}>
-        {[0, 1, 2].map(i => (
-          <span key={i} style={{
-            width: 7, height: 7,
-            borderRadius: '50%',
-            background: 'var(--color-text-secondary)',
-            display: 'inline-block',
-            animation: `bounce 1s ease infinite ${i * 0.15}s`,
-          }} />
-        ))}
+        <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+          EmprendeBot está escribiendo...
+        </span>
+        <span style={{ display: 'flex', gap: '3px' }} aria-hidden="true">
+          {[0, 1, 2].map(i => (
+            <span key={i} style={{
+              width: 5, height: 5,
+              borderRadius: '50%',
+              background: 'var(--color-text-secondary)',
+              display: 'inline-block',
+              animation: `bounce 1s ease infinite ${i * 0.15}s`,
+            }} />
+          ))}
+        </span>
         <style>{`
           @keyframes bounce {
             0%, 60%, 100% { transform: translateY(0); }

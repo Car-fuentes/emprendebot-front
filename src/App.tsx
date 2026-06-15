@@ -8,6 +8,7 @@ import { RegisterPage } from './pages/RegisterPage'
 import { BusinessConfigPage } from './pages/BusinessConfigPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { ChatbotPage } from './pages/ChatbotPage'
+import { FaqPage } from './pages/FaqPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth()
@@ -31,6 +32,9 @@ function App() {
       } />
       <Route path="/dashboard" element={
         <ProtectedRoute><DashboardPage /></ProtectedRoute>
+      } />
+      <Route path="/faq" element={
+        <ProtectedRoute><FaqPage /></ProtectedRoute>
       } />
 
       {/* Chatbot público por slug: www.emprendebot/minegocio */}
