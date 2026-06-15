@@ -14,7 +14,7 @@ const RUBROS: { value: Rubro; label: string }[] = [
   { value: 'salud', label: 'Salud / Bienestar' },
   { value: 'educacion', label: 'Educación' },
   { value: 'artesanias', label: 'Artesanías' },
-  { value: 'oficios', label: 'Oficios' },
+  { value: 'oficiosgit log --oneline -3', label: 'Oficios' },
   { value: 'otro', label: 'Otro' },
 ]
 
