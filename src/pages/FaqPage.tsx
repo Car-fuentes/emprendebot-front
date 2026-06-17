@@ -66,10 +66,10 @@ export function FaqPage() {
     try {
       if (editingFaq) {
         const selectedCategoryWillDisappear = categoryFilter !== 'all'
-          && editingFaq.categoria === categoryFilter
-          && !allFaqs.some(faq => faq.id !== editingFaq.id && faq.categoria === categoryFilter)
+          && editingFaq.categoriaId === categoryFilter
+          && !allFaqs.some(faq => faq.id !== editingFaq.id && faq.categoriaId === categoryFilter)
         const updatedFaq = await updateFaq(editingFaq.id, data)
-        if (selectedCategoryWillDisappear && updatedFaq.categoria !== categoryFilter) {
+        if (selectedCategoryWillDisappear && updatedFaq.categoriaId !== categoryFilter) {
           setCategoryFilter('all')
         }
       } else {
@@ -88,8 +88,8 @@ export function FaqPage() {
     setError('')
     try {
       const selectedCategoryWillDisappear = categoryFilter !== 'all'
-        && allFaqs.some(faq => faq.id === faqId && faq.categoria === categoryFilter)
-        && !allFaqs.some(faq => faq.id !== faqId && faq.categoria === categoryFilter)
+        && allFaqs.some(faq => faq.id === faqId && faq.categoriaId === categoryFilter)
+        && !allFaqs.some(faq => faq.id !== faqId && faq.categoriaId === categoryFilter)
       await deleteFaq(faqId)
       if (selectedCategoryWillDisappear) setCategoryFilter('all')
       if (editingFaq?.id === faqId) closeForm()
@@ -223,6 +223,7 @@ export function FaqPage() {
                   <FaqForm
                     key={editingFaq?.id ?? 'new-faq'}
                     faq={editingFaq ?? undefined}
+                    categories={categories}
                     loading={formLoading}
                     onSubmit={handleSubmit}
                     onCancel={closeForm}
@@ -284,7 +285,7 @@ export function FaqPage() {
                     >
                       <option value="all">Todas las categorías</option>
                       {categories.map(category => (
-                        <option key={category} value={category}>{category}</option>
+                        <option key={category.id} value={category.id}>{category.nombre}</option>
                       ))}
                     </select>
                   )}

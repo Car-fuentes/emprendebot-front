@@ -13,6 +13,7 @@ interface UseFaqFilters {
 export function useFaqs(filters: UseFaqFilters) {
   const {
     business,
+    faqCategories,
     createFaq,
     updateFaq,
     deleteFaq,
@@ -28,17 +29,16 @@ export function useFaqs(filters: UseFaqFilters) {
         const matchesStatus = filters.status === 'all'
           || (filters.status === 'active' && faq.activa)
           || (filters.status === 'inactive' && !faq.activa)
-        const matchesCategory = filters.category === 'all' || faq.categoria === filters.category
+        const matchesCategory = filters.category === 'all' || faq.categoriaId === filters.category
         return matchesStatus && matchesCategory
       })
       .sort((left, right) => left.orden - right.orden)
   }, [business?.faq, filters.category, filters.status])
 
-  const categories = useMemo(() => Array.from(new Set(
-    (business?.faq ?? [])
-      .map(faq => faq.categoria)
-      .filter((category): category is string => Boolean(category)),
-  )).sort((a, b) => a.localeCompare(b)), [business?.faq])
+  const categories = useMemo(
+    () => [...faqCategories].sort((a, b) => a.nombre.localeCompare(b.nombre)),
+    [faqCategories],
+  )
 
   return {
     faqs,

@@ -28,13 +28,59 @@ export interface Product {
 export interface FAQ {
   id: string
   businessId: string
+  categoriaId?: string
   pregunta: string
   respuesta: string
   categoria?: string
+  keywords?: string
+  // TODO: Persistir en backend cuando agregue soporte para activa/inactiva.
   activa: boolean
+  // TODO: Persistir en backend cuando agregue soporte para orden manual.
   orden: number
   createdAt: string
   updatedAt: string
+}
+
+export interface FAQCategory {
+  id: string
+  nombre: string
+  createdAt?: string
+}
+
+export interface FAQApi {
+  id: string
+  botId: string
+  categoriaId: string
+  pregunta: string
+  respuesta: string
+  keywords: string | null
+  fechaCreacion: string
+  fechaModificacion: string
+  categoria?: {
+    id: string
+    nombre: string
+  }
+}
+
+export interface FAQCategoryApi {
+  id: string
+  botId?: string
+  nombre: string
+  fechaCreacion?: string
+}
+
+export interface CreateFAQPayload {
+  categoriaId: string
+  pregunta: string
+  respuesta: string
+  keywords?: string
+}
+
+export interface UpdateFAQPayload {
+  categoriaId?: string
+  pregunta?: string
+  respuesta?: string
+  keywords?: string
 }
 
 export interface Business {
@@ -49,6 +95,7 @@ export interface Business {
   respuestaDerivacion: string
   rubro: Rubro | ''
   productos: Product[]
+  faqCategories?: FAQCategory[]
   faq: FAQ[]
   slug: string
 }
