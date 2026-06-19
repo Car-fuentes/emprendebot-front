@@ -32,7 +32,6 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel }
     categoriaId: faq?.categoriaId ?? '',
     categoria: faq?.categoria ?? '',
     nuevaCategoriaNombre: '',
-    keywords: faq?.keywords ?? '',
     activa: faq?.activa ?? true,
   })
   const [errors, setErrors] = useState<{ pregunta?: string; respuesta?: string; categoria?: string }>({})
@@ -175,34 +174,6 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel }
             }}
           />
         )}
-      </div>
-
-      <Input
-        label="Keywords"
-        placeholder="Ej: pagos, tarjetas, transferencia"
-        value={form.keywords}
-        hint="Opcional. Preparado para enviarse al backend."
-        onChange={event => setForm(current => ({ ...current, keywords: event.target.value }))}
-      />
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
-        <span style={labelStyle}>Estado inicial</span>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <Chip
-            type="button"
-            selected={form.activa}
-            onClick={() => setForm(current => ({ ...current, activa: true }))}
-          >
-            Activa
-          </Chip>
-          <Chip
-            type="button"
-            selected={!form.activa}
-            onClick={() => setForm(current => ({ ...current, activa: false }))}
-          >
-            Inactiva
-          </Chip>
-        </div>
       </div>
 
       <div style={{ display: 'flex', gap: '10px' }}>

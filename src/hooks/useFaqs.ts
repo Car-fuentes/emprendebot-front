@@ -4,10 +4,33 @@ import type { FAQ } from '../types'
 import type { FAQFormData } from '../services/faqStorage'
 
 export type FAQStatusFilter = 'all' | 'active' | 'inactive'
+export type FAQSortOption = 'created-desc' | 'created-asc' | 'alpha-asc' | 'alpha-desc'
 
 interface UseFaqFilters {
   status: FAQStatusFilter
   category: string
+  sort: FAQSortOption
+}
+
+function getTime(value: string): number {
+  const time = new Date(value).getTime()
+  return Number.isNaN(time) ? 0 : time
+}
+
+function sortFaqs(left: FAQ, right: FAQ, sort: FAQSortOption): number {
+  if (sort === 'created-asc') {
+    return getTime(left.createdAt) - getTime(right.createdAt)
+  }
+
+  if (sort === 'alpha-asc') {
+    return left.pregunta.localeCompare(right.pregunta, 'es', { sensitivity: 'base' })
+  }
+
+  if (sort === 'alpha-desc') {
+    return right.pregunta.localeCompare(left.pregunta, 'es', { sensitivity: 'base' })
+  }
+
+  return getTime(right.createdAt) - getTime(left.createdAt)
 }
 
 export function useFaqs(filters: UseFaqFilters) {
@@ -18,7 +41,6 @@ export function useFaqs(filters: UseFaqFilters) {
     updateFaq,
     deleteFaq,
     toggleFaq,
-    moveFaq,
   } = useBusiness()
 
   const faqs = useMemo(() => {
@@ -32,8 +54,8 @@ export function useFaqs(filters: UseFaqFilters) {
         const matchesCategory = filters.category === 'all' || faq.categoriaId === filters.category
         return matchesStatus && matchesCategory
       })
-      .sort((left, right) => left.orden - right.orden)
-  }, [business?.faq, filters.category, filters.status])
+      .sort((left, right) => sortFaqs(left, right, filters.sort))
+  }, [business?.faq, filters.category, filters.sort, filters.status])
 
   const categories = useMemo(
     () => [...faqCategories].sort((a, b) => a.nombre.localeCompare(b.nombre)),
@@ -48,6 +70,5 @@ export function useFaqs(filters: UseFaqFilters) {
     updateFaq: (faqId: string, data: FAQFormData): Promise<FAQ> => updateFaq(faqId, data),
     deleteFaq,
     toggleFaq,
-    moveFaq,
   }
 }

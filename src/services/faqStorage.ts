@@ -11,7 +11,6 @@ export interface FAQFormData {
   categoriaId?: string
   categoria?: string
   nuevaCategoriaNombre?: string
-  keywords?: string
   activa: boolean
 }
 
@@ -28,7 +27,6 @@ function normalizeFaqData(data: FAQFormData): FAQFormData {
   const respuesta = data.respuesta.trim()
   const categoria = data.categoria?.trim() || undefined
   const nuevaCategoriaNombre = data.nuevaCategoriaNombre?.trim() || undefined
-  const keywords = data.keywords?.trim() || undefined
 
   if (!pregunta) throw new Error('La pregunta es obligatoria.')
   if (!respuesta) throw new Error('La respuesta es obligatoria.')
@@ -42,7 +40,6 @@ function normalizeFaqData(data: FAQFormData): FAQFormData {
     categoriaId: data.categoriaId,
     categoria,
     nuevaCategoriaNombre,
-    keywords,
     activa: data.activa ?? true,
   }
 }
@@ -107,7 +104,6 @@ export function normalizeFaqs(
       pregunta: faq.pregunta?.trim() ?? '',
       respuesta: faq.respuesta?.trim() ?? '',
       categoria: category?.nombre ?? (faq.categoria?.trim() || undefined),
-      keywords: faq.keywords?.trim() || undefined,
       // TODO: Persistir en backend cuando agregue soporte para activa/inactiva.
       activa: faq.activa ?? true,
       // TODO: Persistir en backend cuando agregue soporte para orden manual.
@@ -127,7 +123,6 @@ function hasFaqMigrationChanges(originalFaqs: Partial<FAQ>[], normalizedFaqs: FA
       || faq.pregunta !== normalized.pregunta
       || faq.respuesta !== normalized.respuesta
       || (faq.categoria || undefined) !== normalized.categoria
-      || (faq.keywords || undefined) !== normalized.keywords
       || faq.activa !== normalized.activa
       || faq.orden !== normalized.orden
       || faq.createdAt !== normalized.createdAt
@@ -236,7 +231,6 @@ export async function createFaq(
       categoria: category.nombre,
       pregunta: normalizedData.pregunta,
       respuesta: normalizedData.respuesta,
-      keywords: normalizedData.keywords,
       activa: normalizedData.activa,
       orden: currentFaqs.length + 1,
       createdAt: now,
@@ -267,7 +261,6 @@ export async function updateFaq(
         categoria: category.nombre,
         pregunta: normalizedData.pregunta,
         respuesta: normalizedData.respuesta,
-        keywords: normalizedData.keywords,
         activa: normalizedData.activa,
         updatedAt: new Date().toISOString(),
       }

@@ -8,10 +8,9 @@ import { Button } from '../components/ui/Button'
 import { Chip } from '../components/ui/Chip'
 import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
-import { useFaqs, type FAQStatusFilter } from '../hooks/useFaqs'
+import { useFaqs, type FAQSortOption, type FAQStatusFilter } from '../hooks/useFaqs'
 import type { FAQ } from '../types'
 import type { FAQFormData } from '../services/faqStorage'
-import type { FAQMoveDirection } from '../services/faqStorage'
 
 export function FaqPage() {
   const navigate = useNavigate()
@@ -22,6 +21,7 @@ export function FaqPage() {
   const [editingFaq, setEditingFaq] = useState<FAQ | null>(null)
   const [statusFilter, setStatusFilter] = useState<FAQStatusFilter>('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [sortOption, setSortOption] = useState<FAQSortOption>('created-desc')
   const [formLoading, setFormLoading] = useState(false)
   const [busyFaqId, setBusyFaqId] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -34,8 +34,7 @@ export function FaqPage() {
     updateFaq,
     deleteFaq,
     toggleFaq,
-    moveFaq,
-  } = useFaqs({ status: statusFilter, category: categoryFilter })
+  } = useFaqs({ status: statusFilter, category: categoryFilter, sort: sortOption })
 
   useEffect(() => {
     if (user) loadBusiness(user.id)
@@ -107,18 +106,6 @@ export function FaqPage() {
       await toggleFaq(faqId)
     } catch (toggleError) {
       setError(toggleError instanceof Error ? toggleError.message : 'No pudimos cambiar el estado de la FAQ.')
-    } finally {
-      setBusyFaqId(null)
-    }
-  }
-
-  const handleMove = async (faqId: string, direction: FAQMoveDirection) => {
-    setBusyFaqId(faqId)
-    setError('')
-    try {
-      await moveFaq(faqId, direction)
-    } catch (moveError) {
-      setError(moveError instanceof Error ? moveError.message : 'No pudimos cambiar el orden de la FAQ.')
     } finally {
       setBusyFaqId(null)
     }
@@ -289,6 +276,43 @@ export function FaqPage() {
                       ))}
                     </select>
                   )}
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
+                    <label
+                      htmlFor="faq-sort"
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: 'var(--color-text-secondary)',
+                        letterSpacing: '0.8px',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Ordenar por
+                    </label>
+                    <select
+                      id="faq-sort"
+                      aria-label="Ordenar preguntas frecuentes"
+                      value={sortOption}
+                      onChange={event => setSortOption(event.target.value as FAQSortOption)}
+                      style={{
+                        width: '100%',
+                        height: '42px',
+                        padding: '0 12px',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-sm)',
+                        background: 'var(--color-bg)',
+                        color: 'var(--color-text-primary)',
+                        fontSize: '13px',
+                        outline: 'none',
+                      }}
+                    >
+                      <option value="created-desc">Fecha: mas recientes primero</option>
+                      <option value="created-asc">Fecha: mas antiguas primero</option>
+                      <option value="alpha-asc">Alfabetico: A-Z</option>
+                      <option value="alpha-desc">Alfabetico: Z-A</option>
+                    </select>
+                  </div>
                 </section>
               )}
 
@@ -330,9 +354,6 @@ export function FaqPage() {
                       onEdit={openEditForm}
                       onDelete={handleDelete}
                       onToggle={handleToggle}
-                      onMove={handleMove}
-                      canMoveUp={allFaqs.findIndex(item => item.id === faq.id) > 0}
-                      canMoveDown={allFaqs.findIndex(item => item.id === faq.id) < allFaqs.length - 1}
                     />
                   ))}
                 </section>

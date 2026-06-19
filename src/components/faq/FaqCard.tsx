@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import type { FAQ } from '../../types'
 import { Button } from '../ui/Button'
-import { Chip } from '../ui/Chip'
-import type { FAQMoveDirection } from '../../services/faqStorage'
+import { Switch } from '../ui/Switch'
 
 interface FaqCardProps {
   faq: FAQ
@@ -10,9 +9,6 @@ interface FaqCardProps {
   onEdit: (faq: FAQ) => void
   onDelete: (faqId: string) => Promise<void>
   onToggle: (faqId: string) => Promise<void>
-  onMove: (faqId: string, direction: FAQMoveDirection) => Promise<void>
-  canMoveUp: boolean
-  canMoveDown: boolean
 }
 
 export function FaqCard({
@@ -21,9 +17,6 @@ export function FaqCard({
   onEdit,
   onDelete,
   onToggle,
-  onMove,
-  canMoveUp,
-  canMoveDown,
 }: FaqCardProps) {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
@@ -37,7 +30,7 @@ export function FaqCard({
       opacity: busy ? 0.7 : 1,
       transition: 'opacity var(--transition)',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
+      <div style={{ marginBottom: '10px' }}>
         <div style={{ minWidth: 0 }}>
           {faq.categoria && (
             <span style={{
@@ -57,16 +50,6 @@ export function FaqCard({
             {faq.pregunta}
           </h2>
         </div>
-        <Chip
-          type="button"
-          selected={faq.activa}
-          disabled={busy}
-          aria-label={`${faq.activa ? 'Desactivar' : 'Activar'} FAQ: ${faq.pregunta}`}
-          onClick={() => void onToggle(faq.id)}
-          style={{ flexShrink: 0, alignSelf: 'flex-start' }}
-        >
-          {faq.activa ? 'Activa' : 'Inactiva'}
-        </Chip>
       </div>
 
       <p style={{
@@ -79,6 +62,31 @@ export function FaqCard({
         {faq.respuesta}
       </p>
 
+      <div style={{
+        marginTop: '14px',
+        padding: '12px',
+        borderRadius: 'var(--radius-sm)',
+        background: 'var(--color-bg-subtle)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '7px',
+      }}>
+        <Switch
+          checked={faq.activa}
+          label="Mostrar en el chatbot"
+          disabled={busy}
+          aria-label={`${faq.activa ? 'Ocultar del chatbot' : 'Mostrar en el chatbot'}: ${faq.pregunta}`}
+          onChange={() => void onToggle(faq.id)}
+        />
+        <p style={{
+          color: 'var(--color-text-secondary)',
+          fontSize: '12px',
+          lineHeight: 1.5,
+        }}>
+          Las preguntas activadas estaran disponibles para que el chatbot las utilice en las conversaciones.
+        </p>
+      </div>
+
       {confirmingDelete ? (
         <div style={{
           marginTop: '14px',
@@ -86,7 +94,7 @@ export function FaqCard({
           borderTop: '1px solid var(--color-border)',
         }}>
           <p style={{ fontSize: '13px', fontWeight: 600, marginBottom: '10px' }}>
-            ¿Seguro que querés eliminar esta FAQ?
+            Seguro que queres eliminar esta FAQ?
           </p>
           <div style={{ display: 'flex', gap: '8px' }}>
             <Button
@@ -116,31 +124,11 @@ export function FaqCard({
           display: 'flex',
           justifyContent: 'flex-end',
           flexWrap: 'wrap',
-          gap: '4px',
+          gap: '6px',
           marginTop: '12px',
           paddingTop: '10px',
           borderTop: '1px solid var(--color-border)',
         }}>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={busy || !canMoveUp}
-            onClick={() => void onMove(faq.id, 'up')}
-            aria-label={`Subir ${faq.pregunta}`}
-          >
-            ↑ Subir
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={busy || !canMoveDown}
-            onClick={() => void onMove(faq.id, 'down')}
-            aria-label={`Bajar ${faq.pregunta}`}
-          >
-            ↓ Bajar
-          </Button>
           <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={() => onEdit(faq)}>
             Editar
           </Button>

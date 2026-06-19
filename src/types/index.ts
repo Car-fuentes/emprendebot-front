@@ -32,7 +32,6 @@ export interface FAQ {
   pregunta: string
   respuesta: string
   categoria?: string
-  keywords?: string
   // TODO: Persistir en backend cuando agregue soporte para activa/inactiva.
   activa: boolean
   // TODO: Persistir en backend cuando agregue soporte para orden manual.
@@ -53,7 +52,6 @@ export interface FAQApi {
   categoriaId: string
   pregunta: string
   respuesta: string
-  keywords: string | null
   fechaCreacion: string
   fechaModificacion: string
   categoria?: {
@@ -73,14 +71,12 @@ export interface CreateFAQPayload {
   categoriaId: string
   pregunta: string
   respuesta: string
-  keywords?: string
 }
 
 export interface UpdateFAQPayload {
   categoriaId?: string
   pregunta?: string
   respuesta?: string
-  keywords?: string
 }
 
 export interface Business {
