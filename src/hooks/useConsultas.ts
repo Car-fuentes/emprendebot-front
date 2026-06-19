@@ -1,26 +1,62 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { Consulta, EstadoConsultaNombre } from '../types'
+import type { CanalConsulta, Consulta, EstadoConsultaNombre } from '../types'
 import { getConsultas, updateConsultaEstado } from '../services/consultaStorage'
 
-export type ConsultaFilter = 'todas' | EstadoConsultaNombre
+export type ConsultaEstadoFilter = 'todas' | EstadoConsultaNombre
+export type ConsultaCanalFilter = 'todos' | CanalConsulta
+export type ConsultaSortOption = 'recentes' | 'antiguas'
 
 interface UseConsultasResult {
   consultas: Consulta[]
   filteredConsultas: Consulta[]
   selectedConsulta: Consulta | null
   selectedConsultaId: string | null
-  filter: ConsultaFilter
+  estadoFilter: ConsultaEstadoFilter
+  canalFilter: ConsultaCanalFilter
+  sortOption: ConsultaSortOption
+  searchQuery: string
   isLoading: boolean
-  setFilter: (filter: ConsultaFilter) => void
+  setEstadoFilter: (filter: ConsultaEstadoFilter) => void
+  setCanalFilter: (filter: ConsultaCanalFilter) => void
+  setSortOption: (sort: ConsultaSortOption) => void
+  setSearchQuery: (query: string) => void
   selectConsulta: (consultaId: string) => void
+  clearSelection: () => void
   closeConsulta: (consultaId: string) => Promise<void>
   reloadConsultas: () => Promise<void>
+}
+
+function getLastMessageText(consulta: Consulta): string {
+  const last = [...consulta.mensajes].sort((left, right) => (
+    new Date(right.fechaCreacion).getTime() - new Date(left.fechaCreacion).getTime()
+  ))[0]
+  return last?.contenido ?? ''
+}
+
+function matchesSearch(consulta: Consulta, query: string): boolean {
+  const normalized = query.trim().toLowerCase()
+  if (!normalized) return true
+
+  const searchable = [
+    consulta.clienteNombre,
+    consulta.asunto,
+    getLastMessageText(consulta),
+    ...consulta.mensajes.map(message => message.contenido),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+
+  return searchable.includes(normalized)
 }
 
 export function useConsultas(userId?: string): UseConsultasResult {
   const [consultas, setConsultas] = useState<Consulta[]>([])
   const [selectedConsultaId, setSelectedConsultaId] = useState<string | null>(null)
-  const [filter, setFilter] = useState<ConsultaFilter>('todas')
+  const [estadoFilter, setEstadoFilter] = useState<ConsultaEstadoFilter>('todas')
+  const [canalFilter, setCanalFilter] = useState<ConsultaCanalFilter>('todos')
+  const [sortOption, setSortOption] = useState<ConsultaSortOption>('recentes')
+  const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
 
   const reloadConsultas = useCallback(async () => {
@@ -39,9 +75,16 @@ export function useConsultas(userId?: string): UseConsultasResult {
   }, [reloadConsultas])
 
   const filteredConsultas = useMemo(() => {
-    if (filter === 'todas') return consultas
-    return consultas.filter(consulta => consulta.estadoConsulta.nombre === filter)
-  }, [consultas, filter])
+    return consultas
+      .filter(consulta => estadoFilter === 'todas' || consulta.estadoConsulta.nombre === estadoFilter)
+      .filter(consulta => canalFilter === 'todos' || consulta.canal === canalFilter)
+      .filter(consulta => matchesSearch(consulta, searchQuery))
+      .sort((left, right) => {
+        const leftTime = new Date(left.fechaActualizacion).getTime()
+        const rightTime = new Date(right.fechaActualizacion).getTime()
+        return sortOption === 'recentes' ? rightTime - leftTime : leftTime - rightTime
+      })
+  }, [canalFilter, consultas, estadoFilter, searchQuery, sortOption])
 
   const selectedConsulta = useMemo(() => {
     if (!selectedConsultaId) return filteredConsultas[0] ?? null
@@ -50,6 +93,10 @@ export function useConsultas(userId?: string): UseConsultasResult {
 
   const selectConsulta = useCallback((consultaId: string) => {
     setSelectedConsultaId(consultaId)
+  }, [])
+
+  const clearSelection = useCallback(() => {
+    setSelectedConsultaId(null)
   }, [])
 
   const closeConsulta = useCallback(async (consultaId: string) => {
@@ -67,10 +114,17 @@ export function useConsultas(userId?: string): UseConsultasResult {
     filteredConsultas,
     selectedConsulta,
     selectedConsultaId,
-    filter,
+    estadoFilter,
+    canalFilter,
+    sortOption,
+    searchQuery,
     isLoading,
-    setFilter,
+    setEstadoFilter,
+    setCanalFilter,
+    setSortOption,
+    setSearchQuery,
     selectConsulta,
+    clearSelection,
     closeConsulta,
     reloadConsultas,
   }

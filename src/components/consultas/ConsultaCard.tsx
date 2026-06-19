@@ -38,6 +38,11 @@ function formatDate(value: string): string {
   }).format(new Date(value))
 }
 
+function getCanalLabel(canal?: string | null): string {
+  if (canal === 'whatsapp') return 'WhatsApp'
+  return 'Web'
+}
+
 export function ConsultaCard({ consulta, selected = false, onSelect }: ConsultaCardProps) {
   const estado = consulta.estadoConsulta.nombre
   const estadoColor = ESTADO_COLORS[estado] ?? 'var(--color-text-secondary)'
@@ -93,22 +98,15 @@ export function ConsultaCard({ consulta, selected = false, onSelect }: ConsultaC
 
       <div style={{
         display: 'flex',
-        flexWrap: 'wrap',
-        gap: '6px',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '10px',
         color: 'var(--color-text-secondary)',
         fontSize: '12px',
       }}>
-        <span>{consulta.canal ?? 'web'}</span>
-        <span>-</span>
-        <span>{consulta.tipoConsulta ?? 'general'}</span>
-        <span>-</span>
-        <span>{consulta.prioridad ?? 'normal'}</span>
+        <span style={{ fontWeight: 600 }}>{getCanalLabel(consulta.canal)}</span>
+        <span>{formatDate(consulta.fechaActualizacion)}</span>
       </div>
-
-      <p style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginTop: '8px' }}>
-        Ultima interaccion: {formatDate(consulta.fechaActualizacion)}
-      </p>
     </button>
   )
 }
-

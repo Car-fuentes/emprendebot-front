@@ -4,6 +4,7 @@ import { Button } from '../ui/Button'
 interface ConsultaDetailProps {
   consulta: Consulta | null
   onCloseConsulta: (consultaId: string) => Promise<void>
+  onBack?: () => void
 }
 
 const ESTADO_LABELS: Record<string, string> = {
@@ -34,7 +35,7 @@ function openWhatsApp(phone: string) {
   window.open(`https://wa.me/${digits}`, '_blank', 'noopener,noreferrer')
 }
 
-export function ConsultaDetail({ consulta, onCloseConsulta }: ConsultaDetailProps) {
+export function ConsultaDetail({ consulta, onCloseConsulta, onBack }: ConsultaDetailProps) {
   if (!consulta) {
     return (
       <section style={{
@@ -65,6 +66,29 @@ export function ConsultaDetail({ consulta, onCloseConsulta }: ConsultaDetailProp
       overflow: 'hidden',
     }}>
       <header style={{ padding: '16px', borderBottom: '1px solid var(--color-border)' }}>
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              marginBottom: '12px',
+              padding: 0,
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--color-primary)',
+              fontFamily: 'var(--font-family)',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            ← Volver a consultas
+          </button>
+        )}
+
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginBottom: '12px' }}>
           <div style={{ minWidth: 0 }}>
             <h2 style={{ fontSize: '18px', marginBottom: '4px' }}>
@@ -158,4 +182,3 @@ export function ConsultaDetail({ consulta, onCloseConsulta }: ConsultaDetailProp
     </section>
   )
 }
-

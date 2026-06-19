@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Drawer } from '../components/layout/Drawer'
 import { Avatar } from '../components/ui/Avatar'
-import { Chip } from '../components/ui/Chip'
 import { ConsultaCard } from '../components/consultas/ConsultaCard'
 import { ConsultaDetail } from '../components/consultas/ConsultaDetail'
 import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
-import { useConsultas, type ConsultaFilter } from '../hooks/useConsultas'
+import {
+  useConsultas,
+  type ConsultaCanalFilter,
+  type ConsultaEstadoFilter,
+  type ConsultaSortOption,
+} from '../hooks/useConsultas'
 
-const FILTERS: Array<{ value: ConsultaFilter; label: string }> = [
+const ESTADO_OPTIONS: Array<{ value: ConsultaEstadoFilter; label: string }> = [
   { value: 'todas', label: 'Todas' },
   { value: 'nueva', label: 'Nuevas' },
   { value: 'en_proceso', label: 'En proceso' },
@@ -16,6 +20,38 @@ const FILTERS: Array<{ value: ConsultaFilter; label: string }> = [
   { value: 'derivada', label: 'Derivadas' },
   { value: 'cerrada', label: 'Cerradas' },
 ]
+
+const CANAL_OPTIONS: Array<{ value: ConsultaCanalFilter; label: string }> = [
+  { value: 'todos', label: 'Todos' },
+  { value: 'web', label: 'Web' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+]
+
+const SORT_OPTIONS: Array<{ value: ConsultaSortOption; label: string }> = [
+  { value: 'recentes', label: 'Mas recientes' },
+  { value: 'antiguas', label: 'Mas antiguas' },
+]
+
+const fieldStyle: React.CSSProperties = {
+  width: '100%',
+  height: '42px',
+  padding: '0 12px',
+  border: '1px solid var(--color-border)',
+  borderRadius: 'var(--radius-sm)',
+  background: 'var(--color-bg)',
+  color: 'var(--color-text-primary)',
+  fontSize: '13px',
+  fontFamily: 'var(--font-family)',
+  outline: 'none',
+}
+
+const labelStyle: React.CSSProperties = {
+  fontSize: '11px',
+  fontWeight: 700,
+  color: 'var(--color-text-secondary)',
+  letterSpacing: '0.4px',
+  textTransform: 'uppercase',
+}
 
 export function ConsultasPage() {
   const { user } = useAuth()
@@ -26,10 +62,17 @@ export function ConsultasPage() {
     filteredConsultas,
     selectedConsulta,
     selectedConsultaId,
-    filter,
+    estadoFilter,
+    canalFilter,
+    sortOption,
+    searchQuery,
     isLoading,
-    setFilter,
+    setEstadoFilter,
+    setCanalFilter,
+    setSortOption,
+    setSearchQuery,
     selectConsulta,
+    clearSelection,
     closeConsulta,
   } = useConsultas(user?.id)
 
@@ -38,6 +81,8 @@ export function ConsultasPage() {
   }, [loadBusiness, user])
 
   if (!user) return null
+
+  const showingDetail = Boolean(selectedConsultaId && selectedConsulta)
 
   return (
     <>
@@ -90,24 +135,72 @@ export function ConsultasPage() {
             </p>
           </div>
 
-          <section style={{ marginBottom: '16px' }} aria-label="Filtros de consultas">
-            <div style={{
-              display: 'flex',
-              gap: '7px',
-              overflowX: 'auto',
-              paddingBottom: '8px',
-            }}>
-              {FILTERS.map(item => (
-                <Chip
-                  key={item.value}
-                  selected={filter === item.value}
-                  onClick={() => setFilter(item.value)}
-                >
-                  {item.label}
-                </Chip>
-              ))}
-            </div>
-          </section>
+          {!showingDetail && (
+            <section
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+                marginBottom: '16px',
+              }}
+              aria-label="Filtros de consultas"
+            >
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <span style={labelStyle}>Buscar</span>
+                <input
+                  value={searchQuery}
+                  onChange={event => setSearchQuery(event.target.value)}
+                  placeholder="Buscar cliente o mensaje..."
+                  style={fieldStyle}
+                />
+              </label>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0, 1fr)',
+                gap: '10px',
+              }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={labelStyle}>Estado</span>
+                  <select
+                    value={estadoFilter}
+                    onChange={event => setEstadoFilter(event.target.value as ConsultaEstadoFilter)}
+                    style={fieldStyle}
+                  >
+                    {ESTADO_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={labelStyle}>Canal</span>
+                  <select
+                    value={canalFilter}
+                    onChange={event => setCanalFilter(event.target.value as ConsultaCanalFilter)}
+                    style={fieldStyle}
+                  >
+                    {CANAL_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={labelStyle}>Orden</span>
+                  <select
+                    value={sortOption}
+                    onChange={event => setSortOption(event.target.value as ConsultaSortOption)}
+                    style={fieldStyle}
+                  >
+                    {SORT_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </section>
+          )}
 
           {isLoading ? (
             <section style={{
@@ -133,42 +226,42 @@ export function ConsultasPage() {
               </p>
             </section>
           ) : (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1fr)',
-              gap: '14px',
-              alignItems: 'start',
-            }}>
-              <section style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {filteredConsultas.length === 0 ? (
-                  <div style={{
-                    padding: '24px 16px',
-                    textAlign: 'center',
-                    color: 'var(--color-text-secondary)',
-                    fontSize: '13px',
-                    background: 'var(--color-bg)',
-                    borderRadius: 'var(--radius-md)',
-                  }}>
-                    No hay consultas que coincidan con este filtro.
-                  </div>
-                ) : (
-                  filteredConsultas.map(consulta => (
-                    <ConsultaCard
-                      key={consulta.id}
-                      consulta={consulta}
-                      selected={selectedConsultaId === consulta.id}
-                      onSelect={selectConsulta}
-                    />
-                  ))
-                )}
-              </section>
-
-              <ConsultaDetail consulta={selectedConsulta} onCloseConsulta={closeConsulta} />
-            </div>
+            <>
+              {showingDetail ? (
+                <ConsultaDetail
+                  consulta={selectedConsulta}
+                  onCloseConsulta={closeConsulta}
+                  onBack={clearSelection}
+                />
+              ) : (
+                <section style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {filteredConsultas.length === 0 ? (
+                    <div style={{
+                      padding: '24px 16px',
+                      textAlign: 'center',
+                      color: 'var(--color-text-secondary)',
+                      fontSize: '13px',
+                      background: 'var(--color-bg)',
+                      borderRadius: 'var(--radius-md)',
+                    }}>
+                      No hay consultas que coincidan con estos filtros.
+                    </div>
+                  ) : (
+                    filteredConsultas.map(consulta => (
+                      <ConsultaCard
+                        key={consulta.id}
+                        consulta={consulta}
+                        selected={selectedConsultaId === consulta.id}
+                        onSelect={selectConsulta}
+                      />
+                    ))
+                  )}
+                </section>
+              )}
+            </>
           )}
         </main>
       </div>
     </>
   )
 }
-
