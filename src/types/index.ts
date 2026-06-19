@@ -40,6 +40,15 @@ export interface FAQ {
   updatedAt: string
 }
 
+export interface FAQFormData {
+  pregunta: string
+  respuesta: string
+  categoriaId?: string
+  categoria?: string
+  nuevaCategoriaNombre?: string
+  activa: boolean
+}
+
 export interface FAQCategory {
   id: string
   nombre: string
@@ -52,6 +61,7 @@ export interface FAQApi {
   categoriaId: string
   pregunta: string
   respuesta: string
+  activa?: boolean
   fechaCreacion: string
   fechaModificacion: string
   categoria?: {
@@ -71,12 +81,14 @@ export interface CreateFAQPayload {
   categoriaId: string
   pregunta: string
   respuesta: string
+  activa?: boolean
 }
 
 export interface UpdateFAQPayload {
   categoriaId?: string
   pregunta?: string
   respuesta?: string
+  activa?: boolean
 }
 
 export interface Business {

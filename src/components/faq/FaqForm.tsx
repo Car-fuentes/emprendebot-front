@@ -1,6 +1,5 @@
 import { useState, type CSSProperties, type FormEvent } from 'react'
-import type { FAQ, FAQCategory } from '../../types'
-import type { FAQFormData } from '../../services/faqStorage'
+import type { FAQ, FAQCategory, FAQFormData } from '../../types'
 import { Button } from '../ui/Button'
 import { Chip } from '../ui/Chip'
 import { Input } from '../ui/Input'

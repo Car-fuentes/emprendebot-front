@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Drawer } from '../components/layout/Drawer'
 import { FaqCard } from '../components/faq/FaqCard'
 import { FaqForm } from '../components/faq/FaqForm'
@@ -9,11 +8,9 @@ import { Chip } from '../components/ui/Chip'
 import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { useFaqs, type FAQSortOption, type FAQStatusFilter } from '../hooks/useFaqs'
-import type { FAQ } from '../types'
-import type { FAQFormData } from '../services/faqStorage'
+import type { FAQ, FAQFormData } from '../types'
 
 export function FaqPage() {
-  const navigate = useNavigate()
   const { user } = useAuth()
   const { business, isBusinessLoading, loadBusiness } = useBusiness()
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -30,6 +27,8 @@ export function FaqPage() {
     faqs,
     allFaqs,
     categories,
+    isLoading: isFaqLoading,
+    error: faqLoadError,
     createFaq,
     updateFaq,
     deleteFaq,
@@ -142,7 +141,7 @@ export function FaqPage() {
         }}>
           <button
             type="button"
-            aria-label="Abrir navegación"
+            aria-label="Abrir navegacion"
             onClick={() => setDrawerOpen(true)}
             style={{ background: 'none', border: 'none', fontSize: '22px', padding: '4px' }}
           >
@@ -167,41 +166,24 @@ export function FaqPage() {
                 Preguntas frecuentes
               </h1>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px' }}>
-                Administrá las respuestas automáticas de tu negocio.
+                Administra las respuestas automaticas de tu negocio.
               </p>
             </div>
-            {business && !showForm && (
+            {!showForm && (
               <Button type="button" size="sm" onClick={openCreateForm} style={{ flexShrink: 0 }}>
                 + Nueva
               </Button>
             )}
           </div>
 
-          {isBusinessLoading ? (
+          {isBusinessLoading || isFaqLoading ? (
             <section style={{
               padding: '28px 20px',
               textAlign: 'center',
               color: 'var(--color-text-secondary)',
               fontSize: '13px',
             }}>
-              Cargando información del negocio...
-            </section>
-          ) : !business ? (
-            <section style={{
-              padding: '28px 20px',
-              textAlign: 'center',
-              background: 'var(--color-bg)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-md)',
-            }}>
-              <div style={{ fontSize: '34px', marginBottom: '10px' }}>?</div>
-              <h2 style={{ fontSize: '17px', marginBottom: '6px' }}>Primero configurá tu negocio</h2>
-              <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '18px' }}>
-                Necesitamos asociar las preguntas frecuentes a un negocio.
-              </p>
-              <Button type="button" onClick={() => navigate('/configurar')}>
-                Configurar negocio
-              </Button>
+              Cargando preguntas frecuentes...
             </section>
           ) : (
             <>
@@ -218,7 +200,7 @@ export function FaqPage() {
                 </div>
               )}
 
-              {error && (
+              {(error || faqLoadError) && (
                 <div
                   role="alert"
                   style={{
@@ -230,7 +212,7 @@ export function FaqPage() {
                     fontSize: '13px',
                   }}
                 >
-                  {error}
+                  {error || faqLoadError}
                 </div>
               )}
 
@@ -255,7 +237,7 @@ export function FaqPage() {
 
                   {categories.length > 0 && (
                     <select
-                      aria-label="Filtrar por categoría"
+                      aria-label="Filtrar por categoria"
                       value={categoryFilter}
                       onChange={event => setCategoryFilter(event.target.value)}
                       style={{
@@ -270,7 +252,7 @@ export function FaqPage() {
                         outline: 'none',
                       }}
                     >
-                      <option value="all">Todas las categorías</option>
+                      <option value="all">Todas las categorias</option>
                       {categories.map(category => (
                         <option key={category.id} value={category.id}>{category.nombre}</option>
                       ))}
@@ -325,9 +307,9 @@ export function FaqPage() {
                   borderRadius: 'var(--radius-md)',
                 }}>
                   <div style={{ fontSize: '34px', marginBottom: '10px' }}>?</div>
-                  <h2 style={{ fontSize: '17px', marginBottom: '6px' }}>Todavía no hay FAQs</h2>
+                  <h2 style={{ fontSize: '17px', marginBottom: '6px' }}>Todavia no hay FAQs</h2>
                   <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '18px' }}>
-                    Creá respuestas para las consultas que recibís con más frecuencia.
+                    Crea respuestas para las consultas que recibis con mas frecuencia.
                   </p>
                   {!showForm && (
                     <Button type="button" onClick={openCreateForm}>Crear primera FAQ</Button>

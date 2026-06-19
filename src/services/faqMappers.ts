@@ -16,8 +16,7 @@ export function mapFaqApiToUi(faq: FAQApi, index: number): FAQ {
     pregunta: faq.pregunta,
     respuesta: faq.respuesta,
     categoria: faq.categoria?.nombre,
-    // TODO: Reemplazar por faq.activa cuando Back agregue persistencia.
-    activa: true,
+    activa: faq.activa ?? true,
     // TODO: Reemplazar por faq.orden cuando Back agregue persistencia.
     orden: index + 1,
     createdAt: faq.fechaCreacion,
