@@ -9,6 +9,7 @@ import { BusinessConfigPage } from './pages/BusinessConfigPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { ChatbotPage } from './pages/ChatbotPage'
 import { FaqPage } from './pages/FaqPage'
+import { ConsultasPage } from './pages/ConsultasPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth()
@@ -32,6 +33,9 @@ function App() {
       } />
       <Route path="/dashboard" element={
         <ProtectedRoute><DashboardPage /></ProtectedRoute>
+      } />
+      <Route path="/consultas" element={
+        <ProtectedRoute><ConsultasPage /></ProtectedRoute>
       } />
       <Route path="/faq" element={
         <ProtectedRoute><FaqPage /></ProtectedRoute>

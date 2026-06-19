@@ -126,6 +126,52 @@ export interface ChatSession {
   messages: Message[]
 }
 
+// ===== CONSULTAS =====
+export type EstadoConsultaNombre = 'nueva' | 'en_proceso' | 'respondida' | 'derivada' | 'cerrada'
+export type CanalConsulta = 'web' | 'whatsapp'
+export type TipoConsulta = 'general' | 'catalogo' | 'presupuesto' | 'soporte' | 'derivacion'
+export type PrioridadConsulta = 'baja' | 'normal' | 'alta' | 'urgente'
+export type EmisorMensaje = 'cliente' | 'usuario' | 'bot'
+
+export interface EstadoConsulta {
+  id: string
+  nombre: EstadoConsultaNombre
+  descripcion?: string | null
+  fechaCreacion: string
+}
+
+export interface Mensaje {
+  id: string
+  consultaId: string
+  mensajePadreId?: string | null
+  emisor: EmisorMensaje
+  contenido: string
+  tipoMensaje?: string | null
+  fechaCreacion: string
+  fechaActualizacion: string
+  leido: boolean
+}
+
+export interface Consulta {
+  id: string
+  usuarioId?: string | null
+  sessionAnonimaId?: string | null
+  clienteNombre?: string | null
+  clienteTelefono?: string | null
+  estadoConsultaId: string
+  estadoConsulta: EstadoConsulta
+  tipoConsulta?: TipoConsulta | string | null
+  prioridad?: PrioridadConsulta | string | null
+  canal?: CanalConsulta | string | null
+  asunto?: string | null
+  descripcion?: string | null
+  derivadaA?: string | null
+  fechaCreacion: string
+  fechaActualizacion: string
+  fechaCierre?: string | null
+  mensajes: Mensaje[]
+}
+
 // ===== DASHBOARD =====
 export interface DashboardStats {
   consultasPendientes: number
