@@ -64,7 +64,9 @@ export function useConsultas(userId?: string): UseConsultasResult {
     try {
       const data = await getConsultas(userId)
       setConsultas(data)
-      setSelectedConsultaId(current => current ?? data[0]?.id ?? null)
+      setSelectedConsultaId(current => (
+        current && data.some(consulta => consulta.id === current) ? current : null
+      ))
     } finally {
       setIsLoading(false)
     }
@@ -87,8 +89,8 @@ export function useConsultas(userId?: string): UseConsultasResult {
   }, [canalFilter, consultas, estadoFilter, searchQuery, sortOption])
 
   const selectedConsulta = useMemo(() => {
-    if (!selectedConsultaId) return filteredConsultas[0] ?? null
-    return filteredConsultas.find(consulta => consulta.id === selectedConsultaId) ?? filteredConsultas[0] ?? null
+    if (!selectedConsultaId) return null
+    return filteredConsultas.find(consulta => consulta.id === selectedConsultaId) ?? null
   }, [filteredConsultas, selectedConsultaId])
 
   const selectConsulta = useCallback((consultaId: string) => {
