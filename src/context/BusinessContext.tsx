@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
-import type { Business, DashboardStats, FAQ } from '../types'
+import type { Business, DashboardStats, FAQ, FAQCategory } from '../types'
 import {
   createFaq as createStoredFaq,
   deleteFaq as deleteStoredFaq,
@@ -17,6 +17,7 @@ import {
 
 interface BusinessContextType {
   business: Business | null
+  faqCategories: FAQCategory[]
   isBusinessLoading: boolean
   stats: DashboardStats
   loadBusiness: (userId: string) => void
@@ -42,6 +43,7 @@ const BusinessContext = createContext<BusinessContextType | null>(null)
 export function BusinessProvider({ children }: { children: ReactNode }) {
   const [business, setBusiness] = useState<Business | null>(null)
   const [isBusinessLoading, setIsBusinessLoading] = useState(true)
+  const faqCategories = business?.faqCategories ?? []
 
   const loadBusiness = useCallback((userId: string) => {
     setIsBusinessLoading(true)
@@ -64,6 +66,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       id: crypto.randomUUID(),
       productos: [],
       faq: [],
+      faqCategories: [],
       rubro: '',
       ...data,
       nombre: data.nombre ?? '',
@@ -91,14 +94,14 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   const createFaq = useCallback(async (data: FAQFormData): Promise<FAQ> => {
     if (!business) throw new Error('Primero tenés que configurar tu negocio.')
     const result = await createStoredFaq(business.id, data)
-    setBusiness(current => current ? { ...current, faq: result.faqs } : current)
+    setBusiness(current => current ? { ...current, faq: result.faqs, faqCategories: result.categories } : current)
     return result.faq
   }, [business])
 
   const updateFaq = useCallback(async (faqId: string, data: FAQFormData): Promise<FAQ> => {
     if (!business) throw new Error('Primero tenés que configurar tu negocio.')
     const result = await updateStoredFaq(business.id, faqId, data)
-    setBusiness(current => current ? { ...current, faq: result.faqs } : current)
+    setBusiness(current => current ? { ...current, faq: result.faqs, faqCategories: result.categories } : current)
     return result.faq
   }, [business])
 
@@ -124,6 +127,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   return (
     <BusinessContext.Provider value={{
       business,
+      faqCategories,
       isBusinessLoading,
       stats: DEFAULT_STATS,
       loadBusiness,

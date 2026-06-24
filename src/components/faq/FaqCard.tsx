@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import type { FAQ } from '../../types'
 import { Button } from '../ui/Button'
-import { Chip } from '../ui/Chip'
-import type { FAQMoveDirection } from '../../services/faqStorage'
+import { Switch } from '../ui/Switch'
 
 interface FaqCardProps {
   faq: FAQ
@@ -10,9 +9,6 @@ interface FaqCardProps {
   onEdit: (faq: FAQ) => void
   onDelete: (faqId: string) => Promise<void>
   onToggle: (faqId: string) => Promise<void>
-  onMove: (faqId: string, direction: FAQMoveDirection) => Promise<void>
-  canMoveUp: boolean
-  canMoveDown: boolean
 }
 
 export function FaqCard({
@@ -21,72 +17,82 @@ export function FaqCard({
   onEdit,
   onDelete,
   onToggle,
-  onMove,
-  canMoveUp,
-  canMoveDown,
 }: FaqCardProps) {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   return (
     <article style={{
-      padding: '16px',
-      background: 'var(--color-bg)',
-      border: '1px solid var(--color-border)',
-      borderRadius: 'var(--radius-md)',
-      boxShadow: 'var(--shadow-sm)',
+      padding: '26px 0 24px',
+      background: 'transparent',
+      borderBottom: '1px solid var(--color-border)',
       opacity: busy ? 0.7 : 1,
       transition: 'opacity var(--transition)',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
-        <div style={{ minWidth: 0 }}>
-          {faq.categoria && (
-            <span style={{
-              display: 'inline-block',
-              marginBottom: '7px',
-              padding: '3px 8px',
-              borderRadius: 'var(--radius-full)',
-              background: 'var(--color-bg-subtle)',
-              color: 'var(--color-text-secondary)',
-              fontSize: '11px',
-              fontWeight: 600,
-            }}>
-              {faq.categoria}
-            </span>
-          )}
-          <h2 style={{ fontSize: '15px', fontWeight: 700, lineHeight: 1.4 }}>
-            {faq.pregunta}
-          </h2>
-        </div>
-        <Chip
-          type="button"
-          selected={faq.activa}
-          disabled={busy}
-          aria-label={`${faq.activa ? 'Desactivar' : 'Activar'} FAQ: ${faq.pregunta}`}
-          onClick={() => void onToggle(faq.id)}
-          style={{ flexShrink: 0, alignSelf: 'flex-start' }}
-        >
-          {faq.activa ? 'Activa' : 'Inactiva'}
-        </Chip>
-      </div>
+      <h2 style={{
+        fontSize: '18px',
+        fontWeight: 800,
+        lineHeight: 1.25,
+        marginBottom: '10px',
+        color: 'var(--color-text-primary)',
+      }}>
+        {faq.pregunta}
+      </h2>
+
+      {faq.categoria && (
+        <p style={{
+          fontSize: '13px',
+          lineHeight: 1.45,
+          marginBottom: '14px',
+          color: 'var(--color-text-primary)',
+        }}>
+          <strong style={{ fontWeight: 700 }}>Categoría:</strong>{' '}
+          <span style={{ color: 'var(--color-text-secondary)', fontWeight: 500 }}>{faq.categoria}</span>
+        </p>
+      )}
 
       <p style={{
         color: 'var(--color-text-secondary)',
-        fontSize: '13px',
-        lineHeight: 1.6,
+        fontSize: '14px',
+        lineHeight: 1.55,
         whiteSpace: 'pre-wrap',
         overflowWrap: 'anywhere',
+        marginBottom: '16px',
       }}>
         {faq.respuesta}
       </p>
 
+      <div style={{
+        marginTop: '2px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+      }}>
+        <Switch
+          checked={faq.activa}
+          label="Mostrar en el chatbot"
+          disabled={busy}
+          aria-label={`${faq.activa ? 'Ocultar del chatbot' : 'Mostrar en el chatbot'}: ${faq.pregunta}`}
+          onChange={() => void onToggle(faq.id)}
+          style={{ fontSize: '13px', fontWeight: 700 }}
+        />
+        <p style={{
+          color: 'var(--color-text-secondary)',
+          fontSize: '12px',
+          lineHeight: 1.45,
+          maxWidth: '560px',
+        }}>
+          Cuando está activada, esta pregunta estará disponible para que el chatbot la use en las conversaciones con clientes.
+        </p>
+      </div>
+
       {confirmingDelete ? (
         <div style={{
-          marginTop: '14px',
+          marginTop: '16px',
           paddingTop: '14px',
           borderTop: '1px solid var(--color-border)',
         }}>
           <p style={{ fontSize: '13px', fontWeight: 600, marginBottom: '10px' }}>
-            ¿Seguro que querés eliminar esta FAQ?
+            Seguro que querés eliminar esta FAQ?
           </p>
           <div style={{ display: 'flex', gap: '8px' }}>
             <Button
@@ -114,46 +120,50 @@ export function FaqCard({
       ) : (
         <div style={{
           display: 'flex',
-          justifyContent: 'flex-end',
-          flexWrap: 'wrap',
-          gap: '4px',
-          marginTop: '12px',
-          paddingTop: '10px',
-          borderTop: '1px solid var(--color-border)',
+          justifyContent: 'flex-start',
+          gap: '32px',
+          marginTop: '18px',
         }}>
-          <Button
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
-            disabled={busy || !canMoveUp}
-            onClick={() => void onMove(faq.id, 'up')}
-            aria-label={`Subir ${faq.pregunta}`}
+            disabled={busy}
+            onClick={() => onEdit(faq)}
+            style={{
+              padding: 0,
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--color-primary)',
+              fontFamily: 'var(--font-family)',
+              fontSize: '13px',
+              fontWeight: 800,
+              letterSpacing: '0.6px',
+              textTransform: 'uppercase',
+              cursor: busy ? 'not-allowed' : 'pointer',
+              opacity: busy ? 0.5 : 1,
+            }}
           >
-            ↑ Subir
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={busy || !canMoveDown}
-            onClick={() => void onMove(faq.id, 'down')}
-            aria-label={`Bajar ${faq.pregunta}`}
-          >
-            ↓ Bajar
-          </Button>
-          <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={() => onEdit(faq)}>
             Editar
-          </Button>
-          <Button
+          </button>
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
             disabled={busy}
             onClick={() => setConfirmingDelete(true)}
-            style={{ color: 'var(--color-error)' }}
+            style={{
+              padding: 0,
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--color-error)',
+              fontFamily: 'var(--font-family)',
+              fontSize: '13px',
+              fontWeight: 800,
+              letterSpacing: '0.6px',
+              textTransform: 'uppercase',
+              cursor: busy ? 'not-allowed' : 'pointer',
+              opacity: busy ? 0.5 : 1,
+            }}
           >
             Eliminar
-          </Button>
+          </button>
         </div>
       )}
     </article>
