@@ -32,10 +32,9 @@ export interface FAQ {
   pregunta: string
   respuesta: string
   categoria?: string
-  // TODO: Persistir en backend cuando agregue soporte para activa/inactiva.
   activa: boolean
-  // TODO: Persistir en backend cuando agregue soporte para orden manual.
-  orden: number
+  orden?: number
+  sourceSuggestionId?: string
   createdAt: string
   updatedAt: string
 }
@@ -47,6 +46,7 @@ export interface FAQFormData {
   categoria?: string
   nuevaCategoriaNombre?: string
   activa: boolean
+  sourceSuggestionId?: string
 }
 
 export interface FAQCategory {

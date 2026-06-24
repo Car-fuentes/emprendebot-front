@@ -12,6 +12,7 @@ export interface FAQFormData {
   categoria?: string
   nuevaCategoriaNombre?: string
   activa: boolean
+  sourceSuggestionId?: string
 }
 
 interface FAQMutationResult {
@@ -41,6 +42,7 @@ function normalizeFaqData(data: FAQFormData): FAQFormData {
     categoria,
     nuevaCategoriaNombre,
     activa: data.activa ?? true,
+    sourceSuggestionId: data.sourceSuggestionId,
   }
 }
 
@@ -104,10 +106,9 @@ export function normalizeFaqs(
       pregunta: faq.pregunta?.trim() ?? '',
       respuesta: faq.respuesta?.trim() ?? '',
       categoria: category?.nombre ?? (faq.categoria?.trim() || undefined),
-      // TODO: Persistir en backend cuando agregue soporte para activa/inactiva.
       activa: faq.activa ?? true,
-      // TODO: Persistir en backend cuando agregue soporte para orden manual.
       orden: index + 1,
+      sourceSuggestionId: faq.sourceSuggestionId,
       createdAt,
       updatedAt: faq.updatedAt ?? createdAt,
     }
@@ -125,6 +126,7 @@ function hasFaqMigrationChanges(originalFaqs: Partial<FAQ>[], normalizedFaqs: FA
       || (faq.categoria || undefined) !== normalized.categoria
       || faq.activa !== normalized.activa
       || faq.orden !== normalized.orden
+      || faq.sourceSuggestionId !== normalized.sourceSuggestionId
       || faq.createdAt !== normalized.createdAt
       || faq.updatedAt !== normalized.updatedAt
   })
@@ -233,6 +235,7 @@ export async function createFaq(
       respuesta: normalizedData.respuesta,
       activa: normalizedData.activa,
       orden: currentFaqs.length + 1,
+      sourceSuggestionId: normalizedData.sourceSuggestionId,
       createdAt: now,
       updatedAt: now,
     }
@@ -262,6 +265,7 @@ export async function updateFaq(
         pregunta: normalizedData.pregunta,
         respuesta: normalizedData.respuesta,
         activa: normalizedData.activa,
+        sourceSuggestionId: normalizedData.sourceSuggestionId ?? faq.sourceSuggestionId,
         updatedAt: new Date().toISOString(),
       }
       return updatedFaq
@@ -326,7 +330,6 @@ export async function toggleFaq(
 
       updatedFaq = {
         ...faq,
-        // TODO: Persistir en backend cuando agregue soporte para activa/inactiva.
         activa: !faq.activa,
         updatedAt: new Date().toISOString(),
       }

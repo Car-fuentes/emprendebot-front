@@ -1,8 +1,9 @@
-import { useState, type CSSProperties, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react'
 import type { FAQ, FAQCategory, FAQFormData } from '../../types'
 import { Button } from '../ui/Button'
 import { Chip } from '../ui/Chip'
 import { Input } from '../ui/Input'
+import { Switch } from '../ui/Switch'
 import { Textarea } from '../ui/Textarea'
 
 interface FaqFormProps {
@@ -11,6 +12,7 @@ interface FaqFormProps {
   loading?: boolean
   onSubmit: (data: FAQFormData) => Promise<void>
   onCancel: () => void
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 const labelStyle: CSSProperties = {
@@ -21,10 +23,9 @@ const labelStyle: CSSProperties = {
   textTransform: 'uppercase',
 }
 
-export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel }: FaqFormProps) {
-  const [categoryMode, setCategoryMode] = useState<'existing' | 'new'>(
-    faq?.categoriaId || categories.length > 0 ? 'existing' : 'new',
-  )
+export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, onDirtyChange }: FaqFormProps) {
+  const initialCategoryMode: 'existing' | 'new' = faq?.categoriaId || categories.length > 0 ? 'existing' : 'new'
+  const [categoryMode, setCategoryMode] = useState<'existing' | 'new'>(initialCategoryMode)
   const [form, setForm] = useState<FAQFormData>({
     pregunta: faq?.pregunta ?? '',
     respuesta: faq?.respuesta ?? '',
@@ -32,8 +33,30 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel }
     categoria: faq?.categoria ?? '',
     nuevaCategoriaNombre: '',
     activa: faq?.activa ?? true,
+    sourceSuggestionId: faq?.sourceSuggestionId,
   })
   const [errors, setErrors] = useState<{ pregunta?: string; respuesta?: string; categoria?: string }>({})
+  const initialSnapshot = useMemo(() => JSON.stringify({
+    pregunta: faq?.pregunta ?? '',
+    respuesta: faq?.respuesta ?? '',
+    categoriaId: initialCategoryMode === 'existing' ? faq?.categoriaId ?? '' : '',
+    nuevaCategoriaNombre: '',
+    activa: faq?.activa ?? true,
+    categoryMode: initialCategoryMode,
+  }), [faq, initialCategoryMode])
+  const currentSnapshot = JSON.stringify({
+    pregunta: form.pregunta,
+    respuesta: form.respuesta,
+    categoriaId: categoryMode === 'existing' ? form.categoriaId ?? '' : '',
+    nuevaCategoriaNombre: categoryMode === 'new' ? form.nuevaCategoriaNombre ?? '' : '',
+    activa: form.activa,
+    categoryMode,
+  })
+  const isDirty = currentSnapshot !== initialSnapshot
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty)
+  }, [isDirty, onDirtyChange])
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -173,6 +196,29 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel }
             }}
           />
         )}
+      </div>
+
+      <div style={{
+        padding: '12px',
+        borderRadius: 'var(--radius-sm)',
+        background: 'var(--color-bg-subtle)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '7px',
+      }}>
+        <Switch
+          checked={form.activa}
+          label="Mostrar en el chatbot"
+          disabled={loading}
+          onChange={checked => setForm(current => ({ ...current, activa: checked }))}
+        />
+        <p style={{
+          color: 'var(--color-text-secondary)',
+          fontSize: '12px',
+          lineHeight: 1.5,
+        }}>
+          Cuando está activada, esta pregunta estará disponible para que el chatbot la use en las conversaciones con clientes.
+        </p>
       </div>
 
       <div style={{ display: 'flex', gap: '10px' }}>

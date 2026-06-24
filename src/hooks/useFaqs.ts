@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { FAQ, FAQCategory, FAQFormData } from '../types'
+import type { Business, FAQ, FAQCategory, FAQFormData } from '../types'
 import { createFaqApi, deleteFaqApi, getFaqsApi, updateFaqApi } from '../services/faqApi'
 import { createFaqCategoryApi, getFaqCategoriesApi } from '../services/faqCategoryApi'
 import { mapFaqApiToUi, mapFaqCategoryApiToUi } from '../services/faqMappers'
@@ -13,8 +13,17 @@ interface UseFaqFilters {
   sort: FAQSortOption
 }
 
+interface UseFaqLocalSource {
+  business: Business | null
+  createFaq: (data: FAQFormData) => Promise<FAQ>
+  updateFaq: (faqId: string, data: FAQFormData) => Promise<FAQ>
+  deleteFaq: (faqId: string) => Promise<void>
+  toggleFaq: (faqId: string) => Promise<FAQ>
+}
+
 const AUTH_INTEGRATION_MESSAGE = 'No se pudo conectar con el servidor. Volvé a iniciar sesión cuando la integración de autenticación esté disponible.'
 const BOT_CONFIG_MESSAGE = 'Primero debe configurarse el bot/negocio para poder administrar preguntas frecuentes.'
+const CONNECTION_MESSAGE = 'No pudimos conectar con el servidor. El panel local sigue disponible con los datos guardados en este navegador.'
 
 function getTime(value: string): number {
   const time = new Date(value).getTime()
@@ -40,6 +49,10 @@ function sortFaqs(left: FAQ, right: FAQ, sort: FAQSortOption): number {
 function normalizeApiError(error: unknown): Error {
   const message = error instanceof Error ? error.message : 'No pudimos conectar con el servidor.'
   const normalized = message.toLowerCase()
+
+  if (normalized.includes('failed to fetch') || normalized.includes('networkerror')) {
+    return new Error(CONNECTION_MESSAGE)
+  }
 
   if (
     normalized.includes('acceso denegado')
@@ -81,7 +94,32 @@ function normalizeFaqData(data: FAQFormData): FAQFormData {
     categoria,
     nuevaCategoriaNombre,
     activa: data.activa ?? true,
+    sourceSuggestionId: data.sourceSuggestionId,
   }
+}
+
+function mapLocalBusinessFaqs(business: Business | null): { faqs: FAQ[]; categories: FAQCategory[] } {
+  if (!business) return { faqs: [], categories: [] }
+
+  return {
+    faqs: business.faq ?? [],
+    categories: business.faqCategories ?? [],
+  }
+}
+
+function ensureCategory(categories: FAQCategory[], faq: FAQ): FAQCategory[] {
+  if (!faq.categoriaId || !faq.categoria || categories.some(category => category.id === faq.categoriaId)) {
+    return categories
+  }
+
+  return [
+    ...categories,
+    {
+      id: faq.categoriaId,
+      nombre: faq.categoria,
+      createdAt: faq.createdAt,
+    },
+  ].sort((a, b) => a.nombre.localeCompare(b.nombre))
 }
 
 function mapFaqsWithCategories(faqs: Awaited<ReturnType<typeof getFaqsApi>>, categories: FAQCategory[]): FAQ[] {
@@ -95,15 +133,24 @@ function mapFaqsWithCategories(faqs: Awaited<ReturnType<typeof getFaqsApi>>, cat
   })
 }
 
-export function useFaqs(filters: UseFaqFilters) {
+export function useFaqs(filters: UseFaqFilters, localSource?: UseFaqLocalSource) {
   const [allFaqs, setAllFaqs] = useState<FAQ[]>([])
   const [categories, setCategories] = useState<FAQCategory[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+  const isLocalMode = Boolean(localSource)
 
   const loadFaqData = useCallback(async () => {
     setIsLoading(true)
     setError('')
+
+    if (localSource) {
+      const localData = mapLocalBusinessFaqs(localSource.business)
+      setCategories(localData.categories)
+      setAllFaqs(localData.faqs)
+      setIsLoading(false)
+      return
+    }
 
     try {
       const [categoryResponse, faqResponse] = await Promise.all([
@@ -124,7 +171,7 @@ export function useFaqs(filters: UseFaqFilters) {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [localSource])
 
   useEffect(() => {
     void loadFaqData()
@@ -152,6 +199,14 @@ export function useFaqs(filters: UseFaqFilters) {
   const createFaq = useCallback(async (data: FAQFormData): Promise<FAQ> => {
     const normalizedData = normalizeFaqData(data)
 
+    if (localSource) {
+      const createdFaq = await localSource.createFaq(normalizedData)
+      setAllFaqs(current => [createdFaq, ...current])
+      setCategories(current => ensureCategory(current, createdFaq))
+      setError('')
+      return createdFaq
+    }
+
     try {
       const { categoryId, categories: nextCategories } = await resolveCategoryId(normalizedData)
       const createdFaq = await createFaqApi({
@@ -167,10 +222,18 @@ export function useFaqs(filters: UseFaqFilters) {
     } catch (createError) {
       throw normalizeApiError(createError)
     }
-  }, [resolveCategoryId])
+  }, [localSource, resolveCategoryId])
 
   const updateFaq = useCallback(async (faqId: string, data: FAQFormData): Promise<FAQ> => {
     const normalizedData = normalizeFaqData(data)
+
+    if (localSource) {
+      const updatedFaq = await localSource.updateFaq(faqId, normalizedData)
+      setAllFaqs(current => current.map(faq => faq.id === faqId ? updatedFaq : faq))
+      setCategories(current => ensureCategory(current, updatedFaq))
+      setError('')
+      return updatedFaq
+    }
 
     try {
       const { categoryId, categories: nextCategories } = await resolveCategoryId(normalizedData)
@@ -187,9 +250,16 @@ export function useFaqs(filters: UseFaqFilters) {
     } catch (updateError) {
       throw normalizeApiError(updateError)
     }
-  }, [resolveCategoryId])
+  }, [localSource, resolveCategoryId])
 
   const deleteFaq = useCallback(async (faqId: string): Promise<void> => {
+    if (localSource) {
+      await localSource.deleteFaq(faqId)
+      setAllFaqs(current => current.filter(faq => faq.id !== faqId))
+      setError('')
+      return
+    }
+
     try {
       await deleteFaqApi(faqId)
       setAllFaqs(current => current.filter(faq => faq.id !== faqId))
@@ -197,11 +267,18 @@ export function useFaqs(filters: UseFaqFilters) {
     } catch (deleteError) {
       throw normalizeApiError(deleteError)
     }
-  }, [])
+  }, [localSource])
 
   const toggleFaq = useCallback(async (faqId: string): Promise<FAQ> => {
     const faq = allFaqs.find(item => item.id === faqId)
     if (!faq) throw new Error('No se encontro la FAQ que queres actualizar.')
+
+    if (localSource) {
+      const updatedFaq = await localSource.toggleFaq(faqId)
+      setAllFaqs(current => current.map(item => item.id === faqId ? updatedFaq : item))
+      setError('')
+      return updatedFaq
+    }
 
     try {
       const updatedFaq = await updateFaqApi(faqId, { activa: !faq.activa })
@@ -212,7 +289,7 @@ export function useFaqs(filters: UseFaqFilters) {
     } catch (toggleError) {
       throw normalizeApiError(toggleError)
     }
-  }, [allFaqs, categories])
+  }, [allFaqs, categories, localSource])
 
   const faqs = useMemo(() => {
     return [...allFaqs]
@@ -237,6 +314,7 @@ export function useFaqs(filters: UseFaqFilters) {
     categories: sortedCategories,
     isLoading,
     error,
+    isLocalMode,
     reload: loadFaqData,
     createFaq,
     updateFaq,
