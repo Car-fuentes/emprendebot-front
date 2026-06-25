@@ -373,7 +373,6 @@ export function FaqPage() {
                 cursor: 'pointer',
               }}
             >
-              <span aria-hidden="true">‹</span>
               ← Volver
             </button>
           </>
