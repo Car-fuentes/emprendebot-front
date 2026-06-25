@@ -8,11 +8,20 @@ interface ConsultaDetailProps {
 }
 
 const ESTADO_LABELS: Record<string, string> = {
-  nueva: 'Nueva',
-  en_proceso: 'En proceso',
-  respondida: 'Respondida',
-  derivada: 'Derivada',
+  pendiente: 'Pendiente',
+  atendida: 'Atendida',
   cerrada: 'Cerrada',
+}
+
+const ESTADO_COLORS: Record<string, string> = {
+  pendiente: '#ef4444',
+  atendida: '#0ea5e9',
+  cerrada: '#64748b',
+}
+
+const CERRADA_POR_LABELS: Record<string, string> = {
+  bot: 'Bot',
+  emprendedor: 'Emprendedor',
 }
 
 function formatDate(value: string): string {
@@ -53,7 +62,8 @@ export function ConsultaDetail({ consulta, onCloseConsulta, onBack }: ConsultaDe
     )
   }
 
-  const isClosed = consulta.estadoConsulta.nombre === 'cerrada'
+  const isClosed = consulta.estado === 'cerrada'
+  const estadoColor = ESTADO_COLORS[consulta.estado] ?? 'var(--color-primary)'
   const messages = [...consulta.mensajes].sort((left, right) => (
     new Date(left.fechaCreacion).getTime() - new Date(right.fechaCreacion).getTime()
   ))
@@ -103,12 +113,12 @@ export function ConsultaDetail({ consulta, onCloseConsulta, onBack }: ConsultaDe
             alignSelf: 'flex-start',
             padding: '5px 9px',
             borderRadius: 'var(--radius-full)',
-            background: 'rgba(19,171,162,0.10)',
-            color: 'var(--color-primary)',
+            background: `${estadoColor}1A`,
+            color: estadoColor,
             fontSize: '12px',
             fontWeight: 700,
           }}>
-            {ESTADO_LABELS[consulta.estadoConsulta.nombre] ?? consulta.estadoConsulta.nombre}
+            {ESTADO_LABELS[consulta.estado] ?? consulta.estado}
           </span>
         </div>
 
@@ -123,6 +133,8 @@ export function ConsultaDetail({ consulta, onCloseConsulta, onBack }: ConsultaDe
             ['Tipo', consulta.tipoConsulta ?? 'general'],
             ['Prioridad', consulta.prioridad ?? 'normal'],
             ['Ultima', formatDate(consulta.fechaActualizacion)],
+            ...(consulta.derivada ? [['Derivacion', consulta.derivadaA ? `Asesor: ${consulta.derivadaA}` : 'Derivada a un asesor']] : []),
+            ...(isClosed ? [['Cerrada por', consulta.cerradaPor ? CERRADA_POR_LABELS[consulta.cerradaPor] : 'Sin dato']] : []),
           ].map(([label, value]) => (
             <div key={label} style={{
               padding: '10px',
@@ -130,7 +142,14 @@ export function ConsultaDetail({ consulta, onCloseConsulta, onBack }: ConsultaDe
               background: 'var(--color-bg-subtle)',
             }}>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: '11px', marginBottom: '2px' }}>{label}</p>
-              <p style={{ fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <p style={{
+                fontSize: '13px',
+                fontWeight: label === 'Derivacion' ? 500 : 600,
+                color: label === 'Derivacion' ? 'var(--color-text-secondary)' : 'var(--color-text-primary)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
                 {value}
               </p>
             </div>

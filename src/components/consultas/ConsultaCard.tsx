@@ -7,18 +7,14 @@ interface ConsultaCardProps {
 }
 
 const ESTADO_LABELS: Record<string, string> = {
-  nueva: 'Nueva',
-  en_proceso: 'En proceso',
-  respondida: 'Respondida',
-  derivada: 'Derivada',
+  pendiente: 'Pendiente',
+  atendida: 'Atendida',
   cerrada: 'Cerrada',
 }
 
 const ESTADO_COLORS: Record<string, string> = {
-  nueva: '#0ea5e9',
-  en_proceso: '#f59e0b',
-  respondida: '#22c55e',
-  derivada: '#8b5cf6',
+  pendiente: '#ef4444',
+  atendida: '#0ea5e9',
   cerrada: '#64748b',
 }
 
@@ -43,9 +39,15 @@ function getCanalLabel(canal?: string | null): string {
   return 'Web'
 }
 
+function getDerivadaText(consulta: Consulta): string {
+  if (!consulta.derivada) return ''
+  return consulta.derivadaA ? `Derivada a ${consulta.derivadaA}` : 'Derivada a un asesor'
+}
+
 export function ConsultaCard({ consulta, selected = false, onSelect }: ConsultaCardProps) {
-  const estado = consulta.estadoConsulta.nombre
+  const estado = consulta.estado
   const estadoColor = ESTADO_COLORS[estado] ?? 'var(--color-text-secondary)'
+  const derivadaText = getDerivadaText(consulta)
 
   return (
     <button
@@ -104,7 +106,27 @@ export function ConsultaCard({ consulta, selected = false, onSelect }: ConsultaC
         color: 'var(--color-text-secondary)',
         fontSize: '12px',
       }}>
-        <span style={{ fontWeight: 600 }}>{getCanalLabel(consulta.canal)}</span>
+        <span style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          minWidth: 0,
+          overflow: 'hidden',
+        }}>
+          <span style={{ fontWeight: 600, flexShrink: 0 }}>{getCanalLabel(consulta.canal)}</span>
+          {derivadaText && (
+            <span style={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              color: 'var(--color-text-secondary)',
+              fontSize: '11px',
+              fontWeight: 500,
+            }}>
+              - {derivadaText}
+            </span>
+          )}
+        </span>
         <span>{formatDate(consulta.fechaActualizacion)}</span>
       </div>
     </button>
