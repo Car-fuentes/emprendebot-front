@@ -5,7 +5,7 @@ import { FaqForm } from '../components/faq/FaqForm'
 import { Avatar } from '../components/ui/Avatar'
 import { Button } from '../components/ui/Button'
 import { Chip } from '../components/ui/Chip'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { useFaqs, type FAQSortOption, type FAQStatusFilter } from '../hooks/useFaqs'
@@ -18,6 +18,7 @@ import {
 
 export function FaqPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const {
     business,
@@ -76,6 +77,20 @@ export function FaqPage() {
   }, [loadBusiness, user])
 
   useEffect(() => {
+    if (!location.state?.resetFaqView) return
+
+    setShowForm(false)
+    setEditingFaq(null)
+    setShowSuggestions(false)
+    setSelectedSuggestionIds([])
+    setHasUnsavedFaqChanges(false)
+    setPendingDiscardAction(null)
+    setError('')
+    setFormLoading(false)
+    setBusyFaqId(null)
+  }, [location.state])
+
+  useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!hasUnsavedFaqChanges) return
       event.preventDefault()
@@ -102,7 +117,11 @@ export function FaqPage() {
     action?.()
   }
 
-  const handleBack = () => {
+  const handleGlobalBack = () => {
+    navigate('/dashboard')
+  }
+
+  const handleInternalBack = () => {
     if (showSuggestions) {
       closeSuggestions()
       return
@@ -112,8 +131,6 @@ export function FaqPage() {
       closeForm()
       return
     }
-
-    navigate(-1)
   }
 
   const openSuggestions = async () => {
@@ -357,7 +374,7 @@ export function FaqPage() {
           <>
             <button
               type="button"
-              onClick={handleBack}
+              onClick={showForm || showSuggestions ? handleInternalBack : handleGlobalBack}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -558,7 +575,7 @@ export function FaqPage() {
                     </Button>
                     {allFaqs.length > 0 && (
                       <Button type="button" variant="ghost" fullWidth onClick={closeSuggestions} disabled={formLoading}>
-                        Volver al listado
+                        Ir a tus FAQ
                       </Button>
                     )}
                   </div>
