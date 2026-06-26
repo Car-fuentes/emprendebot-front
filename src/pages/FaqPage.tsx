@@ -16,6 +16,13 @@ import {
   type FAQSuggestion,
 } from '../services/faqSuggestions'
 
+const FAQ_PRIMARY = '#13A8A2'
+const FAQ_SECONDARY = '#2563EB'
+const FAQ_TEXT = '#111827'
+const FAQ_MUTED = '#6C738E'
+const FAQ_BORDER = '#E5E7EB'
+const FAQ_CARD_SHADOW = '0 3px 8px rgba(17, 24, 39, 0.06)'
+
 export function FaqPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -123,6 +130,11 @@ export function FaqPage() {
 
   const handleInternalBack = () => {
     if (showSuggestions) {
+      if (allFaqs.length === 0) {
+        navigate('/dashboard')
+        return
+      }
+
       closeSuggestions()
       return
     }
@@ -250,15 +262,18 @@ export function FaqPage() {
   }
 
   const handleAddSelectedSuggestions = async () => {
+    if (formLoading) return
+
     if (selectedSuggestionIds.length === 0) {
-      setError('Seleccioná al menos una pregunta sugerida para agregar.')
+      setError('Selecciona al menos una pregunta sugerida para agregar.')
       return
     }
 
     setFormLoading(true)
     setError('')
     try {
-      const selectedSuggestions = availableSuggestions.filter(suggestion => selectedSuggestionIds.includes(suggestion.id))
+      const selectedIds = new Set(selectedSuggestionIds)
+      const selectedSuggestions = availableSuggestions.filter(suggestion => selectedIds.has(suggestion.id))
       for (const suggestion of selectedSuggestions) {
         await createFaq(mapSuggestionToFaqFormData(suggestion))
       }
@@ -322,6 +337,11 @@ export function FaqPage() {
     }
   }
 
+  useEffect(() => {
+    if (isBusinessLoading || isFaqLoading || showForm || showSuggestions || allFaqs.length > 0) return
+    void openSuggestions()
+  }, [allFaqs.length, isBusinessLoading, isFaqLoading, showForm, showSuggestions])
+
   if (!user) return null
 
   return (
@@ -338,7 +358,7 @@ export function FaqPage() {
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100svh',
-        background: 'var(--color-bg-subtle)',
+        background: 'var(--color-bg)',
       }}>
         <header style={{
           display: 'flex',
@@ -370,7 +390,7 @@ export function FaqPage() {
           <Avatar name={user.nombre} size={36} />
         </header>
 
-        <main style={{ flex: 1, padding: '20px', overflowY: 'auto', background: 'var(--color-bg)' }}>
+        <main style={{ flex: 1, padding: '18px 20px 28px', overflowY: 'auto', background: 'var(--color-bg)' }}>
           <>
             <button
               type="button"
@@ -378,19 +398,36 @@ export function FaqPage() {
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '6px',
-                marginBottom: '18px',
+                gap: '8px',
+                marginBottom: showForm || showSuggestions ? '22px' : '12px',
                 padding: 0,
                 background: 'transparent',
                 border: 'none',
-                color: 'var(--color-text-primary)',
-                fontSize: '14px',
+                color: FAQ_TEXT,
+                fontSize: '12px',
                 fontWeight: 700,
                 fontFamily: 'var(--font-family)',
                 cursor: 'pointer',
               }}
             >
-              ← Volver
+              <span
+                aria-hidden="true"
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  borderRadius: '50%',
+                  background: '#EEF0F4',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: FAQ_TEXT,
+                  fontSize: '14px',
+                  lineHeight: 1,
+                }}
+              >
+                {'<'}
+              </span>
+              Volver
             </button>
           </>
 
@@ -399,20 +436,37 @@ export function FaqPage() {
             alignItems: 'flex-start',
             justifyContent: 'space-between',
             gap: '12px',
-            marginBottom: '18px',
+            marginBottom: '12px',
           }}>
             <div>
-              <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '4px' }}>
+              <h1 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '6px', color: FAQ_TEXT, lineHeight: 1.15 }}>
                 Preguntas frecuentes
               </h1>
-              <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px' }}>
+              <p style={{ color: FAQ_MUTED, fontSize: '12px', lineHeight: 1.35 }}>
                 {allFaqs.length > 0
                   ? `${allFaqs.length} ${allFaqs.length === 1 ? 'pregunta agregada' : 'preguntas agregadas'}`
-                  : 'Administra las respuestas automáticas de tu negocio.'}
+                  : 'Administra las respuestas automaticas de tu negocio.'}
               </p>
             </div>
             {!showForm && !showSuggestions && allFaqs.length > 0 && (
-              <Button type="button" size="sm" onClick={openCreateForm} style={{ flexShrink: 0 }}>
+              <Button
+                type="button"
+                size="sm"
+                onClick={openCreateForm}
+                style={{
+                  flexShrink: 0,
+                  height: '32px',
+                  padding: '0 12px',
+                  borderRadius: '8px',
+                  background: `linear-gradient(135deg, ${FAQ_PRIMARY}, ${FAQ_SECONDARY})`,
+                  border: 'none',
+                  boxShadow: '0 5px 10px rgba(17, 24, 39, 0.14)',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0,
+                  fontSize: '10px',
+                  fontWeight: 800,
+                }}
+              >
                 + Crear nueva
               </Button>
             )}
@@ -467,17 +521,17 @@ export function FaqPage() {
                   marginBottom: '18px',
                 }}>
                   <div style={{
-                    padding: '16px',
-                    background: 'var(--color-bg)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)',
-                    boxShadow: 'var(--shadow-sm)',
+                    padding: 0,
+                    background: 'transparent',
+                    border: 'none',
+                    borderRadius: 0,
+                    boxShadow: 'none',
                   }}>
-                    <h2 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '5px' }}>
-                      Elegí preguntas sugeridas
+                    <h2 style={{ fontSize: '19px', fontWeight: 800, marginBottom: '7px', color: FAQ_TEXT, lineHeight: 1.15 }}>
+                      Agrega tus primeras preguntas frecuentes
                     </h2>
-                    <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', lineHeight: 1.5 }}>
-                      Seleccioná las que quieras sumar a tu negocio. Después vas a poder editar las respuestas.
+                    <p style={{ color: FAQ_MUTED, fontSize: '11px', lineHeight: 1.45, maxWidth: '280px' }}>
+                      Elegi algunas de estas preguntas sugeridas para comenzar. Podras editarlas mas adelante.
                     </p>
                   </div>
 
@@ -497,7 +551,7 @@ export function FaqPage() {
                       fontSize: '13px',
                       lineHeight: 1.5,
                     }}>
-                      Ya agregaste todas las preguntas sugeridas disponibles. Si eliminás una FAQ creada desde sugerencias, volverá a aparecer acá.
+                      Ya agregaste todas las preguntas sugeridas disponibles. Si eliminas una FAQ creada desde sugerencias, volvera a aparecer aca.
                     </div>
                   ) : (
                     availableSuggestions.map(suggestion => {
@@ -512,32 +566,32 @@ export function FaqPage() {
                           style={{
                             width: '100%',
                             textAlign: 'left',
-                            padding: selected ? '12px 14px' : '14px 8px 14px 40px',
-                            background: selected ? 'rgba(19, 171, 162, 0.14)' : 'transparent',
-                            border: 'none',
-                            borderBottom: selected ? 'none' : '1px solid var(--color-border)',
-                            borderRadius: selected ? 'var(--radius-md)' : 0,
-                            boxShadow: 'none',
-                            color: selected ? 'var(--color-primary)' : 'var(--color-text-primary)',
+                            minHeight: '44px',
+                            padding: '9px 12px',
+                            background: selected ? 'rgba(19, 168, 162, 0.2)' : '#FFFFFF',
+                            border: `1px solid ${selected ? FAQ_PRIMARY : FAQ_BORDER}`,
+                            borderRadius: '12px',
+                            boxShadow: FAQ_CARD_SHADOW,
+                            color: selected ? FAQ_PRIMARY : FAQ_TEXT,
                             fontFamily: 'var(--font-family)',
-                            fontWeight: selected ? 700 : 600,
+                            fontWeight: 800,
                             cursor: 'pointer',
                           }}
                         >
-                          <span style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          <span style={{ display: 'flex', gap: '11px', alignItems: 'center' }}>
                             {selected && (
                               <span
                                 aria-hidden="true"
                                 style={{
-                                  width: '20px',
-                                  height: '20px',
+                                  width: '19px',
+                                  height: '19px',
                                   borderRadius: '50%',
-                                  background: 'var(--color-primary)',
+                                  background: FAQ_PRIMARY,
                                   color: '#fff',
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  fontSize: '13px',
+                                  fontSize: '12px',
                                   lineHeight: 1,
                                   flexShrink: 0,
                                 }}
@@ -545,14 +599,23 @@ export function FaqPage() {
                                 ✓
                               </span>
                             )}
-                            <span>
-                              <strong style={{ display: 'block', fontSize: '14px', marginBottom: '6px', lineHeight: 1.4 }}>
+                            {!selected && (
+                              <span
+                                aria-hidden="true"
+                                style={{
+                                  width: '19px',
+                                  height: '19px',
+                                  borderRadius: '50%',
+                                  border: `1px solid ${FAQ_BORDER}`,
+                                  background: '#F8FAFC',
+                                  flexShrink: 0,
+                                }}
+                              />
+                            )}
+                            <span style={{ minWidth: 0 }}>
+                              <strong style={{ display: 'block', fontSize: '11px', lineHeight: 1.25, overflowWrap: 'anywhere' }}>
                                 {suggestion.pregunta}
                               </strong>
-                              <span style={{ display: 'block', fontSize: '13px', marginBottom: '6px' }}>
-                                <strong>Categoría:</strong>{' '}
-                                <span style={{ color: 'var(--color-text-secondary)' }}>{suggestion.categoria}</span>
-                              </span>
                             </span>
                           </span>
                         </button>
@@ -560,18 +623,44 @@ export function FaqPage() {
                     })
                   )}
 
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', marginTop: '10px' }}>
                     <Button
                       type="button"
-                      fullWidth
                       loading={formLoading}
                       disabled={suggestionsLoading || availableSuggestions.length === 0}
                       onClick={handleAddSelectedSuggestions}
+                      style={{
+                        width: 'min(100%, 240px)',
+                        height: '46px',
+                        borderRadius: '11px',
+                        background: `linear-gradient(135deg, ${FAQ_PRIMARY}, ${FAQ_SECONDARY})`,
+                        border: 'none',
+                        boxShadow: '0 6px 12px rgba(17, 24, 39, 0.18)',
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        letterSpacing: 0,
+                      }}
                     >
                       Agregar seleccionadas{selectedSuggestionIds.length > 0 ? ` (${selectedSuggestionIds.length})` : ''}
                     </Button>
-                    <Button type="button" variant="outline" fullWidth onClick={openCreateForm} disabled={formLoading}>
-                      Crear nueva
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={openCreateForm}
+                      disabled={formLoading}
+                      style={{
+                        width: 'min(100%, 240px)',
+                        height: '46px',
+                        borderRadius: '9px',
+                        borderColor: FAQ_PRIMARY,
+                        color: FAQ_PRIMARY,
+                        background: '#FFFFFF',
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        letterSpacing: 0,
+                      }}
+                    >
+                      + Crear nueva
                     </Button>
                     {allFaqs.length > 0 && (
                       <Button type="button" variant="ghost" fullWidth onClick={closeSuggestions} disabled={formLoading}>
@@ -589,7 +678,7 @@ export function FaqPage() {
                       Crear nueva
                     </Button>
                     <Button type="button" variant="outline" size="sm" onClick={() => void openSuggestions()}>
-                      Agregar más preguntas sugeridas
+                      Agregar mas preguntas sugeridas
                     </Button>
                   </div>
 
@@ -675,17 +764,48 @@ export function FaqPage() {
 
               {!showSuggestions && !showForm && allFaqs.length === 0 ? (
                 <section style={{
-                  padding: '64px 20px 32px',
+                  padding: '38px 22px 30px',
                   textAlign: 'center',
-                  background: 'var(--color-bg)',
+                  background: '#FFFFFF',
+                  border: `1px solid ${FAQ_BORDER}`,
+                  borderRadius: '10px',
+                  boxShadow: FAQ_CARD_SHADOW,
                 }}>
-                  <div style={{ fontSize: '34px', marginBottom: '28px', color: 'var(--color-text-secondary)' }}>?</div>
-                  <h2 style={{ fontSize: '17px', marginBottom: '6px' }}>Todavía no hay preguntas frecuentes</h2>
-                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '18px' }}>
-                    Crea respuestas para las consultas que recibis con mas frecuencia.
+                  <div style={{
+                    width: '60px',
+                    height: '60px',
+                    margin: '0 auto 18px',
+                    borderRadius: '14px',
+                    background: 'rgba(19, 168, 162, 0.12)',
+                    color: FAQ_PRIMARY,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '28px',
+                    fontWeight: 400,
+                  }}>?</div>
+                  <h2 style={{ fontSize: '17px', marginBottom: '18px', color: FAQ_TEXT, fontWeight: 800 }}>Todavia no hay FAQs</h2>
+                  <p style={{ color: FAQ_MUTED, fontSize: '12px', lineHeight: 1.45, margin: '0 auto 28px', maxWidth: '220px' }}>
+                    Agrega preguntas frecuentes para ayudar a tus clientes y automatizar respuestas.
                   </p>
                   <div style={{ display: 'flex', justifyContent: 'center' }}>
-                    <Button type="button" onClick={() => void openSuggestions()}>Comenzar</Button>
+                    <Button
+                      type="button"
+                      onClick={() => void openSuggestions()}
+                      style={{
+                        width: 'min(100%, 138px)',
+                        height: '45px',
+                        borderRadius: '10px',
+                        background: `linear-gradient(135deg, ${FAQ_PRIMARY}, ${FAQ_SECONDARY})`,
+                        border: 'none',
+                        boxShadow: '0 6px 12px rgba(17, 24, 39, 0.2)',
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        letterSpacing: 0,
+                      }}
+                    >
+                      Comenzar
+                    </Button>
                   </div>
                 </section>
               ) : !showSuggestions && faqs.length === 0 ? (
@@ -715,19 +835,22 @@ export function FaqPage() {
                     type="button"
                     onClick={() => void openSuggestions()}
                     style={{
+                      width: '100%',
                       alignSelf: 'center',
-                      marginTop: '18px',
-                      padding: '10px 0',
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--color-primary)',
-                      fontSize: '15px',
+                      marginTop: '6px',
+                      padding: '13px 14px',
+                      background: '#FFFFFF',
+                      border: `1px solid ${FAQ_BORDER}`,
+                      borderRadius: '10px',
+                      color: FAQ_PRIMARY,
+                      fontSize: '12px',
                       fontWeight: 800,
                       fontFamily: 'var(--font-family)',
+                      boxShadow: FAQ_CARD_SHADOW,
                       cursor: 'pointer',
                     }}
                   >
-                    + Agregar más preguntas sugeridas
+                    + Agregar mas preguntas sugeridas
                   </button>
                 </section>
               ) : null}
@@ -764,7 +887,7 @@ export function FaqPage() {
               Cambios sin guardar
             </h2>
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', lineHeight: 1.45, marginBottom: '14px' }}>
-              Si salís ahora, se van a perder los cambios de esta pregunta.
+              Si salis ahora, se van a perder los cambios de esta pregunta.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <Button type="button" fullWidth onClick={() => setPendingDiscardAction(null)}>

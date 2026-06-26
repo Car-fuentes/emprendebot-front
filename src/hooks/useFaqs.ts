@@ -201,7 +201,7 @@ export function useFaqs(filters: UseFaqFilters, localSource?: UseFaqLocalSource)
 
     if (localSource) {
       const createdFaq = await localSource.createFaq(normalizedData)
-      setAllFaqs(current => [createdFaq, ...current])
+      setAllFaqs(current => [createdFaq, ...current.filter(faq => faq.id !== createdFaq.id)])
       setCategories(current => ensureCategory(current, createdFaq))
       setError('')
       return createdFaq

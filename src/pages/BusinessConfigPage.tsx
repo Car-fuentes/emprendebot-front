@@ -136,7 +136,7 @@ export function BusinessConfigPage() {
     if (isEdit) {
       updateBusiness(form)
     } else {
-      saveBusiness({ ...form, userId: user.id })
+      saveBusiness({ ...form, userId: user.id, rubro: user.rubro ?? '' })
     }
 
     setLoading(false)
