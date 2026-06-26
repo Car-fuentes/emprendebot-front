@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useBusiness } from '../context/BusinessContext'
+import { useAuth } from '../context/AuthContext'
 
 interface ProductForm {
   nombre: string
@@ -19,8 +20,13 @@ const INITIAL_FORM: ProductForm = {
 export function ProductFormPage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
-  const { business, updateBusiness } = useBusiness()
+  const { user } = useAuth()
+  const { business, isBusinessLoading, updateBusiness, loadBusiness, saveBusiness } = useBusiness()
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (user) loadBusiness(user.id)
+  }, [user, loadBusiness])
 
   const isEditing = !!id
   const productos = business?.productos ?? []
@@ -41,12 +47,41 @@ export function ProductFormPage() {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = ev => setForm(prev => ({ ...prev, imagen: ev.target?.result as string }))
+    reader.onload = ev => {
+      const img = new Image()
+      img.onload = () => {
+        const MAX = 400
+        const scale = Math.min(MAX / img.width, MAX / img.height, 1)
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width * scale
+        canvas.height = img.height * scale
+        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+        setForm(prev => ({ ...prev, imagen: canvas.toDataURL('image/jpeg', 0.7) }))
+      }
+      img.src = ev.target?.result as string
+    }
     reader.readAsDataURL(file)
   }
 
   const handleSave = () => {
-    if (!form.nombre || !business) return
+    console.log('handleSave clicked', { form, user, business, isBusinessLoading })
+    if (!form.nombre || !user) return
+
+    const nuevo = {
+      id: crypto.randomUUID(),
+      nombre: form.nombre,
+      descripcion: form.descripcion,
+      precio: form.precio ? Number(form.precio) : undefined,
+      imagen: form.imagen || undefined,
+      disponible: true,
+    }
+
+    if (!business) {
+      // Si no hay negocio configurado aún, creamos uno básico y le agregamos el producto
+      saveBusiness({ userId: user.id, nombre: user.nombre, productos: [nuevo] })
+      navigate('/catalogo')
+      return
+    }
 
     if (isEditing && existing) {
       const updated = productos.map(p =>
@@ -56,19 +91,13 @@ export function ProductFormPage() {
       )
       updateBusiness({ productos: updated })
     } else {
-      const nuevo = {
-        id: crypto.randomUUID(),
-        nombre: form.nombre,
-        descripcion: form.descripcion,
-        precio: form.precio ? Number(form.precio) : undefined,
-        imagen: form.imagen || undefined,
-        disponible: true,
-      }
       updateBusiness({ productos: [...productos, nuevo] })
     }
 
     navigate('/catalogo')
   }
+
+  const canSave = !!form.nombre && !isBusinessLoading
 
   const inputStyle: React.CSSProperties = {
     height: 48,
@@ -220,13 +249,13 @@ export function ProductFormPage() {
           </button>
           <button
             onClick={handleSave}
-            disabled={!form.nombre}
+            disabled={!canSave}
             style={{
               flex: 1, height: 48,
-              background: form.nombre ? '#13A8A2' : '#ccc',
+              background: canSave ? '#13A8A2' : '#ccc',
               color: '#fff', border: 'none', borderRadius: 8,
               fontSize: 14, fontWeight: 700,
-              cursor: form.nombre ? 'pointer' : 'not-allowed',
+              cursor: canSave ? 'pointer' : 'not-allowed',
               fontFamily: 'var(--font-family)',
             }}
           >

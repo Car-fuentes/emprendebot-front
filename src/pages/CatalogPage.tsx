@@ -1,12 +1,19 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBusiness } from '../context/BusinessContext'
+import { useAuth } from '../context/AuthContext'
+import { Avatar } from '../components/ui/Avatar'
 import type { Product } from '../types'
 
 export function CatalogPage() {
   const navigate = useNavigate()
-  const { business, updateBusiness } = useBusiness()
+  const { user } = useAuth()
+  const { business, updateBusiness, loadBusiness } = useBusiness()
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null)
+
+  useEffect(() => {
+    if (user) loadBusiness(user.id)
+  }, [user, loadBusiness])
 
   const productos = business?.productos ?? []
 
@@ -38,27 +45,43 @@ export function CatalogPage() {
       }}>
         <button
           onClick={() => navigate('/dashboard')}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#333', padding: 4 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', padding: '4px' }}
         >
           ☰
         </button>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#555' }}>🔔</button>
-          <div style={{
-            width: 32, height: 32, borderRadius: '50%',
-            background: '#13A8A2', display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-            fontSize: 13, fontWeight: 700, color: '#fff',
-          }}>
-            {business?.nombre?.[0]?.toUpperCase() ?? 'U'}
-          </div>
-        </div>
+        <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-primary)' }}>
+          EmprendeBot
+        </span>
+        <Avatar name={user?.nombre ?? ''} size={36} />
       </div>
 
       {/* Título */}
-      <div style={{ padding: '24px 20px 8px' }}>
-        <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0, color: '#000' }}>Catálogo</h1>
-        <p style={{ fontSize: 14, color: '#6C738E', margin: '4px 0 0' }}>Gestiona tus productos y servicios</p>
+      <div style={{ padding: '24px 20px 8px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div>
+          <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0, color: '#000' }}>Catálogo</h1>
+          <p style={{ fontSize: 14, color: '#6C738E', margin: '4px 0 0' }}>Gestiona tus productos y servicios</p>
+        </div>
+        {productos.length > 0 && (
+          <button
+            onClick={() => navigate('/catalogo/agregar')}
+            style={{
+              background: '#13A8A2',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 8,
+              padding: '8px 16px',
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+              letterSpacing: 0.5,
+              fontFamily: 'var(--font-family)',
+              whiteSpace: 'nowrap',
+              marginTop: 4,
+            }}
+          >
+            + AGREGAR
+          </button>
+        )}
       </div>
 
       {/* Contenido */}
@@ -183,26 +206,26 @@ export function CatalogPage() {
         <div style={{
           position: 'fixed', inset: 0,
           background: 'rgba(0,0,0,0.4)',
-          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 200,
         }}>
           <div style={{
-            width: '100%', maxWidth: 480,
+            width: '75%', maxWidth: 340,
             background: '#fff',
-            borderRadius: '20px 20px 0 0',
-            padding: '28px 24px 40px',
+            borderRadius: 16,
+            padding: '28px 20px 20px',
           }}>
             <p style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 600, color: '#000', textAlign: 'center' }}>
               ¿Estás seguro de que deseas eliminarlo?
             </p>
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 10 }}>
               <button
                 onClick={() => setDeleteTarget(null)}
                 style={{
-                  flex: 1, height: 48,
+                  flex: 1, height: 44,
                   background: '#fff', color: '#13A8A2',
                   border: '1.5px solid #13A8A2', borderRadius: 8,
-                  fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
                   fontFamily: 'var(--font-family)',
                 }}
               >
@@ -211,10 +234,10 @@ export function CatalogPage() {
               <button
                 onClick={handleDelete}
                 style={{
-                  flex: 1, height: 48,
+                  flex: 1, height: 44,
                   background: '#EF4444', color: '#fff',
                   border: 'none', borderRadius: 8,
-                  fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
                   fontFamily: 'var(--font-family)',
                 }}
               >
