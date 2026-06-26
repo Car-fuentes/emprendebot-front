@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { brand, iconGradients } from '../../styles/brand'
 
 interface StatCardProps {
   label: string
@@ -18,11 +19,11 @@ const TONE_BACKGROUNDS: Record<NonNullable<StatCardProps['tone']>, string> = {
 }
 
 const TONE_GRADIENTS: Record<NonNullable<StatCardProps['tone']>, string> = {
-  primary: 'linear-gradient(135deg, #12C8BE 0%, #0B8F8A 100%)',
-  secondary: 'linear-gradient(135deg, #8B5CF6 0%, #2563EB 100%)',
-  success: 'linear-gradient(135deg, #25D99A 0%, #11B866 100%)',
-  warning: 'linear-gradient(135deg, #FBBF24 0%, #F97316 100%)',
-  danger: 'linear-gradient(135deg, #FF6A3D 0%, #EF3E1D 100%)',
+  primary: iconGradients.primary,
+  secondary: iconGradients.secondary,
+  success: iconGradients.success,
+  warning: iconGradients.warning,
+  danger: iconGradients.danger,
 }
 
 export function StatCard({ label, value, description, color, icon, tone = 'primary' }: StatCardProps) {
@@ -34,7 +35,7 @@ export function StatCard({ label, value, description, color, icon, tone = 'prima
       background: 'var(--color-bg)',
       borderRadius: 'var(--radius-md)',
       border: '1px solid var(--color-border)',
-      boxShadow: '0 8px 24px rgba(17, 24, 39, 0.045)',
+      boxShadow: brand.shadowCard,
       overflow: 'hidden',
     }}>
       <span aria-hidden="true" style={{

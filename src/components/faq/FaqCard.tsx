@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import type { FAQ } from '../../types'
 import { Button } from '../ui/Button'
+import { AppIcon } from '../ui/AppIcon'
+import { brand } from '../../styles/brand'
 
 interface FaqCardProps {
   faq: FAQ
@@ -10,11 +12,11 @@ interface FaqCardProps {
   onToggle: (faqId: string) => Promise<void>
 }
 
-const FAQ_PRIMARY = '#13A8A2'
-const FAQ_TEXT = '#111827'
-const FAQ_MUTED = '#6C738E'
-const FAQ_BORDER = '#E5E7EB'
-const FAQ_DANGER = '#EF4444'
+const FAQ_PRIMARY = brand.primary
+const FAQ_TEXT = brand.text
+const FAQ_MUTED = brand.muted
+const FAQ_BORDER = brand.border
+const FAQ_DANGER = brand.danger
 
 export function FaqCard({
   faq,
@@ -28,10 +30,10 @@ export function FaqCard({
   return (
     <article style={{
       padding: '14px 16px 12px',
-      background: '#FFFFFF',
+      background: brand.surface,
       border: `1px solid ${FAQ_BORDER}`,
       borderRadius: '12px',
-      boxShadow: '0 3px 8px rgba(17, 24, 39, 0.06)',
+      boxShadow: brand.shadowCard,
       marginBottom: '10px',
       opacity: busy ? 0.7 : 1,
       transition: 'opacity var(--transition)',
@@ -96,7 +98,7 @@ export function FaqCard({
             height: '24px',
             borderRadius: '999px',
             border: `2px solid ${faq.activa ? FAQ_PRIMARY : '#8A8391'}`,
-            background: faq.activa ? 'rgba(19, 168, 162, 0.14)' : '#FFFFFF',
+            background: faq.activa ? 'rgba(19, 168, 162, 0.14)' : brand.surface,
             position: 'relative',
             padding: 0,
             cursor: busy ? 'not-allowed' : 'pointer',
@@ -177,10 +179,7 @@ export function FaqCard({
               opacity: busy ? 0.5 : 1,
             }}
           >
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: 'block' }}>
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-            </svg>
+            <AppIcon name="edit" size={17} strokeWidth={1.8} />
           </button>
           <button
             type="button"
@@ -201,13 +200,7 @@ export function FaqCard({
               opacity: busy ? 0.5 : 1,
             }}
           >
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: 'block' }}>
-              <path d="M3 6h18" />
-              <path d="M8 6V4h8v2" />
-              <path d="M19 6l-1 14H6L5 6" />
-              <path d="M10 11v5" />
-              <path d="M14 11v5" />
-            </svg>
+            <AppIcon name="trash" size={17} strokeWidth={1.8} />
           </button>
         </div>
       )}

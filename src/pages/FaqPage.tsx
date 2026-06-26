@@ -4,24 +4,24 @@ import { FaqCard } from '../components/faq/FaqCard'
 import { FaqForm } from '../components/faq/FaqForm'
 import { Avatar } from '../components/ui/Avatar'
 import { Button } from '../components/ui/Button'
-import { Chip } from '../components/ui/Chip'
+import { AppIcon } from '../components/ui/AppIcon'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { useFaqs, type FAQSortOption, type FAQStatusFilter } from '../hooks/useFaqs'
 import type { FAQ, FAQFormData } from '../types'
+import { brand } from '../styles/brand'
 import {
   getFaqSuggestions,
   mapSuggestionToFaqFormData,
   type FAQSuggestion,
 } from '../services/faqSuggestions'
 
-const FAQ_PRIMARY = '#13A8A2'
-const FAQ_SECONDARY = '#2563EB'
-const FAQ_TEXT = '#111827'
-const FAQ_MUTED = '#6C738E'
-const FAQ_BORDER = '#E5E7EB'
-const FAQ_CARD_SHADOW = '0 3px 8px rgba(17, 24, 39, 0.06)'
+const FAQ_PRIMARY = brand.primary
+const FAQ_TEXT = brand.text
+const FAQ_MUTED = brand.muted
+const FAQ_BORDER = brand.border
+const FAQ_CARD_SHADOW = brand.shadowCard
 
 export function FaqPage() {
   const navigate = useNavigate()
@@ -39,9 +39,9 @@ export function FaqPage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editingFaq, setEditingFaq] = useState<FAQ | null>(null)
-  const [statusFilter, setStatusFilter] = useState<FAQStatusFilter>('all')
+  const [statusFilter] = useState<FAQStatusFilter>('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
-  const [sortOption, setSortOption] = useState<FAQSortOption>('created-desc')
+  const [sortOption] = useState<FAQSortOption>('created-desc')
   const [formLoading, setFormLoading] = useState(false)
   const [busyFaqId, setBusyFaqId] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -380,14 +380,22 @@ export function FaqPage() {
               setEditingFaq(null)
               setDrawerOpen(true)
             })}
-            style={{ background: 'none', border: 'none', fontSize: '22px', padding: '4px' }}
+            style={{
+              width: 32,
+              height: 32,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: FAQ_TEXT,
+              background: 'transparent',
+            }}
           >
-            ☰
+            <AppIcon name="menu" size={21} strokeWidth={2.2} />
           </button>
-          <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-primary)' }}>
+          <span style={{ fontWeight: 700, fontSize: '15px', color: FAQ_PRIMARY }}>
             EmprendeBot
           </span>
-          <Avatar name={user.nombre} size={36} />
+          <Avatar name={user.nombre} size={32} bgColor={brand.primaryGradient} />
         </header>
 
         <main style={{ flex: 1, padding: '18px 20px 28px', overflowY: 'auto', background: 'var(--color-bg)' }}>
@@ -458,16 +466,17 @@ export function FaqPage() {
                   height: '32px',
                   padding: '0 12px',
                   borderRadius: '8px',
-                  background: `linear-gradient(135deg, ${FAQ_PRIMARY}, ${FAQ_SECONDARY})`,
+                  background: brand.primaryGradient,
                   border: 'none',
-                  boxShadow: '0 5px 10px rgba(17, 24, 39, 0.14)',
+                  boxShadow: brand.shadowAction,
                   textTransform: 'uppercase',
                   letterSpacing: 0,
                   fontSize: '10px',
                   fontWeight: 800,
                 }}
               >
-                + Crear nueva
+                <AppIcon name="plus" size={12} strokeWidth={2.5} />
+                Crear nueva
               </Button>
             )}
           </div>
@@ -568,7 +577,7 @@ export function FaqPage() {
                             textAlign: 'left',
                             minHeight: '44px',
                             padding: '9px 12px',
-                            background: selected ? 'rgba(19, 168, 162, 0.2)' : '#FFFFFF',
+                            background: selected ? 'rgba(19, 168, 162, 0.2)' : brand.surface,
                             border: `1px solid ${selected ? FAQ_PRIMARY : FAQ_BORDER}`,
                             borderRadius: '12px',
                             boxShadow: FAQ_CARD_SHADOW,
@@ -596,7 +605,7 @@ export function FaqPage() {
                                   flexShrink: 0,
                                 }}
                               >
-                                ✓
+                                <AppIcon name="check" size={13} strokeWidth={2.6} />
                               </span>
                             )}
                             {!selected && (
@@ -633,9 +642,9 @@ export function FaqPage() {
                         width: 'min(100%, 240px)',
                         height: '46px',
                         borderRadius: '11px',
-                        background: `linear-gradient(135deg, ${FAQ_PRIMARY}, ${FAQ_SECONDARY})`,
+                        background: brand.primaryGradient,
                         border: 'none',
-                        boxShadow: '0 6px 12px rgba(17, 24, 39, 0.18)',
+                        boxShadow: brand.shadowAction,
                         fontSize: '12px',
                         fontWeight: 800,
                         letterSpacing: 0,
@@ -654,13 +663,14 @@ export function FaqPage() {
                         borderRadius: '9px',
                         borderColor: FAQ_PRIMARY,
                         color: FAQ_PRIMARY,
-                        background: '#FFFFFF',
+                        background: brand.surface,
                         fontSize: '12px',
                         fontWeight: 800,
                         letterSpacing: 0,
                       }}
                     >
-                      + Crear nueva
+                      <AppIcon name="plus" size={13} strokeWidth={2.4} />
+                      Crear nueva
                     </Button>
                     {allFaqs.length > 0 && (
                       <Button type="button" variant="ghost" fullWidth onClick={closeSuggestions} disabled={formLoading}>
@@ -671,102 +681,11 @@ export function FaqPage() {
                 </section>
               )}
 
-              {false && !showSuggestions && allFaqs.length > 0 && (
-                <section style={{ marginBottom: '16px' }} aria-label="Filtros de preguntas frecuentes">
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                    <Button type="button" size="sm" onClick={openCreateForm}>
-                      Crear nueva
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" onClick={() => void openSuggestions()}>
-                      Agregar mas preguntas sugeridas
-                    </Button>
-                  </div>
-
-                  <div style={{
-                    display: 'flex',
-                    gap: '7px',
-                    overflowX: 'auto',
-                    paddingBottom: '8px',
-                  }}>
-                    <Chip selected={statusFilter === 'all'} onClick={() => setStatusFilter('all')}>
-                      Todas ({allFaqs.length})
-                    </Chip>
-                    <Chip selected={statusFilter === 'active'} onClick={() => setStatusFilter('active')}>
-                      Activas
-                    </Chip>
-                    <Chip selected={statusFilter === 'inactive'} onClick={() => setStatusFilter('inactive')}>
-                      Inactivas
-                    </Chip>
-                  </div>
-
-                  {categories.length > 0 && (
-                    <select
-                      aria-label="Filtrar por categoria"
-                      value={categoryFilter}
-                      onChange={event => setCategoryFilter(event.target.value)}
-                      style={{
-                        width: '100%',
-                        height: '42px',
-                        padding: '0 12px',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 'var(--radius-sm)',
-                        background: 'var(--color-bg)',
-                        color: 'var(--color-text-primary)',
-                        fontSize: '13px',
-                        outline: 'none',
-                      }}
-                    >
-                      <option value="all">Todas las categorias</option>
-                      {categories.map(category => (
-                        <option key={category.id} value={category.id}>{category.nombre}</option>
-                      ))}
-                    </select>
-                  )}
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
-                    <label
-                      htmlFor="faq-sort"
-                      style={{
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        color: 'var(--color-text-secondary)',
-                        letterSpacing: '0.8px',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      Ordenar por
-                    </label>
-                    <select
-                      id="faq-sort"
-                      aria-label="Ordenar preguntas frecuentes"
-                      value={sortOption}
-                      onChange={event => setSortOption(event.target.value as FAQSortOption)}
-                      style={{
-                        width: '100%',
-                        height: '42px',
-                        padding: '0 12px',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 'var(--radius-sm)',
-                        background: 'var(--color-bg)',
-                        color: 'var(--color-text-primary)',
-                        fontSize: '13px',
-                        outline: 'none',
-                      }}
-                    >
-                      <option value="created-desc">Fecha: mas recientes primero</option>
-                      <option value="created-asc">Fecha: mas antiguas primero</option>
-                      <option value="alpha-asc">Alfabetico: A-Z</option>
-                      <option value="alpha-desc">Alfabetico: Z-A</option>
-                    </select>
-                  </div>
-                </section>
-              )}
-
               {!showSuggestions && !showForm && allFaqs.length === 0 ? (
                 <section style={{
                   padding: '38px 22px 30px',
                   textAlign: 'center',
-                  background: '#FFFFFF',
+                  background: brand.surface,
                   border: `1px solid ${FAQ_BORDER}`,
                   borderRadius: '10px',
                   boxShadow: FAQ_CARD_SHADOW,
@@ -796,9 +715,9 @@ export function FaqPage() {
                         width: 'min(100%, 138px)',
                         height: '45px',
                         borderRadius: '10px',
-                        background: `linear-gradient(135deg, ${FAQ_PRIMARY}, ${FAQ_SECONDARY})`,
+                        background: brand.primaryGradient,
                         border: 'none',
-                        boxShadow: '0 6px 12px rgba(17, 24, 39, 0.2)',
+                        boxShadow: brand.shadowAction,
                         fontSize: '12px',
                         fontWeight: 800,
                         letterSpacing: 0,
@@ -839,7 +758,7 @@ export function FaqPage() {
                       alignSelf: 'center',
                       marginTop: '6px',
                       padding: '13px 14px',
-                      background: '#FFFFFF',
+                      background: brand.surface,
                       border: `1px solid ${FAQ_BORDER}`,
                       borderRadius: '10px',
                       color: FAQ_PRIMARY,
@@ -850,7 +769,10 @@ export function FaqPage() {
                       cursor: 'pointer',
                     }}
                   >
-                    + Agregar mas preguntas sugeridas
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', verticalAlign: '-2px', marginRight: '6px' }}>
+                      <AppIcon name="plus" size={13} strokeWidth={2.4} />
+                    </span>
+                    Agregar mas preguntas sugeridas
                   </button>
                 </section>
               ) : null}

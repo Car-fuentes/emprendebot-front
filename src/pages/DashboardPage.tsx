@@ -5,13 +5,8 @@ import { useBusiness } from '../context/BusinessContext'
 import { Drawer } from '../components/layout/Drawer'
 import { StatCard } from '../components/dashboard/StatCard'
 import { Avatar } from '../components/ui/Avatar'
-
-const BRAND_PRIMARY = '#13A8A2'
-const BRAND_SECONDARY = '#2563EB'
-const TEXT_PRIMARY = '#111827'
-const TEXT_SECONDARY = '#6C738E'
-const BORDER = '#E5E7EB'
-const SURFACE = '#FFFFFF'
+import { AppIcon } from '../components/ui/AppIcon'
+import { brand } from '../styles/brand'
 
 const rubroLabels: Record<string, string> = {
   gastronomia: 'Gastronomia',
@@ -24,103 +19,7 @@ const rubroLabels: Record<string, string> = {
   otro: 'Negocio',
 }
 
-type AppIconName = 'menu' | 'bell' | 'business' | 'chat' | 'budget' | 'automation' | 'alert' | 'catalog' | 'faq' | 'settings'
-
-function AppIcon({ name, size = 22, strokeWidth = 2 }: { name: AppIconName; size?: number; strokeWidth?: number }) {
-  const common = {
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-    strokeWidth,
-  }
-
-  const paths: Record<AppIconName, ReactNode> = {
-    menu: (
-      <>
-        <path {...common} d="M4 7h16" />
-        <path {...common} d="M4 12h16" />
-        <path {...common} d="M4 17h16" />
-      </>
-    ),
-    bell: (
-      <>
-        <path {...common} d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-        <path {...common} d="M10 21h4" />
-      </>
-    ),
-    business: (
-      <>
-        <path {...common} d="M4 21V7l8-4 8 4v14" />
-        <path {...common} d="M9 21v-7h6v7" />
-        <path {...common} d="M8 9h.01" />
-        <path {...common} d="M12 9h.01" />
-        <path {...common} d="M16 9h.01" />
-      </>
-    ),
-    chat: (
-      <>
-        <path {...common} d="M5 6h14v10H9l-4 4z" />
-        <path {...common} d="M9 10h6" />
-        <path {...common} d="M9 13h4" />
-      </>
-    ),
-    budget: (
-      <>
-        <path {...common} d="M7 3h8l4 4v14H7z" />
-        <path {...common} d="M15 3v5h5" />
-        <path {...common} d="M12 17v-6" />
-        <path {...common} d="M14.5 12.5A2.5 2.5 0 0 0 12 11a2 2 0 0 0 0 4 2 2 0 0 1 0 4 2.5 2.5 0 0 1-2.5-1.5" />
-      </>
-    ),
-    automation: (
-      <>
-        <rect {...common} x="6" y="8" width="12" height="9" rx="3" />
-        <path {...common} d="M9 8V6a3 3 0 0 1 6 0v2" />
-        <path {...common} d="M9.5 12h.01" />
-        <path {...common} d="M14.5 12h.01" />
-        <path {...common} d="M10 15h4" />
-        <path {...common} d="M4 12h2" />
-        <path {...common} d="M18 12h2" />
-      </>
-    ),
-    alert: (
-      <>
-        <circle {...common} cx="12" cy="12" r="9" />
-        <path {...common} d="M12 7v6" />
-        <path {...common} d="M12 17h.01" />
-      </>
-    ),
-    catalog: (
-      <>
-        <path {...common} d="m12 3 8 4.5v9L12 21l-8-4.5v-9z" />
-        <path {...common} d="m4 7.5 8 4.5 8-4.5" />
-        <path {...common} d="M12 12v9" />
-      </>
-    ),
-    faq: (
-      <>
-        <circle {...common} cx="12" cy="12" r="9" />
-        <path {...common} d="M9.5 9a2.8 2.8 0 0 1 5 1.7c0 2.1-2.5 2.3-2.5 4" />
-        <path {...common} d="M12 18h.01" />
-      </>
-    ),
-    settings: (
-      <>
-        <path {...common} d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7" />
-        <path {...common} d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1A2 2 0 0 1 4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1A2 2 0 0 1 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1A2 2 0 0 1 19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1a2 2 0 0 1 0 4H21a1.7 1.7 0 0 0-1.6 1" />
-      </>
-    ),
-  }
-
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
-      {paths[name]}
-    </svg>
-  )
-}
-
-function IconWrapper({ children, color = BRAND_PRIMARY }: { children: ReactNode; color?: string }) {
+function IconWrapper({ children, color = brand.primary }: { children: ReactNode; color?: string }) {
   return (
     <span style={{
       color,
@@ -151,15 +50,15 @@ function QuickAccessCard({
         minHeight: 118,
         padding: '18px 10px',
         borderRadius: '12px',
-        border: `1px solid ${BORDER}`,
-        background: SURFACE,
-        boxShadow: '0 3px 8px rgba(17, 24, 39, 0.06)',
+        border: `1px solid ${brand.border}`,
+        background: brand.surface,
+        boxShadow: brand.shadowCard,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         gap: '12px',
-        color: TEXT_PRIMARY,
+        color: brand.text,
         fontWeight: 700,
         fontSize: '12px',
       }}
@@ -205,7 +104,7 @@ export function DashboardPage() {
       label: 'Consultas recibidas',
       value: stats.consultasPendientes,
       description: 'Requieren seguimiento',
-      color: BRAND_PRIMARY,
+      color: brand.primary,
       icon: <IconWrapper color="#FFFFFF"><AppIcon name="chat" size={21} /></IconWrapper>,
       tone: 'primary' as const,
     },
@@ -247,7 +146,7 @@ export function DashboardPage() {
       <div style={{
         flex: 1,
         minHeight: '100svh',
-        background: SURFACE,
+        background: brand.surface,
         display: 'flex',
         flexDirection: 'column',
       }}>
@@ -257,7 +156,7 @@ export function DashboardPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: SURFACE,
+          background: brand.surface,
         }}>
           <button
             type="button"
@@ -269,7 +168,7 @@ export function DashboardPage() {
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: TEXT_PRIMARY,
+              color: brand.text,
               background: 'transparent',
             }}
           >
@@ -277,10 +176,10 @@ export function DashboardPage() {
           </button>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <span aria-hidden="true" style={{ color: TEXT_PRIMARY, lineHeight: 1, display: 'inline-flex' }}>
+            <span aria-hidden="true" style={{ color: brand.text, lineHeight: 1, display: 'inline-flex' }}>
               <AppIcon name="bell" size={21} />
             </span>
-            <Avatar name={user.nombre} size={32} bgColor={`linear-gradient(135deg, ${BRAND_PRIMARY} 0%, ${BRAND_SECONDARY} 100%)`} />
+            <Avatar name={user.nombre} size={32} bgColor={brand.primaryGradient} />
           </div>
         </header>
 
@@ -291,7 +190,7 @@ export function DashboardPage() {
         }}>
           <section style={{ marginBottom: '18px' }}>
             <h1 style={{
-              color: TEXT_PRIMARY,
+              color: brand.text,
               fontSize: '22px',
               lineHeight: 1.15,
               fontWeight: 800,
@@ -299,12 +198,12 @@ export function DashboardPage() {
             }}>
               Hola, {firstName}
             </h1>
-            <p style={{ color: TEXT_PRIMARY, fontSize: '13px', fontWeight: 700, marginBottom: '2px' }}>
+            <p style={{ color: brand.text, fontSize: '13px', fontWeight: 700, marginBottom: '2px' }}>
               {businessName}
             </p>
-            <p style={{ color: TEXT_PRIMARY, fontSize: '11px', lineHeight: 1.2 }}>
+            <p style={{ color: brand.text, fontSize: '11px', lineHeight: 1.2 }}>
               {businessType}{' '}
-              <span style={{ color: TEXT_SECONDARY, display: 'inline-flex', verticalAlign: '-3px' }}>
+              <span style={{ color: brand.muted, display: 'inline-flex', verticalAlign: '-3px' }}>
                 <AppIcon name="business" size={13} strokeWidth={1.8} />
               </span>
             </p>
@@ -317,44 +216,44 @@ export function DashboardPage() {
           </section>
 
           <section style={{ marginBottom: '20px' }}>
-            <h2 style={{ color: TEXT_PRIMARY, fontSize: '15px', fontWeight: 800, marginBottom: '10px' }}>
+            <h2 style={{ color: brand.text, fontSize: '15px', fontWeight: 800, marginBottom: '10px' }}>
               Accesos rapidos
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px' }}>
               <QuickAccessCard
                 label="Catalogo"
-                icon={<IconWrapper color={BRAND_PRIMARY}><AppIcon name="catalog" /></IconWrapper>}
+                icon={<IconWrapper color={brand.primary}><AppIcon name="catalog" /></IconWrapper>}
                 onClick={() => navigate('/configurar')}
               />
               <QuickAccessCard
                 label="FAQ"
-                icon={<IconWrapper color={BRAND_SECONDARY}><AppIcon name="faq" /></IconWrapper>}
+                icon={<IconWrapper color={brand.secondary}><AppIcon name="faq" /></IconWrapper>}
                 onClick={() => navigate('/faq')}
               />
               <QuickAccessCard
                 label="Consultas"
-                icon={<IconWrapper color={BRAND_PRIMARY}><AppIcon name="chat" /></IconWrapper>}
+                icon={<IconWrapper color={brand.primary}><AppIcon name="chat" /></IconWrapper>}
                 onClick={() => navigate('/consultas')}
               />
               <QuickAccessCard
                 label="Configuracion"
-                icon={<IconWrapper color="#FF5B1F"><AppIcon name="settings" /></IconWrapper>}
+                icon={<IconWrapper color={brand.orange}><AppIcon name="settings" /></IconWrapper>}
                 onClick={() => navigate('/configurar')}
               />
             </div>
           </section>
 
           <section>
-            <h2 style={{ color: TEXT_PRIMARY, fontSize: '15px', fontWeight: 800, marginBottom: '10px' }}>
+            <h2 style={{ color: brand.text, fontSize: '15px', fontWeight: 800, marginBottom: '10px' }}>
               Actividad reciente
             </h2>
             <div style={{
               minHeight: 158,
               padding: '24px 18px',
               borderRadius: '12px',
-              border: `1px solid ${BORDER}`,
-              background: SURFACE,
-              boxShadow: '0 3px 8px rgba(17, 24, 39, 0.06)',
+              border: `1px solid ${brand.border}`,
+              background: brand.surface,
+              boxShadow: brand.shadowCard,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -366,7 +265,7 @@ export function DashboardPage() {
                 height: 48,
                 borderRadius: '12px',
                 background: 'rgba(19, 168, 162, 0.10)',
-                color: BRAND_PRIMARY,
+                color: brand.primary,
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -374,7 +273,7 @@ export function DashboardPage() {
               }}>
                 <AppIcon name="chat" size={25} />
               </span>
-              <p style={{ color: TEXT_SECONDARY, fontSize: '13px', lineHeight: 1.45, maxWidth: 250 }}>
+              <p style={{ color: brand.muted, fontSize: '13px', lineHeight: 1.45, maxWidth: 250 }}>
                 Las actividades de tus clientes apareceran aqui cuando comiencen a usar el chatbot.
               </p>
             </div>
@@ -392,8 +291,8 @@ export function DashboardPage() {
             width: 42,
             height: 42,
             borderRadius: '50%',
-            border: `2px solid ${BRAND_PRIMARY}`,
-            background: SURFACE,
+            border: `2px solid ${brand.primary}`,
+            background: brand.surface,
             boxShadow: '0 8px 20px rgba(17, 24, 39, 0.16)',
             display: 'inline-flex',
             alignItems: 'center',

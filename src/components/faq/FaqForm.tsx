@@ -5,6 +5,7 @@ import { Chip } from '../ui/Chip'
 import { Input } from '../ui/Input'
 import { Switch } from '../ui/Switch'
 import { Textarea } from '../ui/Textarea'
+import { brand } from '../../styles/brand'
 
 interface FaqFormProps {
   faq?: FAQ
@@ -23,12 +24,11 @@ const labelStyle: CSSProperties = {
   textTransform: 'uppercase',
 }
 
-const FAQ_PRIMARY = '#13A8A2'
-const FAQ_SECONDARY = '#2563EB'
-const FAQ_TEXT = '#111827'
-const FAQ_MUTED = '#6C738E'
-const FAQ_BORDER = '#E5E7EB'
-const FAQ_FIELD_BG = '#E6EBF3'
+const FAQ_PRIMARY = brand.primary
+const FAQ_TEXT = brand.text
+const FAQ_MUTED = brand.muted
+const FAQ_BORDER = brand.border
+const FAQ_FIELD_BG = brand.field
 
 export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, onDirtyChange }: FaqFormProps) {
   const initialCategoryMode: 'existing' | 'new' = faq?.categoriaId || categories.length > 0 ? 'existing' : 'new'
@@ -96,10 +96,10 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
         flexDirection: 'column',
         gap: '10px',
         padding: '12px',
-        background: '#FFFFFF',
+        background: brand.surface,
         border: `1px solid ${FAQ_PRIMARY}`,
         borderRadius: '10px',
-        boxShadow: '0 3px 8px rgba(17, 24, 39, 0.06)',
+        boxShadow: brand.shadowCard,
       }}
     >
       <div>
@@ -262,7 +262,7 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
             borderRadius: '11px',
             borderColor: FAQ_PRIMARY,
             color: FAQ_PRIMARY,
-            background: '#FFFFFF',
+            background: brand.surface,
             fontSize: '11px',
             letterSpacing: 0,
           }}
@@ -276,9 +276,9 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
           style={{
             height: '42px',
             borderRadius: '11px',
-            background: `linear-gradient(135deg, ${FAQ_PRIMARY}, ${FAQ_SECONDARY})`,
+            background: brand.primaryGradient,
             border: 'none',
-            boxShadow: '0 5px 10px rgba(17, 24, 39, 0.14)',
+            boxShadow: brand.shadowAction,
             fontSize: '11px',
             letterSpacing: 0,
           }}
