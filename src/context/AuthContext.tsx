@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userData))
   }
 
-  const register = async (nombre: string, email: string, password: string, _rubro: string): Promise<User> => {
+  const register = async (nombre: string, email: string, password: string, rubro: string): Promise<User> => {
     await new Promise(r => setTimeout(r, 600))
     const stored = localStorage.getItem(MOCK_USERS_KEY)
     const users: (User & { password: string })[] = stored ? JSON.parse(stored) : []
@@ -49,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       nombre,
       slug,
+      rubro: rubro as User['rubro'],
       password,
     }
     users.push(newUser)
