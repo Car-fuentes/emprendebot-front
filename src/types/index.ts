@@ -4,6 +4,7 @@ export interface User {
   email: string
   nombre: string
   slug: string
+  rubro?: Rubro | ''
 }
 
 // ===== BUSINESS =====
@@ -130,18 +131,12 @@ export interface ChatSession {
 }
 
 // ===== CONSULTAS =====
-export type EstadoConsultaNombre = 'nueva' | 'en_proceso' | 'respondida' | 'derivada' | 'cerrada'
+export type ConsultaEstado = 'pendiente' | 'atendida' | 'cerrada'
+export type ConsultaCerradaPor = 'bot' | 'emprendedor'
 export type CanalConsulta = 'web' | 'whatsapp'
 export type TipoConsulta = 'general' | 'catalogo' | 'presupuesto' | 'soporte' | 'derivacion'
 export type PrioridadConsulta = 'baja' | 'normal' | 'alta' | 'urgente'
 export type EmisorMensaje = 'cliente' | 'usuario' | 'bot'
-
-export interface EstadoConsulta {
-  id: string
-  nombre: EstadoConsultaNombre
-  descripcion?: string | null
-  fechaCreacion: string
-}
 
 export interface Mensaje {
   id: string
@@ -161,8 +156,9 @@ export interface Consulta {
   sessionAnonimaId?: string | null
   clienteNombre?: string | null
   clienteTelefono?: string | null
-  estadoConsultaId: string
-  estadoConsulta: EstadoConsulta
+  estado: ConsultaEstado
+  derivada: boolean
+  cerradaPor?: ConsultaCerradaPor | null
   tipoConsulta?: TipoConsulta | string | null
   prioridad?: PrioridadConsulta | string | null
   canal?: CanalConsulta | string | null

@@ -85,12 +85,19 @@ export function normalizeFaqs(
   faqs: Partial<FAQ>[] = [],
   categories: FAQCategory[] = [],
 ): FAQ[] {
+  const seenSuggestionIds = new Set<string>()
   const orderedFaqs = faqs
     .map((faq, originalIndex) => ({ faq, originalIndex }))
     .sort((left, right) => {
       const leftOrder = typeof left.faq.orden === 'number' ? left.faq.orden : Number.MAX_SAFE_INTEGER
       const rightOrder = typeof right.faq.orden === 'number' ? right.faq.orden : Number.MAX_SAFE_INTEGER
       return leftOrder - rightOrder || left.originalIndex - right.originalIndex
+    })
+    .filter(({ faq }) => {
+      if (!faq.sourceSuggestionId) return true
+      if (seenSuggestionIds.has(faq.sourceSuggestionId)) return false
+      seenSuggestionIds.add(faq.sourceSuggestionId)
+      return true
     })
 
   return orderedFaqs.map(({ faq }, index) => {
@@ -116,6 +123,8 @@ export function normalizeFaqs(
 }
 
 function hasFaqMigrationChanges(originalFaqs: Partial<FAQ>[], normalizedFaqs: FAQ[]): boolean {
+  if (originalFaqs.length !== normalizedFaqs.length) return true
+
   return originalFaqs.some((faq, index) => {
     const normalized = normalizedFaqs[index]
     return faq.id !== normalized.id
@@ -225,6 +234,15 @@ export async function createFaq(
   const now = new Date().toISOString()
   let faq: FAQ | null = null
   const result = updateBusinessFaqs(businessId, (currentFaqs, currentCategories) => {
+    const existingFaq = normalizedData.sourceSuggestionId
+      ? currentFaqs.find(item => item.sourceSuggestionId === normalizedData.sourceSuggestionId)
+      : undefined
+
+    if (existingFaq) {
+      faq = existingFaq
+      return { faqs: currentFaqs, categories: currentCategories }
+    }
+
     const { category, categories } = resolveCategory(currentCategories, normalizedData)
     faq = {
       id: crypto.randomUUID(),

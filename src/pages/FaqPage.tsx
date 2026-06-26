@@ -4,20 +4,28 @@ import { FaqCard } from '../components/faq/FaqCard'
 import { FaqForm } from '../components/faq/FaqForm'
 import { Avatar } from '../components/ui/Avatar'
 import { Button } from '../components/ui/Button'
-import { Chip } from '../components/ui/Chip'
-import { useNavigate } from 'react-router-dom'
+import { AppIcon } from '../components/ui/AppIcon'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { useFaqs, type FAQSortOption, type FAQStatusFilter } from '../hooks/useFaqs'
 import type { FAQ, FAQFormData } from '../types'
+import { brand } from '../styles/brand'
 import {
   getFaqSuggestions,
   mapSuggestionToFaqFormData,
   type FAQSuggestion,
 } from '../services/faqSuggestions'
 
+const FAQ_PRIMARY = brand.primary
+const FAQ_TEXT = brand.text
+const FAQ_MUTED = brand.muted
+const FAQ_BORDER = brand.border
+const FAQ_CARD_SHADOW = brand.shadowCard
+
 export function FaqPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const {
     business,
@@ -31,9 +39,9 @@ export function FaqPage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editingFaq, setEditingFaq] = useState<FAQ | null>(null)
-  const [statusFilter, setStatusFilter] = useState<FAQStatusFilter>('all')
+  const [statusFilter] = useState<FAQStatusFilter>('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
-  const [sortOption, setSortOption] = useState<FAQSortOption>('created-desc')
+  const [sortOption] = useState<FAQSortOption>('created-desc')
   const [formLoading, setFormLoading] = useState(false)
   const [busyFaqId, setBusyFaqId] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -76,6 +84,20 @@ export function FaqPage() {
   }, [loadBusiness, user])
 
   useEffect(() => {
+    if (!location.state?.resetFaqView) return
+
+    setShowForm(false)
+    setEditingFaq(null)
+    setShowSuggestions(false)
+    setSelectedSuggestionIds([])
+    setHasUnsavedFaqChanges(false)
+    setPendingDiscardAction(null)
+    setError('')
+    setFormLoading(false)
+    setBusyFaqId(null)
+  }, [location.state])
+
+  useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!hasUnsavedFaqChanges) return
       event.preventDefault()
@@ -102,8 +124,17 @@ export function FaqPage() {
     action?.()
   }
 
-  const handleBack = () => {
+  const handleGlobalBack = () => {
+    navigate('/dashboard')
+  }
+
+  const handleInternalBack = () => {
     if (showSuggestions) {
+      if (allFaqs.length === 0) {
+        navigate('/dashboard')
+        return
+      }
+
       closeSuggestions()
       return
     }
@@ -112,8 +143,6 @@ export function FaqPage() {
       closeForm()
       return
     }
-
-    navigate(-1)
   }
 
   const openSuggestions = async () => {
@@ -233,15 +262,18 @@ export function FaqPage() {
   }
 
   const handleAddSelectedSuggestions = async () => {
+    if (formLoading) return
+
     if (selectedSuggestionIds.length === 0) {
-      setError('Seleccioná al menos una pregunta sugerida para agregar.')
+      setError('Selecciona al menos una pregunta sugerida para agregar.')
       return
     }
 
     setFormLoading(true)
     setError('')
     try {
-      const selectedSuggestions = availableSuggestions.filter(suggestion => selectedSuggestionIds.includes(suggestion.id))
+      const selectedIds = new Set(selectedSuggestionIds)
+      const selectedSuggestions = availableSuggestions.filter(suggestion => selectedIds.has(suggestion.id))
       for (const suggestion of selectedSuggestions) {
         await createFaq(mapSuggestionToFaqFormData(suggestion))
       }
@@ -305,6 +337,11 @@ export function FaqPage() {
     }
   }
 
+  useEffect(() => {
+    if (isBusinessLoading || isFaqLoading || showForm || showSuggestions || allFaqs.length > 0) return
+    void openSuggestions()
+  }, [allFaqs.length, isBusinessLoading, isFaqLoading, showForm, showSuggestions])
+
   if (!user) return null
 
   return (
@@ -321,7 +358,7 @@ export function FaqPage() {
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100svh',
-        background: 'var(--color-bg-subtle)',
+        background: 'var(--color-bg)',
       }}>
         <header style={{
           display: 'flex',
@@ -343,38 +380,62 @@ export function FaqPage() {
               setEditingFaq(null)
               setDrawerOpen(true)
             })}
-            style={{ background: 'none', border: 'none', fontSize: '22px', padding: '4px' }}
+            style={{
+              width: 32,
+              height: 32,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: FAQ_TEXT,
+              background: 'transparent',
+            }}
           >
-            ☰
+            <AppIcon name="menu" size={21} strokeWidth={2.2} />
           </button>
-          <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-primary)' }}>
+          <span style={{ fontWeight: 700, fontSize: '15px', color: FAQ_PRIMARY }}>
             EmprendeBot
           </span>
-          <Avatar name={user.nombre} size={36} />
+          <Avatar name={user.nombre} size={32} bgColor={brand.primaryGradient} />
         </header>
 
-        <main style={{ flex: 1, padding: '20px', overflowY: 'auto', background: 'var(--color-bg)' }}>
+        <main style={{ flex: 1, padding: '18px 20px 28px', overflowY: 'auto', background: 'var(--color-bg)' }}>
           <>
             <button
               type="button"
-              onClick={handleBack}
+              onClick={showForm || showSuggestions ? handleInternalBack : handleGlobalBack}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '6px',
-                marginBottom: '18px',
+                gap: '8px',
+                marginBottom: showForm || showSuggestions ? '22px' : '12px',
                 padding: 0,
                 background: 'transparent',
                 border: 'none',
-                color: 'var(--color-text-primary)',
-                fontSize: '14px',
+                color: FAQ_TEXT,
+                fontSize: '12px',
                 fontWeight: 700,
                 fontFamily: 'var(--font-family)',
                 cursor: 'pointer',
               }}
             >
-              <span aria-hidden="true">‹</span>
-              ← Volver
+              <span
+                aria-hidden="true"
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  borderRadius: '50%',
+                  background: '#EEF0F4',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: FAQ_TEXT,
+                  fontSize: '14px',
+                  lineHeight: 1,
+                }}
+              >
+                {'<'}
+              </span>
+              Volver
             </button>
           </>
 
@@ -383,21 +444,39 @@ export function FaqPage() {
             alignItems: 'flex-start',
             justifyContent: 'space-between',
             gap: '12px',
-            marginBottom: '18px',
+            marginBottom: '12px',
           }}>
             <div>
-              <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '4px' }}>
+              <h1 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '6px', color: FAQ_TEXT, lineHeight: 1.15 }}>
                 Preguntas frecuentes
               </h1>
-              <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px' }}>
+              <p style={{ color: FAQ_MUTED, fontSize: '12px', lineHeight: 1.35 }}>
                 {allFaqs.length > 0
                   ? `${allFaqs.length} ${allFaqs.length === 1 ? 'pregunta agregada' : 'preguntas agregadas'}`
-                  : 'Administra las respuestas automáticas de tu negocio.'}
+                  : 'Administra las respuestas automaticas de tu negocio.'}
               </p>
             </div>
             {!showForm && !showSuggestions && allFaqs.length > 0 && (
-              <Button type="button" size="sm" onClick={openCreateForm} style={{ flexShrink: 0 }}>
-                + Crear nueva
+              <Button
+                type="button"
+                size="sm"
+                onClick={openCreateForm}
+                style={{
+                  flexShrink: 0,
+                  height: '32px',
+                  padding: '0 12px',
+                  borderRadius: '8px',
+                  background: brand.primaryGradient,
+                  border: 'none',
+                  boxShadow: brand.shadowAction,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0,
+                  fontSize: '10px',
+                  fontWeight: 800,
+                }}
+              >
+                <AppIcon name="plus" size={12} strokeWidth={2.5} />
+                Crear nueva
               </Button>
             )}
           </div>
@@ -451,17 +530,17 @@ export function FaqPage() {
                   marginBottom: '18px',
                 }}>
                   <div style={{
-                    padding: '16px',
-                    background: 'var(--color-bg)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)',
-                    boxShadow: 'var(--shadow-sm)',
+                    padding: 0,
+                    background: 'transparent',
+                    border: 'none',
+                    borderRadius: 0,
+                    boxShadow: 'none',
                   }}>
-                    <h2 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '5px' }}>
-                      Elegí preguntas sugeridas
+                    <h2 style={{ fontSize: '19px', fontWeight: 800, marginBottom: '7px', color: FAQ_TEXT, lineHeight: 1.15 }}>
+                      Agrega tus primeras preguntas frecuentes
                     </h2>
-                    <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', lineHeight: 1.5 }}>
-                      Seleccioná las que quieras sumar a tu negocio. Después vas a poder editar las respuestas.
+                    <p style={{ color: FAQ_MUTED, fontSize: '11px', lineHeight: 1.45, maxWidth: '280px' }}>
+                      Elegi algunas de estas preguntas sugeridas para comenzar. Podras editarlas mas adelante.
                     </p>
                   </div>
 
@@ -481,7 +560,7 @@ export function FaqPage() {
                       fontSize: '13px',
                       lineHeight: 1.5,
                     }}>
-                      Ya agregaste todas las preguntas sugeridas disponibles. Si eliminás una FAQ creada desde sugerencias, volverá a aparecer acá.
+                      Ya agregaste todas las preguntas sugeridas disponibles. Si eliminas una FAQ creada desde sugerencias, volvera a aparecer aca.
                     </div>
                   ) : (
                     availableSuggestions.map(suggestion => {
@@ -496,47 +575,56 @@ export function FaqPage() {
                           style={{
                             width: '100%',
                             textAlign: 'left',
-                            padding: selected ? '12px 14px' : '14px 8px 14px 40px',
-                            background: selected ? 'rgba(19, 171, 162, 0.14)' : 'transparent',
-                            border: 'none',
-                            borderBottom: selected ? 'none' : '1px solid var(--color-border)',
-                            borderRadius: selected ? 'var(--radius-md)' : 0,
-                            boxShadow: 'none',
-                            color: selected ? 'var(--color-primary)' : 'var(--color-text-primary)',
+                            minHeight: '44px',
+                            padding: '9px 12px',
+                            background: selected ? 'rgba(19, 168, 162, 0.2)' : brand.surface,
+                            border: `1px solid ${selected ? FAQ_PRIMARY : FAQ_BORDER}`,
+                            borderRadius: '12px',
+                            boxShadow: FAQ_CARD_SHADOW,
+                            color: selected ? FAQ_PRIMARY : FAQ_TEXT,
                             fontFamily: 'var(--font-family)',
-                            fontWeight: selected ? 700 : 600,
+                            fontWeight: 800,
                             cursor: 'pointer',
                           }}
                         >
-                          <span style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          <span style={{ display: 'flex', gap: '11px', alignItems: 'center' }}>
                             {selected && (
                               <span
                                 aria-hidden="true"
                                 style={{
-                                  width: '20px',
-                                  height: '20px',
+                                  width: '19px',
+                                  height: '19px',
                                   borderRadius: '50%',
-                                  background: 'var(--color-primary)',
+                                  background: FAQ_PRIMARY,
                                   color: '#fff',
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  fontSize: '13px',
+                                  fontSize: '12px',
                                   lineHeight: 1,
                                   flexShrink: 0,
                                 }}
                               >
-                                ✓
+                                <AppIcon name="check" size={13} strokeWidth={2.6} />
                               </span>
                             )}
-                            <span>
-                              <strong style={{ display: 'block', fontSize: '14px', marginBottom: '6px', lineHeight: 1.4 }}>
+                            {!selected && (
+                              <span
+                                aria-hidden="true"
+                                style={{
+                                  width: '19px',
+                                  height: '19px',
+                                  borderRadius: '50%',
+                                  border: `1px solid ${FAQ_BORDER}`,
+                                  background: '#F8FAFC',
+                                  flexShrink: 0,
+                                }}
+                              />
+                            )}
+                            <span style={{ minWidth: 0 }}>
+                              <strong style={{ display: 'block', fontSize: '11px', lineHeight: 1.25, overflowWrap: 'anywhere' }}>
                                 {suggestion.pregunta}
                               </strong>
-                              <span style={{ display: 'block', fontSize: '13px', marginBottom: '6px' }}>
-                                <strong>Categoría:</strong>{' '}
-                                <span style={{ color: 'var(--color-text-secondary)' }}>{suggestion.categoria}</span>
-                              </span>
                             </span>
                           </span>
                         </button>
@@ -544,132 +632,99 @@ export function FaqPage() {
                     })
                   )}
 
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', marginTop: '10px' }}>
                     <Button
                       type="button"
-                      fullWidth
                       loading={formLoading}
                       disabled={suggestionsLoading || availableSuggestions.length === 0}
                       onClick={handleAddSelectedSuggestions}
+                      style={{
+                        width: 'min(100%, 240px)',
+                        height: '46px',
+                        borderRadius: '11px',
+                        background: brand.primaryGradient,
+                        border: 'none',
+                        boxShadow: brand.shadowAction,
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        letterSpacing: 0,
+                      }}
                     >
                       Agregar seleccionadas{selectedSuggestionIds.length > 0 ? ` (${selectedSuggestionIds.length})` : ''}
                     </Button>
-                    <Button type="button" variant="outline" fullWidth onClick={openCreateForm} disabled={formLoading}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={openCreateForm}
+                      disabled={formLoading}
+                      style={{
+                        width: 'min(100%, 240px)',
+                        height: '46px',
+                        borderRadius: '9px',
+                        borderColor: FAQ_PRIMARY,
+                        color: FAQ_PRIMARY,
+                        background: brand.surface,
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        letterSpacing: 0,
+                      }}
+                    >
+                      <AppIcon name="plus" size={13} strokeWidth={2.4} />
                       Crear nueva
                     </Button>
                     {allFaqs.length > 0 && (
                       <Button type="button" variant="ghost" fullWidth onClick={closeSuggestions} disabled={formLoading}>
-                        Volver al listado
+                        Ir a tus FAQ
                       </Button>
                     )}
                   </div>
                 </section>
               )}
 
-              {false && !showSuggestions && allFaqs.length > 0 && (
-                <section style={{ marginBottom: '16px' }} aria-label="Filtros de preguntas frecuentes">
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                    <Button type="button" size="sm" onClick={openCreateForm}>
-                      Crear nueva
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" onClick={() => void openSuggestions()}>
-                      Agregar más preguntas sugeridas
-                    </Button>
-                  </div>
-
-                  <div style={{
-                    display: 'flex',
-                    gap: '7px',
-                    overflowX: 'auto',
-                    paddingBottom: '8px',
-                  }}>
-                    <Chip selected={statusFilter === 'all'} onClick={() => setStatusFilter('all')}>
-                      Todas ({allFaqs.length})
-                    </Chip>
-                    <Chip selected={statusFilter === 'active'} onClick={() => setStatusFilter('active')}>
-                      Activas
-                    </Chip>
-                    <Chip selected={statusFilter === 'inactive'} onClick={() => setStatusFilter('inactive')}>
-                      Inactivas
-                    </Chip>
-                  </div>
-
-                  {categories.length > 0 && (
-                    <select
-                      aria-label="Filtrar por categoria"
-                      value={categoryFilter}
-                      onChange={event => setCategoryFilter(event.target.value)}
-                      style={{
-                        width: '100%',
-                        height: '42px',
-                        padding: '0 12px',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 'var(--radius-sm)',
-                        background: 'var(--color-bg)',
-                        color: 'var(--color-text-primary)',
-                        fontSize: '13px',
-                        outline: 'none',
-                      }}
-                    >
-                      <option value="all">Todas las categorias</option>
-                      {categories.map(category => (
-                        <option key={category.id} value={category.id}>{category.nombre}</option>
-                      ))}
-                    </select>
-                  )}
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
-                    <label
-                      htmlFor="faq-sort"
-                      style={{
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        color: 'var(--color-text-secondary)',
-                        letterSpacing: '0.8px',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      Ordenar por
-                    </label>
-                    <select
-                      id="faq-sort"
-                      aria-label="Ordenar preguntas frecuentes"
-                      value={sortOption}
-                      onChange={event => setSortOption(event.target.value as FAQSortOption)}
-                      style={{
-                        width: '100%',
-                        height: '42px',
-                        padding: '0 12px',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 'var(--radius-sm)',
-                        background: 'var(--color-bg)',
-                        color: 'var(--color-text-primary)',
-                        fontSize: '13px',
-                        outline: 'none',
-                      }}
-                    >
-                      <option value="created-desc">Fecha: mas recientes primero</option>
-                      <option value="created-asc">Fecha: mas antiguas primero</option>
-                      <option value="alpha-asc">Alfabetico: A-Z</option>
-                      <option value="alpha-desc">Alfabetico: Z-A</option>
-                    </select>
-                  </div>
-                </section>
-              )}
-
               {!showSuggestions && !showForm && allFaqs.length === 0 ? (
                 <section style={{
-                  padding: '64px 20px 32px',
+                  padding: '38px 22px 30px',
                   textAlign: 'center',
-                  background: 'var(--color-bg)',
+                  background: brand.surface,
+                  border: `1px solid ${FAQ_BORDER}`,
+                  borderRadius: '10px',
+                  boxShadow: FAQ_CARD_SHADOW,
                 }}>
-                  <div style={{ fontSize: '34px', marginBottom: '28px', color: 'var(--color-text-secondary)' }}>?</div>
-                  <h2 style={{ fontSize: '17px', marginBottom: '6px' }}>Todavía no hay preguntas frecuentes</h2>
-                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '18px' }}>
-                    Crea respuestas para las consultas que recibis con mas frecuencia.
+                  <div style={{
+                    width: '60px',
+                    height: '60px',
+                    margin: '0 auto 18px',
+                    borderRadius: '14px',
+                    background: 'rgba(19, 168, 162, 0.12)',
+                    color: FAQ_PRIMARY,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '28px',
+                    fontWeight: 400,
+                  }}>?</div>
+                  <h2 style={{ fontSize: '17px', marginBottom: '18px', color: FAQ_TEXT, fontWeight: 800 }}>Todavia no hay FAQs</h2>
+                  <p style={{ color: FAQ_MUTED, fontSize: '12px', lineHeight: 1.45, margin: '0 auto 28px', maxWidth: '220px' }}>
+                    Agrega preguntas frecuentes para ayudar a tus clientes y automatizar respuestas.
                   </p>
                   <div style={{ display: 'flex', justifyContent: 'center' }}>
-                    <Button type="button" onClick={() => void openSuggestions()}>Comenzar</Button>
+                    <Button
+                      type="button"
+                      onClick={() => void openSuggestions()}
+                      style={{
+                        width: 'min(100%, 138px)',
+                        height: '45px',
+                        borderRadius: '10px',
+                        background: brand.primaryGradient,
+                        border: 'none',
+                        boxShadow: brand.shadowAction,
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        letterSpacing: 0,
+                      }}
+                    >
+                      Comenzar
+                    </Button>
                   </div>
                 </section>
               ) : !showSuggestions && faqs.length === 0 ? (
@@ -699,19 +754,25 @@ export function FaqPage() {
                     type="button"
                     onClick={() => void openSuggestions()}
                     style={{
+                      width: '100%',
                       alignSelf: 'center',
-                      marginTop: '18px',
-                      padding: '10px 0',
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--color-primary)',
-                      fontSize: '15px',
+                      marginTop: '6px',
+                      padding: '13px 14px',
+                      background: brand.surface,
+                      border: `1px solid ${FAQ_BORDER}`,
+                      borderRadius: '10px',
+                      color: FAQ_PRIMARY,
+                      fontSize: '12px',
                       fontWeight: 800,
                       fontFamily: 'var(--font-family)',
+                      boxShadow: FAQ_CARD_SHADOW,
                       cursor: 'pointer',
                     }}
                   >
-                    + Agregar más preguntas sugeridas
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', verticalAlign: '-2px', marginRight: '6px' }}>
+                      <AppIcon name="plus" size={13} strokeWidth={2.4} />
+                    </span>
+                    Agregar mas preguntas sugeridas
                   </button>
                 </section>
               ) : null}
@@ -748,7 +809,7 @@ export function FaqPage() {
               Cambios sin guardar
             </h2>
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', lineHeight: 1.45, marginBottom: '14px' }}>
-              Si salís ahora, se van a perder los cambios de esta pregunta.
+              Si salis ahora, se van a perder los cambios de esta pregunta.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <Button type="button" fullWidth onClick={() => setPendingDiscardAction(null)}>

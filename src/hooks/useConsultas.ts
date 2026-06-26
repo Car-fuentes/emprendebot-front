@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { CanalConsulta, Consulta, EstadoConsultaNombre } from '../types'
+import type { CanalConsulta, Consulta, ConsultaEstado } from '../types'
 import { getConsultas, updateConsultaEstado } from '../services/consultaStorage'
 
-export type ConsultaEstadoFilter = 'todas' | EstadoConsultaNombre
+export type ConsultaEstadoFilter = 'todas' | ConsultaEstado
 export type ConsultaCanalFilter = 'todos' | CanalConsulta
 export type ConsultaSortOption = 'recentes' | 'antiguas'
 
@@ -78,7 +78,7 @@ export function useConsultas(userId?: string): UseConsultasResult {
 
   const filteredConsultas = useMemo(() => {
     return consultas
-      .filter(consulta => estadoFilter === 'todas' || consulta.estadoConsulta.nombre === estadoFilter)
+      .filter(consulta => estadoFilter === 'todas' || consulta.estado === estadoFilter)
       .filter(consulta => canalFilter === 'todos' || consulta.canal === canalFilter)
       .filter(consulta => matchesSearch(consulta, searchQuery))
       .sort((left, right) => {
@@ -102,7 +102,7 @@ export function useConsultas(userId?: string): UseConsultasResult {
   }, [])
 
   const closeConsulta = useCallback(async (consultaId: string) => {
-    const updated = await updateConsultaEstado(consultaId, 'cerrada', userId)
+    const updated = await updateConsultaEstado(consultaId, 'cerrada', userId, 'emprendedor')
     if (!updated) return
 
     setConsultas(current => current.map(consulta => (

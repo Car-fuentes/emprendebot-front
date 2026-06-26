@@ -1,39 +1,10 @@
-import type { Consulta, EstadoConsulta, EstadoConsultaNombre, Mensaje } from '../types'
+import type { Consulta, ConsultaCerradaPor, ConsultaEstado, Mensaje } from '../types'
 
 const STORAGE_PREFIX = 'emprendebot:consultas'
 
-const ESTADOS: Record<EstadoConsultaNombre, EstadoConsulta> = {
-  nueva: {
-    id: '1',
-    nombre: 'nueva',
-    descripcion: 'Consulta nueva',
-    fechaCreacion: '2026-06-01T09:00:00.000Z',
-  },
-  en_proceso: {
-    id: '2',
-    nombre: 'en_proceso',
-    descripcion: 'Consulta en proceso',
-    fechaCreacion: '2026-06-01T09:00:00.000Z',
-  },
-  respondida: {
-    id: '3',
-    nombre: 'respondida',
-    descripcion: 'Consulta respondida',
-    fechaCreacion: '2026-06-01T09:00:00.000Z',
-  },
-  derivada: {
-    id: '4',
-    nombre: 'derivada',
-    descripcion: 'Consulta derivada',
-    fechaCreacion: '2026-06-01T09:00:00.000Z',
-  },
-  cerrada: {
-    id: '5',
-    nombre: 'cerrada',
-    descripcion: 'Consulta cerrada',
-    fechaCreacion: '2026-06-01T09:00:00.000Z',
-  },
-}
+type LegacyEstadoConsultaNombre = 'nueva' | 'en_proceso' | 'respondida' | 'derivada' | 'cerrada'
+
+const ESTADOS_VALIDOS: ConsultaEstado[] = ['pendiente', 'atendida', 'cerrada']
 
 function storageKey(userId?: string) {
   return `${STORAGE_PREFIX}:${userId ?? 'demo'}`
@@ -66,8 +37,9 @@ function createMockConsultas(userId?: string): Consulta[] {
       sessionAnonimaId: 'web-ana-101',
       clienteNombre: 'Ana Martinez',
       clienteTelefono: '5491123456789',
-      estadoConsultaId: ESTADOS.nueva.id,
-      estadoConsulta: ESTADOS.nueva,
+      estado: 'pendiente',
+      derivada: false,
+      cerradaPor: null,
       tipoConsulta: 'presupuesto',
       prioridad: 'alta',
       canal: 'whatsapp',
@@ -89,8 +61,9 @@ function createMockConsultas(userId?: string): Consulta[] {
       sessionAnonimaId: 'web-visitante-102',
       clienteNombre: null,
       clienteTelefono: null,
-      estadoConsultaId: ESTADOS.en_proceso.id,
-      estadoConsulta: ESTADOS.en_proceso,
+      estado: 'atendida',
+      derivada: false,
+      cerradaPor: null,
       tipoConsulta: 'catalogo',
       prioridad: 'normal',
       canal: 'web',
@@ -112,8 +85,9 @@ function createMockConsultas(userId?: string): Consulta[] {
       sessionAnonimaId: 'wa-luis-103',
       clienteNombre: 'Luis Gomez',
       clienteTelefono: '5491198765432',
-      estadoConsultaId: ESTADOS.respondida.id,
-      estadoConsulta: ESTADOS.respondida,
+      estado: 'cerrada',
+      derivada: false,
+      cerradaPor: 'bot',
       tipoConsulta: 'general',
       prioridad: 'baja',
       canal: 'whatsapp',
@@ -122,7 +96,7 @@ function createMockConsultas(userId?: string): Consulta[] {
       derivadaA: null,
       fechaCreacion: '2026-06-18T16:40:00.000Z',
       fechaActualizacion: '2026-06-18T16:42:00.000Z',
-      fechaCierre: null,
+      fechaCierre: '2026-06-18T16:42:00.000Z',
       mensajes: [
         createMessage('m-103-1', '103', 'cliente', 'Hola, que horarios tienen?', '2026-06-18T16:40:00.000Z'),
         createMessage('m-103-2', '103', 'bot', 'Atendemos de lunes a viernes de 9 a 18 hs.', '2026-06-18T16:40:06.000Z'),
@@ -135,8 +109,9 @@ function createMockConsultas(userId?: string): Consulta[] {
       sessionAnonimaId: 'web-sofia-104',
       clienteNombre: 'Sofia Rios',
       clienteTelefono: '5491133344455',
-      estadoConsultaId: ESTADOS.derivada.id,
-      estadoConsulta: ESTADOS.derivada,
+      estado: 'atendida',
+      derivada: true,
+      cerradaPor: null,
       tipoConsulta: 'derivacion',
       prioridad: 'urgente',
       canal: 'web',
@@ -158,8 +133,9 @@ function createMockConsultas(userId?: string): Consulta[] {
       sessionAnonimaId: 'web-marcos-105',
       clienteNombre: 'Marcos Diaz',
       clienteTelefono: null,
-      estadoConsultaId: ESTADOS.cerrada.id,
-      estadoConsulta: ESTADOS.cerrada,
+      estado: 'cerrada',
+      derivada: false,
+      cerradaPor: 'emprendedor',
       tipoConsulta: 'soporte',
       prioridad: 'normal',
       canal: 'web',
@@ -178,6 +154,55 @@ function createMockConsultas(userId?: string): Consulta[] {
   ]
 }
 
+function mapLegacyEstado(
+  estadoNombre?: LegacyEstadoConsultaNombre,
+): { estado: ConsultaEstado; derivada: boolean; cerradaPor: ConsultaCerradaPor | null } {
+  if (estadoNombre === 'en_proceso') {
+    return { estado: 'atendida', derivada: false, cerradaPor: null }
+  }
+
+  if (estadoNombre === 'respondida') {
+    return { estado: 'cerrada', derivada: false, cerradaPor: 'bot' }
+  }
+
+  if (estadoNombre === 'derivada') {
+    return { estado: 'atendida', derivada: true, cerradaPor: null }
+  }
+
+  if (estadoNombre === 'cerrada') {
+    return { estado: 'cerrada', derivada: false, cerradaPor: 'bot' }
+  }
+
+  return { estado: 'pendiente', derivada: false, cerradaPor: null }
+}
+
+function normalizeConsulta(raw: Consulta & {
+  estadoConsulta?: { nombre?: LegacyEstadoConsultaNombre }
+  estadoConsultaId?: string
+}): Consulta {
+  const currentEstado = ESTADOS_VALIDOS.includes(raw.estado) ? raw.estado : undefined
+  const legacy = mapLegacyEstado(raw.estadoConsulta?.nombre)
+  const estado = currentEstado ?? legacy.estado
+  const derivada = typeof raw.derivada === 'boolean' ? raw.derivada : legacy.derivada
+  const cerradaPor = estado === 'cerrada'
+    ? raw.cerradaPor ?? legacy.cerradaPor
+    : null
+
+  const {
+    estadoConsulta,
+    estadoConsultaId,
+    ...consulta
+  } = raw
+
+  return {
+    ...consulta,
+    estado,
+    derivada,
+    cerradaPor,
+    fechaCierre: estado === 'cerrada' ? consulta.fechaCierre ?? consulta.fechaActualizacion : null,
+  }
+}
+
 function readConsultas(userId?: string): Consulta[] {
   if (typeof window === 'undefined') return createMockConsultas(userId)
 
@@ -190,7 +215,10 @@ function readConsultas(userId?: string): Consulta[] {
   }
 
   try {
-    return JSON.parse(raw) as Consulta[]
+    const parsed = JSON.parse(raw) as Consulta[]
+    const normalized = parsed.map(normalizeConsulta)
+    window.localStorage.setItem(key, JSON.stringify(normalized))
+    return normalized
   } catch {
     const initial = createMockConsultas(userId)
     window.localStorage.setItem(key, JSON.stringify(initial))
@@ -225,8 +253,9 @@ export async function saveConsulta(consulta: Consulta, userId?: string): Promise
 
 export async function updateConsultaEstado(
   consultaId: string,
-  estadoNombre: EstadoConsultaNombre,
+  estado: ConsultaEstado,
   userId?: string,
+  cerradaPor: ConsultaCerradaPor | null = null,
 ): Promise<Consulta | null> {
   const consultas = readConsultas(userId)
   const now = new Date().toISOString()
@@ -237,10 +266,10 @@ export async function updateConsultaEstado(
 
     updated = {
       ...consulta,
-      estadoConsultaId: ESTADOS[estadoNombre].id,
-      estadoConsulta: ESTADOS[estadoNombre],
+      estado,
+      cerradaPor: estado === 'cerrada' ? cerradaPor : null,
       fechaActualizacion: now,
-      fechaCierre: estadoNombre === 'cerrada' ? now : consulta.fechaCierre ?? null,
+      fechaCierre: estado === 'cerrada' ? now : null,
     }
 
     return updated
@@ -249,4 +278,3 @@ export async function updateConsultaEstado(
   writeConsultas(next, userId)
   return updated
 }
-

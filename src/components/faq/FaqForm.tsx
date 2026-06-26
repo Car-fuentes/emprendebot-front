@@ -5,6 +5,7 @@ import { Chip } from '../ui/Chip'
 import { Input } from '../ui/Input'
 import { Switch } from '../ui/Switch'
 import { Textarea } from '../ui/Textarea'
+import { brand } from '../../styles/brand'
 
 interface FaqFormProps {
   faq?: FAQ
@@ -18,10 +19,16 @@ interface FaqFormProps {
 const labelStyle: CSSProperties = {
   fontSize: '12px',
   fontWeight: 600,
-  color: 'var(--color-text-secondary)',
+  color: '#6C738E',
   letterSpacing: '0.8px',
   textTransform: 'uppercase',
 }
+
+const FAQ_PRIMARY = brand.primary
+const FAQ_TEXT = brand.text
+const FAQ_MUTED = brand.muted
+const FAQ_BORDER = brand.border
+const FAQ_FIELD_BG = brand.field
 
 export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, onDirtyChange }: FaqFormProps) {
   const initialCategoryMode: 'existing' | 'new' = faq?.categoriaId || categories.length > 0 ? 'existing' : 'new'
@@ -87,21 +94,18 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '18px',
-        padding: '18px',
-        background: 'var(--color-bg)',
-        border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-md)',
-        boxShadow: 'var(--shadow-sm)',
+        gap: '10px',
+        padding: '12px',
+        background: brand.surface,
+        border: `1px solid ${FAQ_PRIMARY}`,
+        borderRadius: '10px',
+        boxShadow: brand.shadowCard,
       }}
     >
       <div>
-        <h2 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '3px' }}>
-          {faq ? 'Editar pregunta frecuente' : 'Nueva pregunta frecuente'}
+        <h2 style={{ fontSize: '12px', fontWeight: 800, marginBottom: '10px', color: FAQ_TEXT }}>
+          {faq ? 'Editar pregunta' : 'Nueva pregunta'}
         </h2>
-        <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-          Esta informacion podra ser utilizada por el chatbot publico.
-        </p>
       </div>
 
       <Input
@@ -109,6 +113,14 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
         placeholder="Ej: Cuales son los medios de pago?"
         value={form.pregunta}
         error={errors.pregunta}
+        style={{
+          height: '44px',
+          borderRadius: '10px',
+          border: 'none',
+          background: FAQ_FIELD_BG,
+          fontSize: '12px',
+          color: FAQ_TEXT,
+        }}
         onChange={event => {
           setForm(current => ({ ...current, pregunta: event.target.value }))
           if (errors.pregunta) setErrors(current => ({ ...current, pregunta: undefined }))
@@ -120,6 +132,15 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
         placeholder="Escribi una respuesta clara y breve para tus clientes."
         value={form.respuesta}
         error={errors.respuesta}
+        style={{
+          minHeight: '82px',
+          borderRadius: '10px',
+          border: 'none',
+          background: FAQ_FIELD_BG,
+          fontSize: '12px',
+          color: FAQ_TEXT,
+          resize: 'vertical',
+        }}
         onChange={event => {
           setForm(current => ({ ...current, respuesta: event.target.value }))
           if (errors.respuesta) setErrors(current => ({ ...current, respuesta: undefined }))
@@ -165,12 +186,12 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
               style={{
                 height: '52px',
                 padding: '0 16px',
-                borderRadius: 'var(--radius-sm)',
-                border: `1px solid ${errors.categoria ? 'var(--color-error)' : 'var(--color-border)'}`,
-                fontSize: '15px',
+                borderRadius: '10px',
+                border: `1px solid ${errors.categoria ? 'var(--color-error)' : FAQ_BORDER}`,
+                fontSize: '12px',
                 fontFamily: 'var(--font-family)',
-                color: form.categoriaId ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-                background: 'var(--color-bg)',
+                color: form.categoriaId ? FAQ_TEXT : FAQ_MUTED,
+                background: FAQ_FIELD_BG,
                 outline: 'none',
                 width: '100%',
               }}
@@ -190,6 +211,14 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
             value={form.nuevaCategoriaNombre}
             error={errors.categoria}
             hint="Se creara como categoria real antes de enviar la FAQ al backend."
+            style={{
+              height: '44px',
+              borderRadius: '10px',
+              border: 'none',
+              background: FAQ_FIELD_BG,
+              fontSize: '12px',
+              color: FAQ_TEXT,
+            }}
             onChange={event => {
               setForm(current => ({ ...current, nuevaCategoriaNombre: event.target.value }))
               if (errors.categoria) setErrors(current => ({ ...current, categoria: undefined }))
@@ -199,9 +228,9 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
       </div>
 
       <div style={{
-        padding: '12px',
-        borderRadius: 'var(--radius-sm)',
-        background: 'var(--color-bg-subtle)',
+        padding: '10px 12px',
+        borderRadius: '10px',
+        background: 'rgba(19, 168, 162, 0.08)',
         display: 'flex',
         flexDirection: 'column',
         gap: '7px',
@@ -213,7 +242,7 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
           onChange={checked => setForm(current => ({ ...current, activa: checked }))}
         />
         <p style={{
-          color: 'var(--color-text-secondary)',
+          color: FAQ_MUTED,
           fontSize: '12px',
           lineHeight: 1.5,
         }}>
@@ -222,11 +251,39 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
       </div>
 
       <div style={{ display: 'flex', gap: '10px' }}>
-        <Button type="button" variant="outline" fullWidth onClick={onCancel} disabled={loading}>
+        <Button
+          type="button"
+          variant="outline"
+          fullWidth
+          onClick={onCancel}
+          disabled={loading}
+          style={{
+            height: '42px',
+            borderRadius: '11px',
+            borderColor: FAQ_PRIMARY,
+            color: FAQ_PRIMARY,
+            background: brand.surface,
+            fontSize: '11px',
+            letterSpacing: 0,
+          }}
+        >
           Cancelar
         </Button>
-        <Button type="submit" fullWidth loading={loading}>
-          {faq ? 'Guardar' : 'Crear FAQ'}
+        <Button
+          type="submit"
+          fullWidth
+          loading={loading}
+          style={{
+            height: '42px',
+            borderRadius: '11px',
+            background: brand.primaryGradient,
+            border: 'none',
+            boxShadow: brand.shadowAction,
+            fontSize: '11px',
+            letterSpacing: 0,
+          }}
+        >
+          {faq ? 'Guardar' : 'Agregar'}
         </Button>
       </div>
     </form>
