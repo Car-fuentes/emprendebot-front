@@ -14,7 +14,7 @@ const NAV_ITEMS = [
   { id: 'consultas', label: 'Consultas', icon: '💬', path: '/consultas' },
   { id: 'catalogo', label: 'Catálogo', icon: '🛍️', path: '/catalogo' },
   { id: 'faq', label: 'FAQ', icon: '❓', path: '/faq' },
-  { id: 'configuracion', label: 'Configuración', icon: '⚙️', path: '/configuracion' },
+  { id: 'configuracion', label: 'Configuración', icon: '⚙️', path: '/configurar' },
 ]
 
 export function Drawer({ business, isOpen, onClose, activeItem = 'dashboard' }: DrawerProps) {

@@ -223,7 +223,7 @@ export function DashboardPage() {
               <QuickAccessCard
                 label="Catalogo"
                 icon={<IconWrapper color={brand.primary}><AppIcon name="catalog" /></IconWrapper>}
-                onClick={() => navigate('/configurar')}
+                onClick={() => navigate('/catalogo')}
               />
               <QuickAccessCard
                 label="FAQ"

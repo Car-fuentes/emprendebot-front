@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBusiness } from '../context/BusinessContext'
 import { useAuth } from '../context/AuthContext'
+import { Drawer } from '../components/layout/Drawer'
 import { Avatar } from '../components/ui/Avatar'
 import type { Product } from '../types'
 
@@ -9,6 +10,7 @@ export function CatalogPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { business, updateBusiness, loadBusiness } = useBusiness()
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null)
 
   useEffect(() => {
@@ -24,6 +26,14 @@ export function CatalogPage() {
   }
 
   return (
+    <>
+    <Drawer
+      business={business}
+      isOpen={drawerOpen}
+      onClose={() => setDrawerOpen(false)}
+      activeItem="catalogo"
+    />
+
     <div style={{
         flex: 1,
         display: 'flex',
@@ -44,7 +54,9 @@ export function CatalogPage() {
         zIndex: 10,
       }}>
         <button
-          onClick={() => navigate('/dashboard')}
+          type="button"
+          aria-label="Abrir navegacion"
+          onClick={() => setDrawerOpen(true)}
           style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', padding: '4px' }}
         >
           ☰
@@ -248,5 +260,6 @@ export function CatalogPage() {
         </div>
       )}
     </div>
+    </>
   )
 }
