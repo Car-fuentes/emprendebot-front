@@ -4,9 +4,24 @@ import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
+import type { Rubro } from '../types'
+
+const RUBROS: { value: Rubro; label: string }[] = [
+  { value: 'gastronomia', label: 'Gastronomía' },
+  { value: 'peluqueria', label: 'Peluquería / Estética' },
+  { value: 'indumentaria', label: 'Indumentaria' },
+  { value: 'tecnologia', label: 'Tecnología' },
+  { value: 'servicios', label: 'Servicios profesionales' },
+  { value: 'salud', label: 'Salud / Bienestar' },
+  { value: 'educacion', label: 'Educación' },
+  { value: 'artesanias', label: 'Artesanías' },
+  { value: 'oficios', label: 'Oficios' },
+  { value: 'otro', label: 'Otro' },
+]
 
 interface FormData {
   nombre: string
+  rubro: Rubro | ''
   descripcion: string
   horario: string
   telefono: string
@@ -17,6 +32,7 @@ interface FormData {
 
 const INITIAL: FormData = {
   nombre: '',
+  rubro: '',
   descripcion: '',
   horario: '',
   telefono: '',
@@ -91,6 +107,7 @@ export function BusinessConfigPage() {
     business
       ? {
           nombre: business.nombre,
+          rubro: business.rubro ?? '',
           descripcion: business.descripcion,
           horario: business.horario,
           telefono: business.telefono,
@@ -289,6 +306,29 @@ export function BusinessConfigPage() {
               value={form.nombre}
               onChange={set('nombre')}
             />
+          </div>
+
+          {/* Rubro */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label style={labelStyle}>Rubro de tu negocio</label>
+            <select
+              value={form.rubro}
+              onChange={e => setForm(prev => ({ ...prev, rubro: e.target.value as Rubro }))}
+              style={{
+                height: '52px', padding: '0 16px',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--color-border)',
+                fontSize: '15px', fontFamily: 'var(--font-family)',
+                color: form.rubro ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                background: 'var(--color-bg)', outline: 'none',
+                width: '100%', cursor: 'pointer',
+              }}
+            >
+              <option value="">Seleccioná</option>
+              {RUBROS.map(r => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
           </div>
 
           {/* Descripción */}

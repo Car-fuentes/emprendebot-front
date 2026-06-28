@@ -3,20 +3,6 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
-import type { Rubro } from '../types'
-
-const RUBROS: { value: Rubro; label: string }[] = [
-  { value: 'gastronomia', label: 'Gastronomía' },
-  { value: 'peluqueria', label: 'Peluquería / Estética' },
-  { value: 'indumentaria', label: 'Indumentaria' },
-  { value: 'tecnologia', label: 'Tecnología' },
-  { value: 'servicios', label: 'Servicios profesionales' },
-  { value: 'salud', label: 'Salud / Bienestar' },
-  { value: 'educacion', label: 'Educación' },
-  { value: 'artesanias', label: 'Artesanías' },
-  { value: 'oficiosgit log --oneline -3', label: 'Oficios' },
-  { value: 'otro', label: 'Otro' },
-]
 
 export function RegisterPage() {
   const navigate = useNavigate()
@@ -28,14 +14,13 @@ export function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [rubro, setRubro] = useState<Rubro | ''>('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
-    if (!nombre || !email || !password || !confirmPassword || !rubro) {
+    if (!nombre || !email || !password || !confirmPassword) {
       setError('Completá todos los campos.')
       return
     }
@@ -49,7 +34,7 @@ export function RegisterPage() {
     }
     setLoading(true)
     try {
-      await register(nombre, email, password, rubro)
+      await register(nombre, email, password, '')
       navigate('/configurar')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al crear la cuenta')
@@ -137,38 +122,6 @@ export function RegisterPage() {
               />
             )}
           />
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <label style={{
-              fontSize: '12px', fontWeight: 600,
-              color: 'var(--color-text-secondary)',
-              letterSpacing: '0.8px', textTransform: 'uppercase',
-            }}>
-              Rubro de tu negocio
-            </label>
-            <select
-              value={rubro}
-              onChange={e => setRubro(e.target.value as Rubro)}
-              style={{
-                height: '52px',
-                padding: '0 16px',
-                borderRadius: 'var(--radius-sm)',
-                border: `1px solid ${error && !rubro ? 'var(--color-error)' : 'var(--color-border)'}`,
-                fontSize: '15px',
-                fontFamily: 'var(--font-family)',
-                color: rubro ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-                background: 'var(--color-bg)',
-                outline: 'none',
-                width: '100%',
-                cursor: 'pointer',
-              }}
-            >
-              <option value="">Seleccioná</option>
-              {RUBROS.map(r => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
-          </div>
 
           {error && (
             <p style={{ fontSize: '13px', color: 'var(--color-error)', textAlign: 'center' }}>
