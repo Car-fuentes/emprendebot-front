@@ -7,8 +7,8 @@ interface ConsultaCardProps {
 }
 
 const ESTADO_LABELS: Record<string, string> = {
-  pendiente: 'Pendiente',
-  atendida: 'Atendida',
+  pendiente: 'Nueva',
+  atendida: 'En proceso',
   cerrada: 'Cerrada',
 }
 

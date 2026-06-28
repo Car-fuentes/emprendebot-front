@@ -14,8 +14,8 @@ import {
 
 const ESTADO_OPTIONS: Array<{ value: ConsultaEstadoFilter; label: string }> = [
   { value: 'todas', label: 'Todas' },
-  { value: 'pendiente', label: 'Pendientes' },
-  { value: 'atendida', label: 'Atendidas' },
+  { value: 'pendiente', label: 'Nuevas' },
+  { value: 'atendida', label: 'En proceso' },
   { value: 'cerrada', label: 'Cerradas' },
 ]
 
