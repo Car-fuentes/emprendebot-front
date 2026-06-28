@@ -1,10 +1,19 @@
-import { useState, useRef, type FormEvent } from 'react'
+import { useState, useRef, useEffect, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
+import { apiRequest } from '../services/apiClient'
 import type { Rubro } from '../types'
+
+interface BotConfigResponse {
+  success: boolean
+  configuracion: {
+    nombreNegocio: string
+    mensajeBienvenida: string
+  }
+}
 
 const RUBROS: { value: Rubro; label: string }[] = [
   { value: 'gastronomia', label: 'Gastronomía' },
@@ -121,6 +130,18 @@ export function BusinessConfigPage() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
+  // Cargar nombre y mensaje de bienvenida desde el backend al entrar en modo edición
+  useEffect(() => {
+    if (!isEdit) return
+    apiRequest<BotConfigResponse>('/bot').then(data => {
+      setForm(prev => ({
+        ...prev,
+        nombre: data.configuracion.nombreNegocio || prev.nombre,
+        mensajeBienvenida: data.configuracion.mensajeBienvenida || prev.mensajeBienvenida,
+      }))
+    }).catch(() => {/* Si falla usa el localStorage */})
+  }, [isEdit])
+
   const set = (field: keyof FormData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm(prev => ({ ...prev, [field]: e.target.value }))
@@ -148,8 +169,22 @@ export function BusinessConfigPage() {
     if (!user) return
 
     setLoading(true)
-    await new Promise(r => setTimeout(r, 700))
+    try {
+      // Campos soportados por el backend
+      await apiRequest('/bot', {
+        method: 'PUT',
+        body: JSON.stringify({
+          nombreNegocio: form.nombre,
+          mensajeBienvenida: form.mensajeBienvenida || undefined,
+        }),
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al guardar en el servidor.')
+      setLoading(false)
+      return
+    }
 
+    // Campos pendientes de soporte en backend → localStorage
     if (isEdit) {
       updateBusiness(form)
     } else {

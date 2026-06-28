@@ -24,8 +24,15 @@ export function RegisterPage() {
       setError('Completá todos los campos.')
       return
     }
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.')
+    const passwordErrors: string[] = []
+    if (password.length < 8) passwordErrors.push('mínimo 8 caracteres')
+    if (!/[A-Z]/.test(password)) passwordErrors.push('una mayúscula')
+    if (!/[a-z]/.test(password)) passwordErrors.push('una minúscula')
+    if (!/[0-9]/.test(password)) passwordErrors.push('un número')
+    if (!/[^A-Za-z0-9]/.test(password)) passwordErrors.push('un símbolo (@, $, !, %, *, ?, &...)')
+    if (/\s/.test(password)) passwordErrors.push('sin espacios')
+    if (passwordErrors.length > 0) {
+      setError('La contraseña necesita: ' + passwordErrors.join(', ') + '.')
       return
     }
     if (password !== confirmPassword) {
@@ -95,9 +102,9 @@ export function RegisterPage() {
           <Input
             label="Contraseña"
             type={showPassword ? 'text' : 'password'}
-            placeholder="Mínimo 6 caracteres"
+            placeholder="Mínimo 8 caracteres"
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={e => { setPassword(e.target.value); setError('') }}
             autoComplete="new-password"
             endAdornment={(
               <PasswordVisibilityButton
@@ -106,6 +113,10 @@ export function RegisterPage() {
               />
             )}
           />
+
+          <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '-12px' }}>
+            La contraseña necesita: mínimo 8 caracteres, una mayúscula, una minúscula y un símbolo (@, $, *, ?, &...).
+          </p>
 
           <Input
             label="Repetir contraseña"
