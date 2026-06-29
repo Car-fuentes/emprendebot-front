@@ -5,6 +5,7 @@ import { useBusiness } from '../context/BusinessContext'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
 import { apiRequest } from '../services/apiClient'
+import { brand } from '../styles/brand'
 import type { Rubro } from '../types'
 
 interface BotConfigResponse {
@@ -448,8 +449,8 @@ export function BusinessConfigPage() {
             <p style={{ fontSize: '13px', color: 'var(--color-error)' }}>{error}</p>
           )}
 
-          <Button type="submit" fullWidth size="lg" loading={loading}>
-            {isEdit ? 'GUARDAR CAMBIOS' : 'IR A MI PANEL →'}
+          <Button type="submit" fullWidth size="lg" loading={loading} style={{ background: brand.primaryGradient, borderRadius: 'var(--radius-md)', border: 'none' }}>
+            {isEdit ? 'GUARDAR CAMBIOS' : 'CREAR NEGOCIO'}
           </Button>
         </form>
       </div>

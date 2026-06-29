@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useBusiness } from '../context/BusinessContext'
 import { useAuth } from '../context/AuthContext'
+import { brand } from '../styles/brand'
 
 interface ProductForm {
   nombre: string
@@ -252,8 +253,8 @@ export function ProductFormPage() {
             disabled={!canSave}
             style={{
               flex: 1, height: 48,
-              background: canSave ? '#13A8A2' : '#ccc',
-              color: '#fff', border: 'none', borderRadius: 8,
+              background: canSave ? brand.primaryGradient : '#ccc',
+              color: '#fff', border: 'none', borderRadius: 'var(--radius-md)',
               fontSize: 14, fontWeight: 700,
               cursor: canSave ? 'pointer' : 'not-allowed',
               fontFamily: 'var(--font-family)',

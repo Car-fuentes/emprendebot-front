@@ -11,7 +11,7 @@ export const brand = {
   orange: '#FF5B1F',
   shadowCard: '0 3px 8px rgba(17, 24, 39, 0.06)',
   shadowAction: '0 6px 12px rgba(17, 24, 39, 0.18)',
-  primaryGradient: 'linear-gradient(135deg, #13A8A2 0%, #2563EB 100%)',
+  primaryGradient: 'linear-gradient(135deg, #13A8A2 10%, #255f80 100%)',
 }
 
 export const iconGradients = {

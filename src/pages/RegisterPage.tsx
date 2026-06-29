@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
+import { brand } from '../styles/brand'
 
 export function RegisterPage() {
   const navigate = useNavigate()
@@ -16,6 +17,7 @@ export function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -42,7 +44,7 @@ export function RegisterPage() {
     setLoading(true)
     try {
       await register(nombre, email, password, '')
-      navigate('/configurar')
+      setShowSuccessModal(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al crear la cuenta')
     } finally {
@@ -58,6 +60,66 @@ export function RegisterPage() {
       minHeight: '100svh',
       background: 'var(--color-bg)',
     }}>
+      {/* Modal cuenta creada */}
+      {showSuccessModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            width: '75%',
+            maxWidth: 360,
+            background: 'var(--color-bg)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '32px 24px 28px',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: '12px',
+            position: 'relative',
+            textAlign: 'center',
+          }}>
+            <button
+              onClick={() => navigate('/configurar')}
+              style={{
+                position: 'absolute', top: 12, right: 14,
+                background: 'none', border: 'none',
+                fontSize: '18px', cursor: 'pointer',
+                color: 'var(--color-text-secondary)',
+              }}
+            >
+              ✕
+            </button>
+
+            <img src="/cuentaCreada.png" alt="Cuenta creada" style={{ width: '80%', maxWidth: 200 }} />
+
+            <h2 style={{ fontSize: '20px', fontWeight: 700, lineHeight: 1.3, margin: 0 }}>
+              ¡Cuenta creada correctamente!
+            </h2>
+
+            <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', lineHeight: 1.5, margin: 0 }}>
+              Ya casi terminamos. Ahora configurá tu negocio para comenzar a usar{' '}
+              <strong style={{ color: 'var(--color-primary)' }}>EmprendeBot.</strong>
+            </p>
+
+            <button
+              onClick={() => navigate('/configurar')}
+              style={{
+                marginTop: '8px',
+                width: '100%', height: 52,
+                background: brand.primaryGradient,
+                color: '#fff', border: 'none',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '14px', fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'var(--font-family)',
+                letterSpacing: '0.5px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              }}
+            >
+              CONTINUAR →
+            </button>
+          </div>
+        </div>
+      )}
       {/* Back */}
       <div style={{ padding: '16px 24px' }}>
         <button
@@ -140,7 +202,7 @@ export function RegisterPage() {
             </p>
           )}
 
-          <Button type="submit" fullWidth size="lg" loading={loading}>
+          <Button type="submit" fullWidth size="lg" loading={loading} style={{ background: brand.primaryGradient, borderRadius: 'var(--radius-md)', border: 'none' }}>
             CREAR CUENTA
           </Button>
         </form>

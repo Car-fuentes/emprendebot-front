@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBusiness } from '../context/BusinessContext'
 import { useAuth } from '../context/AuthContext'
+import { brand } from '../styles/brand'
 import { Drawer } from '../components/layout/Drawer'
 import { Avatar } from '../components/ui/Avatar'
 import type { Product } from '../types'
@@ -77,10 +78,10 @@ export function CatalogPage() {
           <button
             onClick={() => navigate('/catalogo/agregar')}
             style={{
-              background: '#13A8A2',
+              background: brand.primaryGradient,
               color: '#fff',
               border: 'none',
-              borderRadius: 8,
+              borderRadius: 'var(--radius-md)',
               padding: '8px 16px',
               fontSize: 13,
               fontWeight: 700,
@@ -126,10 +127,10 @@ export function CatalogPage() {
               onClick={() => navigate('/catalogo/agregar')}
               style={{
                 margin: 12,
-                background: '#13A8A2',
+                background: brand.primaryGradient,
                 color: '#fff',
                 border: 'none',
-                borderRadius: 8,
+                borderRadius: 'var(--radius-md)',
                 padding: '14px 40px',
                 fontSize: 14,
                 fontWeight: 700,

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
+import { brand } from '../styles/brand'
 
 export function PresentationPage() {
   const navigate = useNavigate()
@@ -79,6 +80,7 @@ export function PresentationPage() {
           size="lg"
           fullWidth
           onClick={() => navigate('/registro')}
+          style={{ background: brand.primaryGradient, borderRadius: 'var(--radius-md)', border: 'none' }}
         >
           CREAR CUENTA
         </Button>
@@ -96,6 +98,7 @@ export function PresentationPage() {
           size="lg"
           fullWidth
           onClick={() => navigate('/login')}
+          style={{ borderRadius: 'var(--radius-md)' }}
         >
           INICIAR SESIÓN
         </Button>
