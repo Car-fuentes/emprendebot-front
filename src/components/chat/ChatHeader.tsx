@@ -1,4 +1,5 @@
 import { Avatar } from '../ui/Avatar'
+import { brand } from '../../styles/brand'
 import type { Business } from '../../types'
 
 interface ChatHeaderProps {
@@ -14,8 +15,8 @@ export function ChatHeader({ business, onRefresh, onClose }: ChatHeaderProps) {
       alignItems: 'center',
       gap: '12px',
       padding: '14px 16px',
-      background: 'var(--color-secondary)',
-      borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
+      background: brand.primaryGradient,
+      borderRadius: 0,
       flexShrink: 0,
       position: 'sticky',
       top: 0,

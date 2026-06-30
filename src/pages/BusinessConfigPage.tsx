@@ -129,7 +129,7 @@ export function BusinessConfigPage() {
   )
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
 
   // Cargar nombre y mensaje de bienvenida desde el backend al entrar en modo edición
   useEffect(() => {
@@ -193,40 +193,7 @@ export function BusinessConfigPage() {
     }
 
     setLoading(false)
-    setSuccess(true)
-  }
-
-  if (success) {
-    return (
-      <div style={{
-        flex: 1, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        padding: '40px 24px', textAlign: 'center', gap: '20px',
-      }}>
-        <div style={{
-          width: 80, height: 80,
-          background: 'rgba(19,171,162,0.1)',
-          borderRadius: '50%',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '40px',
-        }}>
-          <img src="/isoBot-transparente.png" alt="success" style={{ width: 100, height: 100 }} />
-        </div>
-        <div>
-          <h2 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '8px' }}>
-            {isEdit ? '¡Cambios guardados!' : '¡Cuenta creada correctamente!'}
-          </h2>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>
-            {isEdit
-              ? 'Tu negocio fue actualizado.'
-              : 'Ya terminamos. Ahora configurá tu negocio para comenzar a usar EmprendeBot.'}
-          </p>
-        </div>
-        <Button fullWidth size="lg" onClick={() => navigate('/dashboard')}>
-          CONTINUAR →
-        </Button>
-      </div>
-    )
+    setShowSuccessModal(true)
   }
 
   return (
@@ -237,6 +204,71 @@ export function BusinessConfigPage() {
       minHeight: '100svh',
       background: 'var(--color-bg)',
     }}>
+      {/* Modal negocio creado */}
+      {showSuccessModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            width: '75%',
+            maxWidth: 360,
+            background: 'var(--color-bg)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '32px 24px 28px',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: '12px',
+            position: 'relative',
+            textAlign: 'center',
+          }}>
+            <button
+              onClick={() => navigate('/dashboard')}
+              style={{
+                position: 'absolute', top: 12, right: 14,
+                background: 'none', border: 'none',
+                fontSize: '18px', cursor: 'pointer',
+                color: 'var(--color-text-secondary)',
+              }}
+            >
+              ✕
+            </button>
+
+            <img src="/negocioCreado.jpeg" alt="Negocio creado" style={{ width: '80%', maxWidth: 200 }} />
+
+            <h2 style={{ fontSize: '20px', fontWeight: 700, lineHeight: 1.3, margin: 0 }}>
+              ¡Todo listo!
+            </h2>
+
+            <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', lineHeight: 1.5, margin: 0 }}>
+              Tu negocio y tu asistente virtual fueron configurados correctamente.
+            </p>
+
+            <p style={{ fontSize: '13px', lineHeight: 1.5, margin: 0 }}>
+              Ahora ya podés comenzar a{' '}
+              <strong style={{ color: 'var(--color-primary)' }}>disfrutar de EmprendeBot.</strong>
+            </p>
+
+            <button
+              onClick={() => navigate('/dashboard')}
+              style={{
+                marginTop: '8px',
+                width: '100%', height: 52,
+                background: brand.primaryGradient,
+                color: '#fff', border: 'none',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '14px', fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'var(--font-family)',
+                letterSpacing: '0.5px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              }}
+            >
+              IR AL PANEL →
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Back */}
       <div style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
         {isEdit && (
