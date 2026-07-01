@@ -10,11 +10,11 @@ import {
 } from '../services/chatStorage'
 
 const QUICK_REPLIES_INICIAL = [
-  'Consultar productos',
-  'Solicitar información',
-  'Generar presupuesto',
-  'Dejar mis datos',
+  'Ver catálogo',
+  'Solicitar presupuesto',
+  'Horarios e Información',
   'Preguntas frecuentes',
+  'Dejar mis datos',
   'Hablar con una persona',
 ]
 

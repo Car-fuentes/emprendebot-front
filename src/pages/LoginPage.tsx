@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
+import { brand } from '../styles/brand'
 import { getStoredBusinesses } from '../services/businessStorage'
 
 export function LoginPage() {
@@ -113,7 +114,7 @@ export function LoginPage() {
             </button>
           </div>
 
-          <Button type="submit" fullWidth size="lg" loading={loading}>
+          <Button type="submit" fullWidth size="lg" loading={loading} style={{ background: brand.primaryGradient, borderRadius: 'var(--radius-md)', border: 'none' }}>
             INICIA SESIÓN
           </Button>
         </form>

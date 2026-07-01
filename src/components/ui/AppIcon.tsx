@@ -15,6 +15,8 @@ export type AppIconName =
   | 'trash'
   | 'check'
   | 'plus'
+  | 'time'
+  | 'agent'
 
 export function AppIcon({ name, size = 22, strokeWidth = 2 }: { name: AppIconName; size?: number; strokeWidth?: number }) {
   const common = {
@@ -123,6 +125,20 @@ export function AppIcon({ name, size = 22, strokeWidth = 2 }: { name: AppIconNam
       <>
         <path {...common} d="M12 5v14" />
         <path {...common} d="M5 12h14" />
+      </>
+    ),
+    time: (
+      <>
+        <circle {...common} cx="12" cy="12" r="9" />
+        <path {...common} d="M12 7v5l3 3" />
+      </>
+    ),
+    agent: (
+      <>
+        <circle {...common} cx="12" cy="8" r="3" />
+        <path {...common} d="M5 20a7 7 0 0 1 14 0" />
+        <path {...common} d="M15 13a4 4 0 0 1 4 4" />
+        <path {...common} d="M9 13a4 4 0 0 0-4 4" />
       </>
     ),
   }
