@@ -86,7 +86,7 @@ export function saveAwaitingInput(businessId: string, awaitingInput: AwaitingInp
 export function loadAwaitingInput(businessId: string): AwaitingInput | null {
   try {
     const stored = localStorage.getItem(getChatStateKey(businessId))
-    return stored === 'budget' || stored === 'contact' || stored === 'faq-selection'
+    return stored === 'budget' || stored === 'faq-selection'
       ? stored
       : null
   } catch {
