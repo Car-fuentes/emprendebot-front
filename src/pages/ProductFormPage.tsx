@@ -11,13 +11,6 @@ interface ProductForm {
   imagen: string
 }
 
-const INITIAL_FORM: ProductForm = {
-  nombre: '',
-  descripcion: '',
-  precio: '',
-  imagen: '',
-}
-
 export function ProductFormPage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
