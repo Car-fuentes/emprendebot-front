@@ -18,6 +18,8 @@ export type Rubro =
   | 'educacion'
   | 'artesanias'
   | 'oficios'
+  | 'artesanias'
+  | 'oficios'
   | 'otro'
 
 export interface Product {
