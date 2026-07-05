@@ -18,8 +18,17 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     <div style={{
       display: 'flex',
       justifyContent: isBot ? 'flex-start' : 'flex-end',
+      alignItems: 'flex-end',
+      gap: '8px',
       marginBottom: '4px',
     }}>
+      {isBot && (
+        <img
+          src="/isoBot-transparente.png"
+          alt="EmprendeBot"
+          style={{ width: 36, height: 36, flexShrink: 0, marginBottom: '18px' }}
+        />
+      )}
       <div style={{
         maxWidth: '82%',
         display: 'flex',
@@ -32,7 +41,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           borderRadius: isBot
             ? '4px var(--radius-md) var(--radius-md) var(--radius-md)'
             : 'var(--radius-md) 4px var(--radius-md) var(--radius-md)',
-          background: isBot ? 'var(--color-bg)' : 'var(--color-secondary)',
+          background: isBot ? 'var(--color-bg)' : 'var(--color-bg-answer)',
           color: isBot ? 'var(--color-text-primary)' : '#fff',
           fontSize: '14px',
           lineHeight: '1.5',

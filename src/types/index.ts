@@ -114,7 +114,7 @@ export interface Business {
 
 // ===== CHAT =====
 export type MessageRole = 'bot' | 'user'
-export type AwaitingInput = 'budget' | 'contact' | 'faq-selection'
+export type AwaitingInput = 'budget' | 'faq-selection'
 
 export interface Message {
   id: string

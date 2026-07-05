@@ -10,10 +10,9 @@ import {
 } from '../services/chatStorage'
 
 const QUICK_REPLIES_INICIAL = [
-  'Consultar productos',
-  'Solicitar información',
-  'Generar presupuesto',
-  'Dejar mis datos',
+  'Ver catálogo',
+  'Solicitar presupuesto',
+  'Horarios de atención',
   'Preguntas frecuentes',
   'Hablar con una persona',
 ]
@@ -25,10 +24,7 @@ interface BotResponse {
   awaitingInput?: AwaitingInput
 }
 
-const CONTINUATION_MESSAGES = [
-  '¿Querés que te ayude con algo más?',
-  'También puedo ayudarte con productos, horarios, presupuesto o contacto.',
-]
+const CONTINUATION_MESSAGE = '¿Deseas realizar otra consulta?'
 
 const MENU_COMMANDS = ['menu', 'opciones', 'volver']
 
@@ -64,7 +60,7 @@ function getFaqMenuText(faqs: FAQ[]): string {
     .map((faq, index) => `${index + 1}. ${faq.pregunta}`)
     .join('\n')
 
-  return `Seleccioná qué querés saber escribiendo el número de la opción:\n\n${numberedQuestions}`
+  return `Seleccioná lo que deseas conocer escribiendo el número de la opción:\n\n${numberedQuestions}`
 }
 
 function createFaqMenuResponse(business: Business): BotResponse {
@@ -110,17 +106,10 @@ function generateBotResponse(
     return createFaqMenuResponse(business)
   }
 
-  if (awaitingInput === 'contact') {
-    return {
-      text: '¡Gracias! Registramos tus datos para que alguien del equipo pueda contactarte.',
-      continuation: '¿Puedo ayudarte con algo más?',
-    }
-  }
-
   if (awaitingInput === 'budget') {
     return {
       text: '¡Gracias! Registramos el detalle de tu solicitud de presupuesto. El equipo podrá revisarlo y contactarte.',
-      continuation: '¿Querés consultar algo más mientras tanto?',
+      continuation: CONTINUATION_MESSAGE,
     }
   }
 
@@ -132,7 +121,7 @@ function generateBotResponse(
 
     if (!selectedFaq) {
       return {
-        text: `No encontré esa opción. Elegí un número válido de la lista.\n\n${getFaqMenuText(activeFaqs)}`,
+        text: `No encontré esa opción. Por favor elegí un número válido de la lista.\n\n${getFaqMenuText(activeFaqs)}`,
         awaitingInput: 'faq-selection',
       }
     }
@@ -146,7 +135,7 @@ function generateBotResponse(
   if (msg.includes('producto') || msg.includes('catálogo') || msg.includes('catalogo')) {
     if (business.productos.length === 0) {
       return {
-        text: 'Todavía no tenemos productos cargados. ¿Te puedo ayudar con algo más?',
+        text: 'Todavía no tenemos productos cargados. ¿Deseas realizar otra consulta?',
         quickReplies: QUICK_REPLIES_INICIAL,
       }
     }
@@ -154,14 +143,14 @@ function generateBotResponse(
       `• ${p.nombre}${p.precio ? ` - $${p.precio}` : ''}${p.descripcion ? `\n  ${p.descripcion}` : ''}`
     ).join('\n')
     return {
-      text: `Nuestros productos disponibles:\n\n${lista}\n\n¿Querés más información sobre alguno?`,
-      continuation: 'También puedo ayudarte con horarios, presupuesto o contacto.',
+      text: `Nuestros productos disponibles:\n\n${lista}\n\n¿Deseas más información sobre alguno?`,
+      continuation: CONTINUATION_MESSAGE,
     }
   }
 
   if (msg.includes('horario') || msg.includes('información') || msg.includes('informacion')) {
     return {
-      text: `📋 *Información de ${business.nombre}*\n\n🕐 Horario: ${business.horario || 'No especificado'}\n📞 Teléfono: ${business.telefono || 'No especificado'}\n\n${business.descripcion || ''}`,
+      text: `🕐 Horario: ${business.horario || 'No especificado'}\n📞 Teléfono: ${business.telefono || 'No especificado'}\n\n${business.descripcion || ''}`,
     }
   }
 
@@ -172,12 +161,6 @@ function generateBotResponse(
     }
   }
 
-  if (msg.includes('datos') || msg.includes('contacto')) {
-    return {
-      text: "¡Perfecto! 😊\n\nDejame:\n• Tu nombre\n• Tu teléfono o email\n\nY alguien del equipo se pondrá en contacto con vos a la brevedad.\n\nSi querés volver al menú principal, escribí 'menú' u 'opciones'.",
-      awaitingInput: 'contact',
-    }
-  }
 
   if (msg.includes('frecuente') || msg.includes('faq') || msg.includes('pregunta')) {
     return createFaqMenuResponse(business)
@@ -186,7 +169,7 @@ function generateBotResponse(
   if (msg.includes('persona') || msg.includes('asesor') || msg.includes('hablar')) {
     return {
       text: business.respuestaDerivacion || 'Te voy a conectar con un asesor en breve. ¡Gracias por tu paciencia!',
-      continuation: 'Mientras tanto, ¿querés consultar otra información del negocio?',
+      continuation: CONTINUATION_MESSAGE,
     }
   }
 
@@ -210,7 +193,7 @@ function createBotMessages(response: BotResponse): Message[] {
   const continuationMessage: Message = {
     id: crypto.randomUUID(),
     role: 'bot',
-    text: response.continuation ?? CONTINUATION_MESSAGES[Math.floor(Math.random() * CONTINUATION_MESSAGES.length)],
+    text: response.continuation ?? CONTINUATION_MESSAGE,
     timestamp: new Date(),
     quickReplies: QUICK_REPLIES_INICIAL,
   }
