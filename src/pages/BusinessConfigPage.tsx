@@ -1,12 +1,37 @@
-import { useState, useRef, type FormEvent } from 'react'
+import { useState, useRef, useEffect, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
+import { apiRequest } from '../services/apiClient'
+import { brand } from '../styles/brand'
+import type { Rubro } from '../types'
+
+interface BotConfigResponse {
+  success: boolean
+  configuracion: {
+    nombreNegocio: string
+    mensajeBienvenida: string
+  }
+}
+
+const RUBROS: { value: Rubro; label: string }[] = [
+  { value: 'gastronomia', label: 'Gastronomía' },
+  { value: 'peluqueria', label: 'Peluquería / Estética' },
+  { value: 'indumentaria', label: 'Indumentaria' },
+  { value: 'tecnologia', label: 'Tecnología' },
+  { value: 'servicios', label: 'Servicios profesionales' },
+  { value: 'salud', label: 'Salud / Bienestar' },
+  { value: 'educacion', label: 'Educación' },
+  { value: 'artesanias', label: 'Artesanías' },
+  { value: 'oficios', label: 'Oficios' },
+  { value: 'otro', label: 'Otro' },
+]
 
 interface FormData {
   nombre: string
+  rubro: Rubro | ''
   descripcion: string
   horario: string
   telefono: string
@@ -17,6 +42,7 @@ interface FormData {
 
 const INITIAL: FormData = {
   nombre: '',
+  rubro: '',
   descripcion: '',
   horario: '',
   telefono: '',
@@ -91,6 +117,7 @@ export function BusinessConfigPage() {
     business
       ? {
           nombre: business.nombre,
+          rubro: business.rubro ?? '',
           descripcion: business.descripcion,
           horario: business.horario,
           telefono: business.telefono,
@@ -103,6 +130,18 @@ export function BusinessConfigPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+
+  // Cargar nombre y mensaje de bienvenida desde el backend al entrar en modo edición
+  useEffect(() => {
+    if (!isEdit) return
+    apiRequest<BotConfigResponse>('/bot').then(data => {
+      setForm(prev => ({
+        ...prev,
+        nombre: data.configuracion.nombreNegocio || prev.nombre,
+        mensajeBienvenida: data.configuracion.mensajeBienvenida || prev.mensajeBienvenida,
+      }))
+    }).catch(() => {/* Si falla usa el localStorage */})
+  }, [isEdit])
 
   const set = (field: keyof FormData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -131,12 +170,26 @@ export function BusinessConfigPage() {
     if (!user) return
 
     setLoading(true)
-    await new Promise(r => setTimeout(r, 700))
+    try {
+      // Campos soportados por el backend
+      await apiRequest('/bot', {
+        method: 'PUT',
+        body: JSON.stringify({
+          nombreNegocio: form.nombre,
+          mensajeBienvenida: form.mensajeBienvenida || undefined,
+        }),
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al guardar en el servidor.')
+      setLoading(false)
+      return
+    }
 
+    // Campos pendientes de soporte en backend → localStorage
     if (isEdit) {
       updateBusiness(form)
     } else {
-      saveBusiness({ ...form, userId: user.id })
+      saveBusiness({ ...form, userId: user.id, rubro: user.rubro ?? '' })
     }
 
     setLoading(false)
@@ -157,7 +210,7 @@ export function BusinessConfigPage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: '40px',
         }}>
-          🤖✅
+          <img src="/isoBot-transparente.png" alt="success" style={{ width: 100, height: 100 }} />
         </div>
         <div>
           <h2 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '8px' }}>
@@ -291,6 +344,29 @@ export function BusinessConfigPage() {
             />
           </div>
 
+          {/* Rubro */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label style={labelStyle}>Rubro de tu negocio</label>
+            <select
+              value={form.rubro}
+              onChange={e => setForm(prev => ({ ...prev, rubro: e.target.value as Rubro }))}
+              style={{
+                height: '52px', padding: '0 16px',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--color-border)',
+                fontSize: '15px', fontFamily: 'var(--font-family)',
+                color: form.rubro ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                background: 'var(--color-bg)', outline: 'none',
+                width: '100%', cursor: 'pointer',
+              }}
+            >
+              <option value="">Seleccioná</option>
+              {RUBROS.map(r => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Descripción */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -373,8 +449,8 @@ export function BusinessConfigPage() {
             <p style={{ fontSize: '13px', color: 'var(--color-error)' }}>{error}</p>
           )}
 
-          <Button type="submit" fullWidth size="lg" loading={loading}>
-            {isEdit ? 'GUARDAR CAMBIOS' : 'IR A MI PANEL →'}
+          <Button type="submit" fullWidth size="lg" loading={loading} style={{ background: brand.primaryGradient, borderRadius: 'var(--radius-md)', border: 'none' }}>
+            {isEdit ? 'GUARDAR CAMBIOS' : 'CREAR NEGOCIO'}
           </Button>
         </form>
       </div>
