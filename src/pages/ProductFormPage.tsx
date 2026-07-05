@@ -11,7 +11,6 @@ interface ProductForm {
   imagen: string
 }
 
-
 export function ProductFormPage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()

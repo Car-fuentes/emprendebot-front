@@ -31,7 +31,7 @@ const RUBROS: { value: Rubro; label: string }[] = [
 
 interface FormData {
   nombre: string
-  rubro: Rubro | ''
+  rubro?: Rubro | ''
   descripcion: string
   horario: string
   telefono: string
