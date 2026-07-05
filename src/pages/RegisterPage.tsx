@@ -90,7 +90,7 @@ export function RegisterPage() {
               ✕
             </button>
 
-            <img src="/cuentaCreada.png" alt="Cuenta creada" style={{ width: '80%', maxWidth: 200 }} />
+            <img src="/cuentaCreadaa.png" alt="Cuenta creada" style={{ width: '80%', maxWidth: 200 }} />
 
             <h2 style={{ fontSize: '20px', fontWeight: 700, lineHeight: 1.3, margin: 0 }}>
               ¡Cuenta creada correctamente!
