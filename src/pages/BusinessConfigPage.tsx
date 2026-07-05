@@ -53,6 +53,7 @@ const INITIAL: FormData = {
 
 const EXAMPLES: Omit<FormData, 'logo'> = {
   nombre: 'Bella Luna',
+  rubro: 'peluqueria',
   descripcion: 'Peluquería unisex especializada en cortes modernos, coloración y tratamientos capilares.',
   horario: 'Lun a Sáb de 9:00 a 20:00 hs',
   telefono: '+54 9 11 5555-1234',
