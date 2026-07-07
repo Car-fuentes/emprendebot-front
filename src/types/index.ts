@@ -26,6 +26,7 @@ export interface Product {
   id: string
   nombre: string
   precio?: number
+  precioConsultar?: boolean
   descripcion?: string
   imagen?: string
   disponible: boolean
@@ -124,6 +125,7 @@ export interface Message {
   text: string
   timestamp: Date
   quickReplies?: string[]
+  products?: Product[]
 }
 
 export interface ChatSession {

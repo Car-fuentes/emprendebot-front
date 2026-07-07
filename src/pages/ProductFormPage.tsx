@@ -8,6 +8,7 @@ interface ProductForm {
   nombre: string
   descripcion: string
   precio: string
+  precioConsultar: boolean | undefined   // undefined = sin selección todavía
   imagen: string
 }
 
@@ -30,6 +31,7 @@ export function ProductFormPage() {
     nombre: existing?.nombre ?? '',
     descripcion: existing?.descripcion ?? '',
     precio: existing?.precio != null ? String(existing.precio) : '',
+    precioConsultar: existing?.precioConsultar ? true : existing?.precio != null ? false : undefined,
     imagen: existing?.imagen ?? '',
   })
 
@@ -65,7 +67,8 @@ export function ProductFormPage() {
       id: crypto.randomUUID(),
       nombre: form.nombre,
       descripcion: form.descripcion,
-      precio: form.precio ? Number(form.precio) : undefined,
+      precio: form.precioConsultar === false && form.precio ? Number(form.precio) : undefined,
+      precioConsultar: form.precioConsultar === true || undefined,
       imagen: form.imagen || undefined,
       disponible: true,
     }
@@ -80,7 +83,14 @@ export function ProductFormPage() {
     if (isEditing && existing) {
       const updated = productos.map(p =>
         p.id === id
-          ? { ...p, nombre: form.nombre, descripcion: form.descripcion, precio: form.precio ? Number(form.precio) : undefined, imagen: form.imagen || undefined }
+          ? {
+              ...p,
+              nombre: form.nombre,
+              descripcion: form.descripcion,
+              precio: form.precioConsultar === false && form.precio ? Number(form.precio) : undefined,
+              precioConsultar: form.precioConsultar === true || undefined,
+              imagen: form.imagen || undefined,
+            }
           : p
       )
       updateBusiness({ productos: updated })
@@ -215,16 +225,61 @@ export function ProductFormPage() {
         </div>
 
         {/* Precio */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <label style={labelStyle}>Precio</label>
-          <input
-            value={form.precio}
-            onChange={set('precio')}
-            placeholder="$ 15.000"
-            type="number"
-            min={0}
-            style={inputStyle}
-          />
+
+          {/* Toggle */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => setForm(prev => ({ ...prev, precioConsultar: false }))}
+              style={{
+                flex: 1, height: 40, borderRadius: 8,
+                border: '1.5px solid',
+                borderColor: form.precioConsultar === false ? 'var(--color-primary)' : '#E5E7EB',
+                background: form.precioConsultar === false ? 'rgba(19,171,162,0.08)' : '#fff',
+                color: form.precioConsultar === false ? 'var(--color-primary)' : '#6B7280',
+                fontSize: 13, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'var(--font-family)',
+                transition: 'all 0.15s',
+              }}
+            >
+              Ingresar precio
+            </button>
+            <button
+              type="button"
+              onClick={() => setForm(prev => ({ ...prev, precioConsultar: true, precio: '' }))}
+              style={{
+                flex: 1, height: 40, borderRadius: 8,
+                border: '1.5px solid',
+                borderColor: form.precioConsultar === true ? 'var(--color-primary)' : '#E5E7EB',
+                background: form.precioConsultar === true ? 'rgba(19,171,162,0.08)' : '#fff',
+                color: form.precioConsultar === true ? 'var(--color-primary)' : '#6B7280',
+                fontSize: 13, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'var(--font-family)',
+                transition: 'all 0.15s',
+              }}
+            >
+              Precio a consultar
+            </button>
+          </div>
+
+          {/* Input numérico: solo aparece al elegir "Ingresar precio" */}
+          {form.precioConsultar === false && (
+            <input
+              value={form.precio}
+              onChange={set('precio')}
+              onBlur={e => {
+                const val = parseFloat(e.target.value)
+                if (!isNaN(val)) setForm(prev => ({ ...prev, precio: val.toFixed(2) }))
+              }}
+              placeholder="0.00"
+              type="number"
+              min={0}
+              step="0.01"
+              style={inputStyle}
+            />
+          )}
         </div>
 
         {/* Botones */}
