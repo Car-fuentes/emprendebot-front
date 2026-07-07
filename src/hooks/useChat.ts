@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { AwaitingInput, Business, FAQ, Message } from '../types'
+import type { AwaitingInput, Business, FAQ, Message, Product } from '../types'
+
+export interface OrderItem {
+  product: Product
+  quantity: number
+}
 import {
   clearChatHistory,
   clearChatState,
@@ -22,6 +27,7 @@ interface BotResponse {
   quickReplies?: string[]
   continuation?: string
   awaitingInput?: AwaitingInput
+  products?: Product[]
 }
 
 const CONTINUATION_MESSAGE = '¿Deseas realizar otra consulta?'
@@ -133,18 +139,16 @@ function generateBotResponse(
   }
 
   if (msg.includes('producto') || msg.includes('catálogo') || msg.includes('catalogo')) {
-    if (business.productos.length === 0) {
+    const disponibles = business.productos.filter(p => p.disponible)
+    if (disponibles.length === 0) {
       return {
         text: 'Todavía no tenemos productos cargados. ¿Deseas realizar otra consulta?',
         quickReplies: QUICK_REPLIES_INICIAL,
       }
     }
-    const lista = business.productos.map(p =>
-      `• ${p.nombre}${p.precio ? ` - $${p.precio}` : ''}${p.descripcion ? `\n  ${p.descripcion}` : ''}`
-    ).join('\n')
     return {
-      text: `Nuestros productos disponibles:\n\n${lista}\n\n¿Deseas más información sobre alguno?`,
-      continuation: CONTINUATION_MESSAGE,
+      text: '¡Perfecto! Te comparto las opciones disponibles. Seleccioná una o varias para continuar.',
+      products: disponibles,
     }
   }
 
@@ -186,9 +190,10 @@ function createBotMessages(response: BotResponse): Message[] {
     text: response.text,
     timestamp: new Date(),
     quickReplies: response.quickReplies,
+    products: response.products,
   }
 
-  if (response.awaitingInput || response.quickReplies?.length) return [responseMessage]
+  if (response.awaitingInput || response.quickReplies?.length || response.products?.length) return [responseMessage]
 
   const continuationMessage: Message = {
     id: crypto.randomUUID(),
@@ -289,6 +294,49 @@ export function useChat(business: Business) {
     setIsTyping(false)
   }, [awaitingInput, business, isTyping])
 
+  const submitOrder = useCallback((items: OrderItem[]) => {
+    const summary = items.map(i => `${i.product.nombre} x${i.quantity}`).join(', ')
+    const userMsg: Message = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      text: summary,
+      timestamp: new Date(),
+    }
+
+    const needsQuote = items.some(i => i.product.precioConsultar)
+    let botText: string
+
+    if (needsQuote) {
+      const detail = items.map(i => {
+        const priceStr = i.product.precioConsultar
+          ? '(precio a consultar)'
+          : `$${(i.product.precio! * i.quantity).toLocaleString('es-AR')}`
+        return `• ${i.product.nombre} x${i.quantity} — ${priceStr}`
+      }).join('\n')
+      botText = `Recibimos tu solicitud de cotización:\n\n${detail}\n\nEn breve nos contactamos con vos para darte los precios. 😊`
+    } else {
+      const total = items.reduce((sum, i) => sum + (i.product.precio! * i.quantity), 0)
+      const detail = items.map(i =>
+        `• ${i.product.nombre} x${i.quantity} — $${(i.product.precio! * i.quantity).toLocaleString('es-AR')}`
+      ).join('\n')
+      botText = `Tu presupuesto:\n\n${detail}\n\n💰 Total: $${total.toLocaleString('es-AR')}`
+    }
+
+    const botMsg: Message = {
+      id: crypto.randomUUID(),
+      role: 'bot',
+      text: botText,
+      timestamp: new Date(),
+      quickReplies: QUICK_REPLIES_INICIAL,
+    }
+
+    setMessages(prev => {
+      const next = [...prev, userMsg, botMsg]
+      saveChatHistory(business.id, next)
+      return next
+    })
+  }, [business])
+
   const reset = useCallback(() => {
     conversationVersionRef.current += 1
     cancelPendingResponse()
@@ -302,5 +350,5 @@ export function useChat(business: Business) {
     setIsTyping(false)
   }, [business, cancelPendingResponse])
 
-  return { messages, isTyping, sendMessage, reset }
+  return { messages, isTyping, sendMessage, submitOrder, reset }
 }

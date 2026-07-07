@@ -6,32 +6,28 @@ import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
 import { apiRequest } from '../services/apiClient'
 import { brand } from '../styles/brand'
-import type { Rubro } from '../types'
+interface RubroApi {
+  id: string
+  nombre: string
+}
+
+interface RubrosResponse {
+  success: boolean
+  rubros: RubroApi[]
+}
 
 interface BotConfigResponse {
   success: boolean
   configuracion: {
     nombreNegocio: string
     mensajeBienvenida: string
+    rubroId?: string
   }
 }
 
-const RUBROS: { value: Rubro; label: string }[] = [
-  { value: 'gastronomia', label: 'Gastronomía' },
-  { value: 'peluqueria', label: 'Peluquería / Estética' },
-  { value: 'indumentaria', label: 'Indumentaria' },
-  { value: 'tecnologia', label: 'Tecnología' },
-  { value: 'servicios', label: 'Servicios profesionales' },
-  { value: 'salud', label: 'Salud / Bienestar' },
-  { value: 'educacion', label: 'Educación' },
-  { value: 'artesanias', label: 'Artesanías' },
-  { value: 'oficios', label: 'Oficios' },
-  { value: 'otro', label: 'Otro' },
-]
-
 interface FormData {
   nombre: string
-  rubro?: Rubro | ''
+  rubroId: string
   descripcion: string
   horario: string
   telefono: string
@@ -42,7 +38,7 @@ interface FormData {
 
 const INITIAL: FormData = {
   nombre: '',
-  rubro: '',
+  rubroId: '',
   descripcion: '',
   horario: '',
   telefono: '',
@@ -51,13 +47,12 @@ const INITIAL: FormData = {
   logo: '',
 }
 
-const EXAMPLES: Omit<FormData, 'logo'> = {
+const EXAMPLES: Omit<FormData, 'logo' | 'rubroId'> = {
   nombre: 'Bella Luna',
-  rubro: 'peluqueria',
   descripcion: 'Peluquería unisex especializada en cortes modernos, coloración y tratamientos capilares.',
-  horario: 'Lun a Sáb de 9:00 a 20:00 hs',
+  horario: 'Lun a Sáb de 9:00 a 19:00 hs',
   telefono: '+54 9 11 5555-1234',
-  mensajeBienvenida: '¡Hola! Soy el asistente de Bella Luna 💇. Podés consultarme sobre turnos, precios y servicios. ¿En qué te ayudo?',
+  mensajeBienvenida: '¡Hola! Soy el asistente de Bella Luna 💇 ¿En qué te puedo ayudar? Elige una opción para continuar ',
   respuestaDerivacion: 'Perfecto, te voy a poner en contacto con uno de nuestros asesores. ¡En breve se comunican con vos!',
 }
 
@@ -102,8 +97,6 @@ const labelStyle: React.CSSProperties = {
   fontSize: '12px',
   fontWeight: 600,
   color: 'var(--color-text-secondary)',
-  letterSpacing: '0.8px',
-  textTransform: 'uppercase',
 }
 
 export function BusinessConfigPage() {
@@ -118,7 +111,7 @@ export function BusinessConfigPage() {
     business
       ? {
           nombre: business.nombre,
-          rubro: business.rubro ?? '',
+          rubroId: '',
           descripcion: business.descripcion,
           horario: business.horario,
           telefono: business.telefono,
@@ -128,11 +121,19 @@ export function BusinessConfigPage() {
         }
       : INITIAL
   )
+  const [rubros, setRubros] = useState<RubroApi[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
 
-  // Cargar nombre y mensaje de bienvenida desde el backend al entrar en modo edición
+  // Cargar rubros desde el backend (no requiere auth)
+  useEffect(() => {
+    apiRequest<RubrosResponse>('/bot/rubros', { auth: false }).then(data => {
+      setRubros(data.rubros)
+    }).catch(() => {/* Si falla no muestra rubros */})
+  }, [])
+
+  // Cargar config desde el backend al entrar en modo edición
   useEffect(() => {
     if (!isEdit) return
     apiRequest<BotConfigResponse>('/bot').then(data => {
@@ -140,6 +141,7 @@ export function BusinessConfigPage() {
         ...prev,
         nombre: data.configuracion.nombreNegocio || prev.nombre,
         mensajeBienvenida: data.configuracion.mensajeBienvenida || prev.mensajeBienvenida,
+        rubroId: data.configuracion.rubroId || prev.rubroId,
       }))
     }).catch(() => {/* Si falla usa el localStorage */})
   }, [isEdit])
@@ -164,8 +166,8 @@ export function BusinessConfigPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
-    if (!form.nombre || !form.descripcion) {
-      setError('El nombre y la descripción son obligatorios.')
+    if (!form.nombre || !form.descripcion || !form.telefono) {
+      setError('El nombre, la descripción y el teléfono son obligatorios.')
       return
     }
     if (!user) return
@@ -178,6 +180,7 @@ export function BusinessConfigPage() {
         body: JSON.stringify({
           nombreNegocio: form.nombre,
           mensajeBienvenida: form.mensajeBienvenida || undefined,
+          rubroId: form.rubroId || undefined,
         }),
       })
     } catch (err) {
@@ -381,21 +384,21 @@ export function BusinessConfigPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <label style={labelStyle}>Rubro de tu negocio</label>
             <select
-              value={form.rubro}
-              onChange={e => setForm(prev => ({ ...prev, rubro: e.target.value as Rubro }))}
+              value={form.rubroId}
+              onChange={e => setForm(prev => ({ ...prev, rubroId: e.target.value }))}
               style={{
                 height: '52px', padding: '0 16px',
                 borderRadius: 'var(--radius-sm)',
                 border: '1px solid var(--color-border)',
                 fontSize: '15px', fontFamily: 'var(--font-family)',
-                color: form.rubro ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                color: form.rubroId ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
                 background: 'var(--color-bg)', outline: 'none',
                 width: '100%', cursor: 'pointer',
               }}
             >
               <option value="">Seleccioná</option>
-              {RUBROS.map(r => (
-                <option key={r.value} value={r.value}>{r.label}</option>
+              {rubros.map(r => (
+                <option key={r.id} value={r.id}>{r.nombre}</option>
               ))}
             </select>
           </div>
@@ -430,7 +433,7 @@ export function BusinessConfigPage() {
 
           {/* Teléfono */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <label style={labelStyle}>Teléfono de contacto</label>
+            <label style={labelStyle}>Teléfono de contacto *</label>
             <Input
               type="tel"
               placeholder="Ej: +54 9 11 5555-1234"

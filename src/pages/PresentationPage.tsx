@@ -53,6 +53,8 @@ export function PresentationPage() {
           fontWeight: 400,
           margin: 0,
           lineHeight: 1.4,
+          textAlign: 'left',
+          width: '100%',
         }}>
           Soy <strong>EmprendeBot</strong>, tu asistente de gestión comercial.
         </p>
@@ -63,7 +65,7 @@ export function PresentationPage() {
           color: 'var(--color-text-secondary)',
           lineHeight: 1.6,
           margin: '8px 0 0',
-          textAlign: 'left',
+          textAlign: 'justify',
           width: '100%',
         }}>
           Te ayudaré a responder consultas, generar presupuestos y potenciar las oportunidades de venta de tu negocio.
