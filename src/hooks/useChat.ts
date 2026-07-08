@@ -28,6 +28,7 @@ interface BotResponse {
   continuation?: string
   awaitingInput?: AwaitingInput
   products?: Product[]
+  faqs?: FAQ[]
 }
 
 const CONTINUATION_MESSAGE = '¿Deseas realizar otra consulta?'
@@ -61,14 +62,6 @@ function getActiveFaqs(business: Business): FAQ[] {
     .sort((left, right) => (left.orden ?? 0) - (right.orden ?? 0))
 }
 
-function getFaqMenuText(faqs: FAQ[]): string {
-  const numberedQuestions = faqs
-    .map((faq, index) => `${index + 1}. ${faq.pregunta}`)
-    .join('\n')
-
-  return `Seleccioná lo que deseas conocer escribiendo el número de la opción:\n\n${numberedQuestions}`
-}
-
 function createFaqMenuResponse(business: Business): BotResponse {
   const activeFaqs = getActiveFaqs(business)
 
@@ -80,17 +73,22 @@ function createFaqMenuResponse(business: Business): BotResponse {
   }
 
   return {
-    text: getFaqMenuText(activeFaqs),
+    text: 'Estas son las preguntas más frecuentes. Seleccioná la que te interese.',
+    faqs: activeFaqs,
     awaitingInput: 'faq-selection',
   }
 }
 
 function findSelectedFaq(userMessage: string, faqs: FAQ[]): FAQ | null {
-  const normalizedSelection = normalizeMessage(userMessage)
-  if (!/^\d+$/.test(normalizedSelection)) return null
+  const normalized = normalizeMessage(userMessage)
 
-  const selectedIndex = Number(normalizedSelection) - 1
-  return faqs[selectedIndex] ?? null
+  // Match por número (legado)
+  if (/^\d+$/.test(normalized)) {
+    return faqs[Number(normalized) - 1] ?? null
+  }
+
+  // Match por texto de la pregunta (cuando el usuario hace clic en el botón)
+  return faqs.find(faq => normalizeMessage(faq.pregunta) === normalized) ?? null
 }
 
 function generateBotResponse(
@@ -127,7 +125,8 @@ function generateBotResponse(
 
     if (!selectedFaq) {
       return {
-        text: `No encontré esa opción. Por favor elegí un número válido de la lista.\n\n${getFaqMenuText(activeFaqs)}`,
+        text: 'No encontré esa opción. Por favor elegí una de las preguntas de la lista.',
+        faqs: activeFaqs,
         awaitingInput: 'faq-selection',
       }
     }
@@ -191,9 +190,10 @@ function createBotMessages(response: BotResponse): Message[] {
     timestamp: new Date(),
     quickReplies: response.quickReplies,
     products: response.products,
+    faqs: response.faqs,
   }
 
-  if (response.awaitingInput || response.quickReplies?.length || response.products?.length) return [responseMessage]
+  if (response.awaitingInput || response.quickReplies?.length || response.products?.length || response.faqs?.length) return [responseMessage]
 
   const continuationMessage: Message = {
     id: crypto.randomUUID(),

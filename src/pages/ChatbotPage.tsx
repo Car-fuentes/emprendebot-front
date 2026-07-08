@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ChatHeader } from '../components/chat/ChatHeader'
 import { ChatInput } from '../components/chat/ChatInput'
 import { MessageBubble, TypingIndicator } from '../components/chat/MessageBubble'
+import { FaqListMessage } from '../components/chat/FaqListMessage'
 import { ProductCatalogMessage } from '../components/chat/ProductCatalogMessage'
 import { QuickReplies } from '../components/chat/QuickReplies'
 import { useBusiness } from '../context/BusinessContext'
@@ -84,6 +85,7 @@ function PublicChat({ business }: { business: Business }) {
   }, [messages, isTyping])
 
   const lastProductsMessageId = [...messages].reverse().find(m => m.products?.length)?.id
+  const lastFaqsMessageId = [...messages].reverse().find(m => m.faqs?.length)?.id
 
   const lastBotWithReplies = [...messages].reverse().find(
     message => message.role === 'bot' && message.quickReplies && message.quickReplies.length > 0
@@ -100,6 +102,9 @@ function PublicChat({ business }: { business: Business }) {
             {message.text && <MessageBubble message={message} />}
             {message.products && message.products.length > 0 && message.id === lastProductsMessageId && !isTyping && (
               <ProductCatalogMessage products={message.products} onConfirm={submitOrder} />
+            )}
+            {message.faqs && message.faqs.length > 0 && message.id === lastFaqsMessageId && !isTyping && (
+              <FaqListMessage faqs={message.faqs} onSelect={sendMessage} />
             )}
             {message.id === messages[messages.length - 1]?.id &&
               message.role === 'bot' &&

@@ -126,6 +126,7 @@ export interface Message {
   timestamp: Date
   quickReplies?: string[]
   products?: Product[]
+  faqs?: FAQ[]
 }
 
 export interface ChatSession {
