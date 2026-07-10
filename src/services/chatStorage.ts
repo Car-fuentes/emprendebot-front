@@ -3,7 +3,7 @@ import type { AwaitingInput, Message, MessageRole } from '../types'
 const CHAT_HISTORY_PREFIX = 'eb_chat_history'
 const CHAT_STATE_PREFIX = 'eb_chat_state'
 
-interface StoredMessage extends Omit<Message, 'timestamp'> {
+interface StoredMessage extends Omit<Message, 'timestamp' | 'products' | 'faqs'> {
   timestamp: string
 }
 
@@ -36,7 +36,7 @@ function isStoredMessage(value: unknown): value is StoredMessage {
 
 export function saveChatHistory(businessId: string, messages: Message[]): void {
   try {
-    const storedMessages: StoredMessage[] = messages.map(message => ({
+    const storedMessages: StoredMessage[] = messages.map(({ products: _products, faqs: _faqs, ...message }) => ({
       ...message,
       timestamp: message.timestamp.toISOString(),
     }))
