@@ -13,6 +13,14 @@ export function CatalogPage() {
   const { business, updateBusiness, loadBusiness } = useBusiness()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null)
+  const [showPricingModal, setShowPricingModal] = useState(false)
+
+  const openAddProduct = () => setShowPricingModal(true)
+
+  const handlePricingChoice = (precioConsultar: boolean) => {
+    setShowPricingModal(false)
+    navigate('/catalogo/agregar', { state: { precioConsultar } })
+  }
 
   useEffect(() => {
     if (user) loadBusiness(user.id)
@@ -76,7 +84,7 @@ export function CatalogPage() {
         </div>
         {productos.length > 0 && (
           <button
-            onClick={() => navigate('/catalogo/agregar')}
+            onClick={() => openAddProduct()}
             style={{
               background: brand.primaryGradient,
               color: '#fff',
@@ -124,7 +132,7 @@ export function CatalogPage() {
               </p>
             </div>
             <button
-              onClick={() => navigate('/catalogo/agregar')}
+              onClick={() => openAddProduct()}
               style={{
                 margin: 12,
                 background: brand.primaryGradient,
@@ -213,6 +221,105 @@ export function CatalogPage() {
           </div>
         )}
       </div>
+
+      {/* Modal selección de tipo de precio */}
+      {showPricingModal && (
+        <div
+          onClick={() => setShowPricingModal(false)}
+          style={{
+            position: 'fixed', inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 200, padding: '0 24px',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%', maxWidth: 400,
+              background: '#fff', borderRadius: 20,
+              padding: '28px 20px 24px',
+              display: 'flex', flexDirection: 'column', gap: 16,
+            }}
+          >
+            <div>
+              <p style={{ margin: '0 0 6px', fontSize: 17, fontWeight: 700, color: '#111', lineHeight: 1.35 }}>
+                Configurá cómo querés ofrecer este producto o servicio.
+              </p>
+              <p style={{ margin: 0, fontSize: 13, color: '#6C738E', lineHeight: 1.5 }}>
+                La elección en cada producto determinará cómo se mostrará en tu catálogo.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12 }}>
+              {/* Precio fijo */}
+              <button
+                onClick={() => handlePricingChoice(false)}
+                style={{
+                  flex: 1, padding: '18px 12px',
+                  border: '1.5px solid #E5E7EB', borderRadius: 14,
+                  background: '#fff', cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', gap: 10,
+                  textAlign: 'left', fontFamily: 'var(--font-family)',
+                  transition: 'border-color 0.15s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = '#13A8A2')}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = '#E5E7EB')}
+              >
+                <div style={{
+                  width: 44, height: 44, borderRadius: '50%',
+                  background: 'rgba(19,171,162,0.12)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#13A8A2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                    <line x1="7" y1="7" x2="7.01" y2="7" />
+                  </svg>
+                </div>
+                <div>
+                  <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: '#111' }}>Precio fijo</p>
+                  <p style={{ margin: 0, fontSize: 12, color: '#13A8A2', lineHeight: 1.4 }}>
+                    El cliente ve el precio directamente
+                  </p>
+                </div>
+              </button>
+
+              {/* Requiere cotización */}
+              <button
+                onClick={() => handlePricingChoice(true)}
+                style={{
+                  flex: 1, padding: '18px 12px',
+                  border: '1.5px solid #E5E7EB', borderRadius: 14,
+                  background: '#fff', cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', gap: 10,
+                  textAlign: 'left', fontFamily: 'var(--font-family)',
+                  transition: 'border-color 0.15s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = '#13A8A2')}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = '#E5E7EB')}
+              >
+                <div style={{
+                  width: 44, height: 44, borderRadius: '50%',
+                  background: 'rgba(19,171,162,0.12)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#13A8A2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <path d="M9 15h.01M12 12a2 2 0 0 1 0 3.5" />
+                  </svg>
+                </div>
+                <div>
+                  <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: '#111' }}>Requiere cotización</p>
+                  <p style={{ margin: 0, fontSize: 12, color: '#13A8A2', lineHeight: 1.4 }}>
+                    Se muestra como "Precio a convenir"
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Diálogo confirmación eliminar */}
       {deleteTarget && (

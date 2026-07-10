@@ -12,7 +12,7 @@ function PriceTag({ product }: { product: Product }) {
   if (product.precioConsultar) {
     return (
       <span style={{ fontSize: 12, color: 'var(--color-primary)', fontWeight: 600 }}>
-        Precio a consultar
+        Precio a convenir
       </span>
     )
   }

@@ -75,6 +75,7 @@ function createFaqMenuResponse(business: Business): BotResponse {
   return {
     text: 'Estas son las preguntas más frecuentes. Seleccioná la que te interese.',
     faqs: activeFaqs,
+    quickReplies: QUICK_REPLIES_INICIAL,
     awaitingInput: 'faq-selection',
   }
 }
@@ -127,6 +128,7 @@ function generateBotResponse(
       return {
         text: 'No encontré esa opción. Por favor elegí una de las preguntas de la lista.',
         faqs: activeFaqs,
+        quickReplies: QUICK_REPLIES_INICIAL,
         awaitingInput: 'faq-selection',
       }
     }
@@ -325,7 +327,9 @@ export function useChat(business: Business) {
       return
     }
 
-    const response = generateBotResponse(text, business, awaitingInput)
+    // Si el usuario hace clic en un chip del menú principal, ignorar el awaitingInput actual
+    const isMenuQuickReply = QUICK_REPLIES_INICIAL.some(r => r.toLowerCase() === text.toLowerCase())
+    const response = generateBotResponse(text, business, isMenuQuickReply ? null : awaitingInput)
     const botMessages = createBotMessages(response)
     const nextAwaitingInput = response.awaitingInput ?? null
 
