@@ -110,7 +110,7 @@ export function BusinessConfigPage() {
   const [linkCopied, setLinkCopied] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
 
-  const publicUrl = user ? `${window.location.origin}/${user.slug}` : ''
+  const publicUrl = business?.slug ? `${window.location.origin}/${business.slug}` : ''
 
   // Cargar rubros desde el backend (no requiere auth)
   useEffect(() => {
