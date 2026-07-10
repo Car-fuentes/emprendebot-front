@@ -3,7 +3,7 @@ import type { AwaitingInput, Message, MessageRole } from '../types'
 const CHAT_HISTORY_PREFIX = 'eb_chat_history'
 const CHAT_STATE_PREFIX = 'eb_chat_state'
 
-interface StoredMessage extends Omit<Message, 'timestamp' | 'products'> {
+interface StoredMessage extends Omit<Message, 'timestamp' | 'products' | 'faqs'> {
   timestamp: string
 }
 
@@ -36,7 +36,7 @@ function isStoredMessage(value: unknown): value is StoredMessage {
 
 export function saveChatHistory(businessId: string, messages: Message[]): void {
   try {
-    const storedMessages: StoredMessage[] = messages.map(({ products: _products, ...message }) => ({
+    const storedMessages: StoredMessage[] = messages.map(({ products: _products, faqs: _faqs, ...message }) => ({
       ...message,
       timestamp: message.timestamp.toISOString(),
     }))
@@ -86,8 +86,8 @@ export function saveAwaitingInput(businessId: string, awaitingInput: AwaitingInp
 export function loadAwaitingInput(businessId: string): AwaitingInput | null {
   try {
     const stored = localStorage.getItem(getChatStateKey(businessId))
-    return stored === 'budget' || stored === 'faq-selection'
-      ? stored
+    return stored === 'budget' || stored === 'faq-selection' || stored === 'contact-name' || stored === 'contact-phone'
+      ? (stored as AwaitingInput)
       : null
   } catch {
     return null

@@ -117,7 +117,7 @@ export interface Business {
 
 // ===== CHAT =====
 export type MessageRole = 'bot' | 'user'
-export type AwaitingInput = 'budget' | 'faq-selection'
+export type AwaitingInput = 'budget' | 'faq-selection' | 'contact-name' | 'contact-phone'
 
 export interface Message {
   id: string
@@ -126,6 +126,7 @@ export interface Message {
   timestamp: Date
   quickReplies?: string[]
   products?: Product[]
+  faqs?: FAQ[]
 }
 
 export interface ChatSession {

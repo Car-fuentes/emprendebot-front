@@ -28,6 +28,7 @@ interface BotResponse {
   continuation?: string
   awaitingInput?: AwaitingInput
   products?: Product[]
+  faqs?: FAQ[]
 }
 
 const CONTINUATION_MESSAGE = '¿Deseas realizar otra consulta?'
@@ -61,14 +62,6 @@ function getActiveFaqs(business: Business): FAQ[] {
     .sort((left, right) => (left.orden ?? 0) - (right.orden ?? 0))
 }
 
-function getFaqMenuText(faqs: FAQ[]): string {
-  const numberedQuestions = faqs
-    .map((faq, index) => `${index + 1}. ${faq.pregunta}`)
-    .join('\n')
-
-  return `Seleccioná lo que deseas conocer escribiendo el número de la opción:\n\n${numberedQuestions}`
-}
-
 function createFaqMenuResponse(business: Business): BotResponse {
   const activeFaqs = getActiveFaqs(business)
 
@@ -80,17 +73,22 @@ function createFaqMenuResponse(business: Business): BotResponse {
   }
 
   return {
-    text: getFaqMenuText(activeFaqs),
+    text: 'Estas son las preguntas más frecuentes. Seleccioná la que te interese.',
+    faqs: activeFaqs,
     awaitingInput: 'faq-selection',
   }
 }
 
 function findSelectedFaq(userMessage: string, faqs: FAQ[]): FAQ | null {
-  const normalizedSelection = normalizeMessage(userMessage)
-  if (!/^\d+$/.test(normalizedSelection)) return null
+  const normalized = normalizeMessage(userMessage)
 
-  const selectedIndex = Number(normalizedSelection) - 1
-  return faqs[selectedIndex] ?? null
+  // Match por número (legado)
+  if (/^\d+$/.test(normalized)) {
+    return faqs[Number(normalized) - 1] ?? null
+  }
+
+  // Match por texto de la pregunta (cuando el usuario hace clic en el botón)
+  return faqs.find(faq => normalizeMessage(faq.pregunta) === normalized) ?? null
 }
 
 function generateBotResponse(
@@ -127,7 +125,8 @@ function generateBotResponse(
 
     if (!selectedFaq) {
       return {
-        text: `No encontré esa opción. Por favor elegí un número válido de la lista.\n\n${getFaqMenuText(activeFaqs)}`,
+        text: 'No encontré esa opción. Por favor elegí una de las preguntas de la lista.',
+        faqs: activeFaqs,
         awaitingInput: 'faq-selection',
       }
     }
@@ -172,8 +171,8 @@ function generateBotResponse(
 
   if (msg.includes('persona') || msg.includes('asesor') || msg.includes('hablar')) {
     return {
-      text: business.respuestaDerivacion || 'Te voy a conectar con un asesor en breve. ¡Gracias por tu paciencia!',
-      continuation: CONTINUATION_MESSAGE,
+      text: '¡Perfecto! Para ponerte en contacto con una persona del negocio necesito un par de datos. 😊\n\n¿Cuál es tu nombre?',
+      awaitingInput: 'contact-name',
     }
   }
 
@@ -191,9 +190,10 @@ function createBotMessages(response: BotResponse): Message[] {
     timestamp: new Date(),
     quickReplies: response.quickReplies,
     products: response.products,
+    faqs: response.faqs,
   }
 
-  if (response.awaitingInput || response.quickReplies?.length || response.products?.length) return [responseMessage]
+  if (response.awaitingInput || response.quickReplies?.length || response.products?.length || response.faqs?.length) return [responseMessage]
 
   const continuationMessage: Message = {
     id: crypto.randomUUID(),
@@ -231,6 +231,7 @@ export function useChat(business: Business) {
   const [messages, setMessages] = useState<Message[]>(() => getInitialHistory(business))
   const [awaitingInput, setAwaitingInput] = useState<AwaitingInput | null>(() => loadAwaitingInput(business.id))
   const [isTyping, setIsTyping] = useState(false)
+  const [contactName, setContactName] = useState<string>('')
   const responseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingResponseResolverRef = useRef<(() => void) | null>(null)
   const conversationVersionRef = useRef(0)
@@ -280,6 +281,50 @@ export function useChat(business: Business) {
 
     if (conversationVersion !== conversationVersionRef.current) return
 
+    // Flujo de captura de datos de contacto
+    if (awaitingInput === 'contact-name') {
+      const name = text.trim() || 'usuario'
+      setContactName(name)
+      const botMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'bot',
+        text: `¡Gracias ${name}! ¿Cuál es tu número de teléfono?`,
+        timestamp: new Date(),
+      }
+      setMessages(prev => {
+        const next = [...prev, botMsg]
+        saveChatHistory(business.id, next)
+        return next
+      })
+      setAwaitingInput('contact-phone')
+      saveAwaitingInput(business.id, 'contact-phone')
+      setIsTyping(false)
+      return
+    }
+
+    if (awaitingInput === 'contact-phone') {
+      const phone = text.trim()
+      // TODO: POST /api/consultas cuando el backend esté listo
+      console.log('Derivación a asesor:', { nombre: contactName, telefono: phone, businessId: business.id })
+      const botMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'bot',
+        text: `Perfecto ${contactName}.\nRecibimos tu solicitud de contacto. Una persona del negocio se comunicará con vos a la brevedad. ¡Gracias por contactarte!`,
+        timestamp: new Date(),
+        quickReplies: QUICK_REPLIES_INICIAL,
+      }
+      setMessages(prev => {
+        const next = [...prev, botMsg]
+        saveChatHistory(business.id, next)
+        return next
+      })
+      setAwaitingInput(null)
+      saveAwaitingInput(business.id, null)
+      setContactName('')
+      setIsTyping(false)
+      return
+    }
+
     const response = generateBotResponse(text, business, awaitingInput)
     const botMessages = createBotMessages(response)
     const nextAwaitingInput = response.awaitingInput ?? null
@@ -292,7 +337,7 @@ export function useChat(business: Business) {
     setAwaitingInput(nextAwaitingInput)
     saveAwaitingInput(business.id, nextAwaitingInput)
     setIsTyping(false)
-  }, [awaitingInput, business, isTyping])
+  }, [awaitingInput, business, contactName, isTyping])
 
   const submitOrder = useCallback((items: OrderItem[]) => {
     const summary = items.map(i => `${i.product.nombre} x${i.quantity}`).join(', ')
@@ -346,6 +391,7 @@ export function useChat(business: Business) {
     const initialMessages = [createInitialMessage(business)]
     setMessages(initialMessages)
     setAwaitingInput(null)
+    setContactName('')
     saveChatHistory(business.id, initialMessages)
     setIsTyping(false)
   }, [business, cancelPendingResponse])
