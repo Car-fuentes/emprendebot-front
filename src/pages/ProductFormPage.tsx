@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useBusiness } from '../context/BusinessContext'
 import { useAuth } from '../context/AuthContext'
 import { brand } from '../styles/brand'
@@ -15,6 +15,8 @@ interface ProductForm {
 export function ProductFormPage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
+  const location = useLocation()
+  const locationPrecioConsultar = (location.state as { precioConsultar?: boolean } | null)?.precioConsultar
   const { user } = useAuth()
   const { business, isBusinessLoading, updateBusiness, loadBusiness, saveBusiness } = useBusiness()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -31,7 +33,7 @@ export function ProductFormPage() {
     nombre: existing?.nombre ?? '',
     descripcion: existing?.descripcion ?? '',
     precio: existing?.precio != null ? String(existing.precio) : '',
-    precioConsultar: existing?.precioConsultar ? true : existing?.precio != null ? false : undefined,
+    precioConsultar: existing?.precioConsultar ? true : existing?.precio != null ? false : locationPrecioConsultar,
     imagen: existing?.imagen ?? '',
   })
 
@@ -244,7 +246,7 @@ export function ProductFormPage() {
                 transition: 'all 0.15s',
               }}
             >
-              Ingresar precio
+              Ingresar precio fijo
             </button>
             <button
               type="button"
@@ -260,7 +262,7 @@ export function ProductFormPage() {
                 transition: 'all 0.15s',
               }}
             >
-              Precio a consultar
+              Precio a convenir
             </button>
           </div>
 

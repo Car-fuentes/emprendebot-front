@@ -75,6 +75,7 @@ function createFaqMenuResponse(business: Business): BotResponse {
   return {
     text: 'Estas son las preguntas más frecuentes. Seleccioná la que te interese.',
     faqs: activeFaqs,
+    quickReplies: QUICK_REPLIES_INICIAL,
     awaitingInput: 'faq-selection',
   }
 }
@@ -127,6 +128,7 @@ function generateBotResponse(
       return {
         text: 'No encontré esa opción. Por favor elegí una de las preguntas de la lista.',
         faqs: activeFaqs,
+        quickReplies: QUICK_REPLIES_INICIAL,
         awaitingInput: 'faq-selection',
       }
     }
@@ -171,8 +173,8 @@ function generateBotResponse(
 
   if (msg.includes('persona') || msg.includes('asesor') || msg.includes('hablar')) {
     return {
-      text: business.respuestaDerivacion || 'Te voy a conectar con un asesor en breve. ¡Gracias por tu paciencia!',
-      continuation: CONTINUATION_MESSAGE,
+      text: '¡Perfecto! Para ponerte en contacto con una persona del negocio necesito un par de datos. 😊\n\n¿Cuál es tu nombre?',
+      awaitingInput: 'contact-name',
     }
   }
 
@@ -231,6 +233,7 @@ export function useChat(business: Business) {
   const [messages, setMessages] = useState<Message[]>(() => getInitialHistory(business))
   const [awaitingInput, setAwaitingInput] = useState<AwaitingInput | null>(() => loadAwaitingInput(business.id))
   const [isTyping, setIsTyping] = useState(false)
+  const [contactName, setContactName] = useState<string>('')
   const responseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingResponseResolverRef = useRef<(() => void) | null>(null)
   const conversationVersionRef = useRef(0)
@@ -280,7 +283,53 @@ export function useChat(business: Business) {
 
     if (conversationVersion !== conversationVersionRef.current) return
 
-    const response = generateBotResponse(text, business, awaitingInput)
+    // Flujo de captura de datos de contacto
+    if (awaitingInput === 'contact-name') {
+      const name = text.trim() || 'usuario'
+      setContactName(name)
+      const botMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'bot',
+        text: `¡Gracias ${name}! ¿Cuál es tu número de teléfono?`,
+        timestamp: new Date(),
+      }
+      setMessages(prev => {
+        const next = [...prev, botMsg]
+        saveChatHistory(business.id, next)
+        return next
+      })
+      setAwaitingInput('contact-phone')
+      saveAwaitingInput(business.id, 'contact-phone')
+      setIsTyping(false)
+      return
+    }
+
+    if (awaitingInput === 'contact-phone') {
+      const phone = text.trim()
+      // TODO: POST /api/consultas cuando el backend esté listo
+      console.log('Derivación a asesor:', { nombre: contactName, telefono: phone, businessId: business.id })
+      const botMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'bot',
+        text: `Perfecto ${contactName}.\nRecibimos tu solicitud de contacto. Una persona del negocio se comunicará con vos a la brevedad. ¡Gracias por contactarte!`,
+        timestamp: new Date(),
+        quickReplies: QUICK_REPLIES_INICIAL,
+      }
+      setMessages(prev => {
+        const next = [...prev, botMsg]
+        saveChatHistory(business.id, next)
+        return next
+      })
+      setAwaitingInput(null)
+      saveAwaitingInput(business.id, null)
+      setContactName('')
+      setIsTyping(false)
+      return
+    }
+
+    // Si el usuario hace clic en un chip del menú principal, ignorar el awaitingInput actual
+    const isMenuQuickReply = QUICK_REPLIES_INICIAL.some(r => r.toLowerCase() === text.toLowerCase())
+    const response = generateBotResponse(text, business, isMenuQuickReply ? null : awaitingInput)
     const botMessages = createBotMessages(response)
     const nextAwaitingInput = response.awaitingInput ?? null
 
@@ -292,7 +341,7 @@ export function useChat(business: Business) {
     setAwaitingInput(nextAwaitingInput)
     saveAwaitingInput(business.id, nextAwaitingInput)
     setIsTyping(false)
-  }, [awaitingInput, business, isTyping])
+  }, [awaitingInput, business, contactName, isTyping])
 
   const submitOrder = useCallback((items: OrderItem[]) => {
     const summary = items.map(i => `${i.product.nombre} x${i.quantity}`).join(', ')
@@ -346,6 +395,7 @@ export function useChat(business: Business) {
     const initialMessages = [createInitialMessage(business)]
     setMessages(initialMessages)
     setAwaitingInput(null)
+    setContactName('')
     saveChatHistory(business.id, initialMessages)
     setIsTyping(false)
   }, [business, cancelPendingResponse])
