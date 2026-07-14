@@ -29,10 +29,14 @@ function formatDate(value: string): string {
   }).format(new Date(value))
 }
 
-function getMessageColors(emisor: Mensaje['emisor']) {
-  if (emisor === 'bot') return { background: 'rgba(19,171,162,0.08)', align: 'flex-start' as const }
-  if (emisor === 'usuario') return { background: '#0F6E95', color: '#FFFFFF', align: 'flex-end' as const }
-  return { background: 'var(--color-bg)', align: 'flex-start' as const }
+function getMessagePresentation(emisor: Mensaje['emisor']) {
+  const isClient = emisor === 'cliente'
+  return {
+    isBot: emisor === 'bot',
+    align: isClient ? 'flex-end' as const : 'flex-start' as const,
+    background: isClient ? 'var(--color-bg-answer)' : 'var(--color-bg)',
+    color: isClient ? '#FFFFFF' : 'var(--color-text-primary)',
+  }
 }
 
 function getStatusAction(estado: ConsultaEstado): { label: string; nextEstado: ConsultaEstado } {
@@ -208,24 +212,53 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDet
       </h3>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {messages.map(message => {
-          const colors = getMessageColors(message.emisor)
+          const presentation = getMessagePresentation(message.emisor)
           return (
-            <article
-              key={message.id}
-              style={{
-                alignSelf: colors.align,
-                maxWidth: '90%',
-                padding: '9px 11px',
-                borderRadius: 'var(--radius-md)',
-                background: colors.background,
-                color: colors.color,
-                border: colors.align === 'flex-start' ? '1px solid var(--color-border)' : 'none',
-                boxShadow: colors.align === 'flex-start' ? 'var(--shadow-sm)' : 'none',
-              }}
-            >
-              <p style={{ fontSize: '12px', lineHeight: 1.4, marginBottom: '5px' }}>{message.contenido}</p>
-              <p style={{ fontSize: '9px', opacity: 0.7 }}>{formatDate(message.fechaCreacion)}</p>
-            </article>
+            <div key={message.id} style={{
+              display: 'flex',
+              justifyContent: presentation.align,
+              alignItems: 'flex-end',
+              gap: 8,
+              marginBottom: 4,
+            }}>
+              {presentation.isBot && (
+                <img
+                  src="/isoBot-transparente.png"
+                  alt="EmprendeBot"
+                  style={{ width: 30, height: 30, flexShrink: 0, marginBottom: 17, objectFit: 'contain' }}
+                />
+              )}
+              <div style={{
+                maxWidth: '82%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: presentation.align,
+                gap: 3,
+              }}>
+                <article style={{
+                  padding: '10px 13px',
+                  borderRadius: presentation.align === 'flex-start'
+                    ? '18px 18px 18px 4px'
+                    : '18px 18px 4px 18px',
+                  background: presentation.background,
+                  color: presentation.color,
+                  boxShadow: 'var(--shadow-sm)',
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}>
+                  {message.contenido}
+                </article>
+                <span style={{
+                  padding: '0 4px',
+                  color: 'var(--color-text-secondary)',
+                  fontSize: 9,
+                }}>
+                  {formatDate(message.fechaCreacion)}
+                </span>
+              </div>
+            </div>
           )
         })}
       </div>
