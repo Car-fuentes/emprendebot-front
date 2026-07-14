@@ -1,6 +1,6 @@
 export const brand = {
   primary: '#13A8A2',
-  secondary: '#2563EB',
+  secondary: '#255F80',
   text: '#111827',
   muted: '#6C738E',
   border: '#E5E7EB',
@@ -16,7 +16,7 @@ export const brand = {
 
 export const iconGradients = {
   primary: 'linear-gradient(135deg, #12C8BE 0%, #0B8F8A 100%)',
-  secondary: 'linear-gradient(135deg, #8B5CF6 0%, #2563EB 100%)',
+  secondary: 'linear-gradient(135deg, #3B789C 0%, #255F80 100%)',
   success: 'linear-gradient(135deg, #25D99A 0%, #11B866 100%)',
   warning: 'linear-gradient(135deg, #FBBF24 0%, #F97316 100%)',
   danger: 'linear-gradient(135deg, #FF6A3D 0%, #EF3E1D 100%)',

@@ -185,7 +185,7 @@ export function DashboardPage() {
 
         <main style={{
           flex: 1,
-          padding: '18px 20px 22px',
+          padding: '18px 20px calc(142px + env(safe-area-inset-bottom, 0px))',
           overflowY: 'auto',
         }}>
           <section style={{ marginBottom: '18px' }}>
@@ -282,25 +282,68 @@ export function DashboardPage() {
 
         <button
           type="button"
-          aria-label="Abrir asistente"
+          aria-label="Abrir asistente: ¿En qué te puedo ayudar?"
           onClick={() => business && navigate(`/${business.slug}`)}
           style={{
             position: 'fixed',
-            right: 'calc(50% - 220px)',
-            bottom: 72,
-            width: 42,
-            height: 42,
+            right: 'calc(16px + env(safe-area-inset-right, 0px))',
+            bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
+            maxWidth: 'calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))',
+            border: 0,
+            background: 'transparent',
+            display: 'inline-flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 8,
+            padding: 0,
+            color: brand.text,
+            zIndex: 20,
+          }}
+        >
+          <span style={{
+            minHeight: 37,
+            maxWidth: '100%',
+            padding: '8px 14px',
+            borderRadius: 999,
+            border: `1px solid ${brand.border}`,
+            background: brand.surface,
+            boxShadow: '0 6px 13px rgba(17, 24, 39, 0.18)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 12,
+            fontWeight: 700,
+            lineHeight: 1.2,
+            whiteSpace: 'nowrap',
+          }}>
+            <span aria-hidden="true" style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: '#65E6A5',
+              flexShrink: 0,
+            }} />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              ¿En qué te puedo ayudar?
+            </span>
+          </span>
+          <span aria-hidden="true" style={{
+            width: 62,
+            height: 62,
             borderRadius: '50%',
             border: `2px solid ${brand.primary}`,
             background: brand.surface,
-            boxShadow: '0 8px 20px rgba(17, 24, 39, 0.16)',
+            boxShadow: '0 6px 13px rgba(17, 24, 39, 0.18)',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: 3,
-          }}
-        >
-          <img src="/isoBot.png" alt="" aria-hidden="true" style={{ width: 32, height: 32, objectFit: 'contain' }} />
+            alignSelf: 'flex-end',
+            marginRight: 2,
+            padding: 6,
+            flexShrink: 0,
+          }}>
+            <img src="/isoBot.png" alt="" style={{ width: 50, height: 50, objectFit: 'contain' }} />
+          </span>
         </button>
       </div>
     </>

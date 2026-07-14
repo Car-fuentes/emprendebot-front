@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
-import { Drawer } from '../components/layout/Drawer'
-import { Avatar } from '../components/ui/Avatar'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { ConsultaCard } from '../components/consultas/ConsultaCard'
 import { ConsultaDetail } from '../components/consultas/ConsultaDetail'
+import { Drawer } from '../components/layout/Drawer'
+import { AppIcon } from '../components/ui/AppIcon'
+import { Avatar } from '../components/ui/Avatar'
 import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import {
@@ -14,8 +15,8 @@ import {
 
 const ESTADO_OPTIONS: Array<{ value: ConsultaEstadoFilter; label: string }> = [
   { value: 'todas', label: 'Todas' },
-  { value: 'pendiente', label: 'Pendientes' },
-  { value: 'atendida', label: 'Atendidas' },
+  { value: 'nueva', label: 'Nuevas' },
+  { value: 'en_proceso', label: 'En proceso' },
   { value: 'cerrada', label: 'Cerradas' },
 ]
 
@@ -26,29 +27,27 @@ const CANAL_OPTIONS: Array<{ value: ConsultaCanalFilter; label: string }> = [
 ]
 
 const SORT_OPTIONS: Array<{ value: ConsultaSortOption; label: string }> = [
-  { value: 'recentes', label: 'Mas recientes' },
-  { value: 'antiguas', label: 'Mas antiguas' },
+  { value: 'recentes', label: 'Más recientes' },
+  { value: 'antiguas', label: 'Más antiguas' },
 ]
 
-const fieldStyle: React.CSSProperties = {
+const fieldStyle: CSSProperties = {
   width: '100%',
-  height: '42px',
+  height: 44,
   padding: '0 12px',
   border: '1px solid var(--color-border)',
-  borderRadius: 'var(--radius-sm)',
+  borderRadius: 10,
   background: 'var(--color-bg)',
   color: 'var(--color-text-primary)',
-  fontSize: '13px',
+  fontSize: 12,
   fontFamily: 'var(--font-family)',
   outline: 'none',
 }
 
-const labelStyle: React.CSSProperties = {
-  fontSize: '11px',
-  fontWeight: 700,
+const labelStyle: CSSProperties = {
+  fontSize: 11,
+  fontWeight: 500,
   color: 'var(--color-text-secondary)',
-  letterSpacing: '0.4px',
-  textTransform: 'uppercase',
 }
 
 export function ConsultasPage() {
@@ -71,7 +70,7 @@ export function ConsultasPage() {
     setSearchQuery,
     selectConsulta,
     clearSelection,
-    closeConsulta,
+    updateConsultaStatus,
   } = useConsultas(user?.id)
 
   useEffect(() => {
@@ -96,117 +95,94 @@ export function ConsultasPage() {
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100svh',
-        background: 'var(--color-bg-subtle)',
+        background: 'var(--color-bg)',
       }}>
         <header style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 20px',
+          padding: '13px 20px 7px',
           background: 'var(--color-bg)',
-          borderBottom: '1px solid var(--color-border)',
           position: 'sticky',
           top: 0,
           zIndex: 10,
         }}>
           <button
             type="button"
-            aria-label="Abrir navegacion"
+            aria-label="Abrir navegación"
             onClick={() => setDrawerOpen(true)}
-            style={{ background: 'none', border: 'none', fontSize: '22px', padding: '4px', cursor: 'pointer' }}
+            style={{ color: 'var(--color-text-primary)', padding: 4 }}
           >
-            ☰
+            <AppIcon name="menu" size={20} />
           </button>
-          <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-primary)' }}>
-            EmprendeBot
+          <span aria-hidden="true" style={{ marginLeft: 'auto', marginRight: 14 }}>
+            <AppIcon name="bell" size={19} strokeWidth={1.8} />
           </span>
-          <Avatar name={user.nombre} size={36} />
+          <Avatar name={user.nombre} size={30} />
         </header>
 
-        <main style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
-          <div style={{ marginBottom: '18px' }}>
-            <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '4px' }}>
-              Consultas
-            </h1>
-            <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px' }}>
-              Historial basico de conversaciones e interacciones recibidas.
-            </p>
-          </div>
+        <main style={{ flex: 1, padding: '18px 20px 24px', overflowY: 'auto' }}>
+          {!showingDetail && (
+            <div style={{ marginBottom: 14 }}>
+              <h1 style={{ fontSize: 21, fontWeight: 700, marginBottom: 3 }}>Consultas</h1>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: 11, lineHeight: 1.4 }}>
+                Historial de conversaciones e interacciones recibidas.
+              </p>
+            </div>
+          )}
 
           {!showingDetail && (
             <section
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-                marginBottom: '16px',
-              }}
               aria-label="Filtros de consultas"
+              style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 15 }}
             >
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={labelStyle}>Buscar</span>
-                <input
-                  value={searchQuery}
-                  onChange={event => setSearchQuery(event.target.value)}
-                  placeholder="Buscar cliente o mensaje..."
-                  style={fieldStyle}
-                />
+              <label>
+                <span className="sr-only">Buscar</span>
+                <span style={{ position: 'relative', display: 'block' }}>
+                  <span aria-hidden="true" style={{
+                    position: 'absolute',
+                    left: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none',
+                    zIndex: 1,
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <circle cx="11" cy="11" r="7" />
+                      <path d="m20 20-4-4" />
+                    </svg>
+                  </span>
+                  <input
+                    value={searchQuery}
+                    onChange={event => setSearchQuery(event.target.value)}
+                    placeholder="Buscar cliente o mensaje..."
+                    style={{ ...fieldStyle, paddingLeft: 37, boxShadow: 'var(--shadow-sm)' }}
+                  />
+                </span>
               </label>
 
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(0, 1fr)',
-                gap: '10px',
-              }}>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <span style={labelStyle}>Estado</span>
+              {[
+                { label: 'Estado', value: estadoFilter, onChange: setEstadoFilter, options: ESTADO_OPTIONS },
+                { label: 'Canal', value: canalFilter, onChange: setCanalFilter, options: CANAL_OPTIONS },
+                { label: 'Orden', value: sortOption, onChange: setSortOption, options: SORT_OPTIONS },
+              ].map(field => (
+                <label key={field.label} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={labelStyle}>{field.label}</span>
                   <select
-                    value={estadoFilter}
-                    onChange={event => setEstadoFilter(event.target.value as ConsultaEstadoFilter)}
+                    value={field.value}
+                    onChange={event => field.onChange(event.target.value as never)}
                     style={fieldStyle}
                   >
-                    {ESTADO_OPTIONS.map(option => (
+                    {field.options.map(option => (
                       <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
                   </select>
                 </label>
-
-                <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <span style={labelStyle}>Canal</span>
-                  <select
-                    value={canalFilter}
-                    onChange={event => setCanalFilter(event.target.value as ConsultaCanalFilter)}
-                    style={fieldStyle}
-                  >
-                    {CANAL_OPTIONS.map(option => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <span style={labelStyle}>Orden</span>
-                  <select
-                    value={sortOption}
-                    onChange={event => setSortOption(event.target.value as ConsultaSortOption)}
-                    style={fieldStyle}
-                  >
-                    {SORT_OPTIONS.map(option => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
+              ))}
             </section>
           )}
 
           {isLoading ? (
-            <section style={{
-              padding: '28px 20px',
-              textAlign: 'center',
-              color: 'var(--color-text-secondary)',
-              fontSize: '13px',
-            }}>
+            <section style={{ padding: '28px 20px', textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: 13 }}>
               Cargando consultas...
             </section>
           ) : consultas.length === 0 ? (
@@ -217,46 +193,39 @@ export function ConsultasPage() {
               border: '1px dashed var(--color-border)',
               borderRadius: 'var(--radius-md)',
             }}>
-              <div style={{ fontSize: '34px', marginBottom: '10px' }}>💬</div>
-              <h2 style={{ fontSize: '17px', marginBottom: '6px' }}>Todavia no hay consultas</h2>
-              <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px' }}>
-                Cuando lleguen conversaciones del chat, van a aparecer aca.
+              <AppIcon name="chat" size={34} />
+              <h2 style={{ fontSize: 17, margin: '10px 0 6px' }}>Todavía no hay consultas</h2>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>
+                Cuando lleguen conversaciones del chat, van a aparecer acá.
               </p>
             </section>
+          ) : showingDetail ? (
+            <ConsultaDetail
+              consulta={selectedConsulta}
+              onUpdateStatus={updateConsultaStatus}
+              onBack={clearSelection}
+            />
           ) : (
-            <>
-              {showingDetail ? (
-                <ConsultaDetail
-                  consulta={selectedConsulta}
-                  onCloseConsulta={closeConsulta}
-                  onBack={clearSelection}
+            <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {filteredConsultas.length === 0 ? (
+                <div style={{
+                  padding: '24px 16px',
+                  textAlign: 'center',
+                  color: 'var(--color-text-secondary)',
+                  fontSize: 13,
+                  borderRadius: 'var(--radius-md)',
+                }}>
+                  No hay consultas que coincidan con estos filtros.
+                </div>
+              ) : filteredConsultas.map(consulta => (
+                <ConsultaCard
+                  key={consulta.id}
+                  consulta={consulta}
+                  selected={selectedConsultaId === consulta.id}
+                  onSelect={selectConsulta}
                 />
-              ) : (
-                <section style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {filteredConsultas.length === 0 ? (
-                    <div style={{
-                      padding: '24px 16px',
-                      textAlign: 'center',
-                      color: 'var(--color-text-secondary)',
-                      fontSize: '13px',
-                      background: 'var(--color-bg)',
-                      borderRadius: 'var(--radius-md)',
-                    }}>
-                      No hay consultas que coincidan con estos filtros.
-                    </div>
-                  ) : (
-                    filteredConsultas.map(consulta => (
-                      <ConsultaCard
-                        key={consulta.id}
-                        consulta={consulta}
-                        selected={selectedConsultaId === consulta.id}
-                        onSelect={selectConsulta}
-                      />
-                    ))
-                  )}
-                </section>
-              )}
-            </>
+              ))}
+            </section>
           )}
         </main>
       </div>
