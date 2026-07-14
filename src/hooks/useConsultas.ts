@@ -22,7 +22,7 @@ interface UseConsultasResult {
   setSearchQuery: (query: string) => void
   selectConsulta: (consultaId: string) => void
   clearSelection: () => void
-  closeConsulta: (consultaId: string) => Promise<void>
+  updateConsultaStatus: (consultaId: string, estado: ConsultaEstado) => Promise<void>
   reloadConsultas: () => Promise<void>
 }
 
@@ -90,8 +90,8 @@ export function useConsultas(userId?: string): UseConsultasResult {
 
   const selectedConsulta = useMemo(() => {
     if (!selectedConsultaId) return null
-    return filteredConsultas.find(consulta => consulta.id === selectedConsultaId) ?? null
-  }, [filteredConsultas, selectedConsultaId])
+    return consultas.find(consulta => consulta.id === selectedConsultaId) ?? null
+  }, [consultas, selectedConsultaId])
 
   const selectConsulta = useCallback((consultaId: string) => {
     setSelectedConsultaId(consultaId)
@@ -101,8 +101,8 @@ export function useConsultas(userId?: string): UseConsultasResult {
     setSelectedConsultaId(null)
   }, [])
 
-  const closeConsulta = useCallback(async (consultaId: string) => {
-    const updated = await updateConsultaEstado(consultaId, 'cerrada', userId, 'emprendedor')
+  const updateConsultaStatus = useCallback(async (consultaId: string, estado: ConsultaEstado) => {
+    const updated = await updateConsultaEstado(consultaId, estado, userId)
     if (!updated) return
 
     setConsultas(current => current.map(consulta => (
@@ -127,7 +127,7 @@ export function useConsultas(userId?: string): UseConsultasResult {
     setSearchQuery,
     selectConsulta,
     clearSelection,
-    closeConsulta,
+    updateConsultaStatus,
     reloadConsultas,
   }
 }
