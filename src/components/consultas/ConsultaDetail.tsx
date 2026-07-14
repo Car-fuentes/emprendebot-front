@@ -148,26 +148,56 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDet
           ))}
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '7px' }}>
           {consulta.clienteTelefono && (
             <Button
               type="button"
-              size="sm"
+              size="md"
               variant="outline"
               onClick={() => openWhatsApp(consulta.clienteTelefono!)}
-              style={{ height: 32, padding: '0 12px', fontSize: 11, textTransform: 'none', letterSpacing: 0 }}
+              style={{
+                height: 37,
+                padding: '0 14px',
+                borderWidth: 2,
+                borderColor: 'var(--color-primary)',
+                color: 'var(--color-primary)',
+                background: 'var(--color-bg)',
+                fontSize: 12,
+                fontWeight: 700,
+                textTransform: 'none',
+                letterSpacing: 0,
+              }}
             >
-              <AppIcon name="chat" size={14} strokeWidth={1.8} />
+              <AppIcon name="chat" size={17} strokeWidth={1.8} />
               Abrir WhatsApp
             </Button>
           )}
           <Button
             type="button"
-            size="sm"
+            size="md"
             onClick={() => onUpdateStatus(consulta.id, statusAction.nextEstado)}
-            style={{ height: 32, padding: '0 12px', fontSize: 11, textTransform: 'none', letterSpacing: 0 }}
+            style={{
+              height: 37,
+              padding: '0 14px',
+              border: 'none',
+              background: 'linear-gradient(100deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+              fontSize: 12,
+              fontWeight: 700,
+              textTransform: 'none',
+              letterSpacing: 0,
+            }}
           >
-            <AppIcon name="check" size={14} strokeWidth={2} />
+            <span aria-hidden="true" style={{
+              width: 17,
+              height: 17,
+              border: '2px solid currentColor',
+              borderRadius: '50%',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <AppIcon name="check" size={11} strokeWidth={2.2} />
+            </span>
             {statusAction.label}
           </Button>
         </div>
