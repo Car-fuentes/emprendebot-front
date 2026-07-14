@@ -31,10 +31,7 @@ export function FaqPage() {
     business,
     isBusinessLoading,
     loadBusiness,
-    createFaq: createLocalFaq,
-    updateFaq: updateLocalFaq,
-    deleteFaq: deleteLocalFaq,
-    toggleFaq: toggleLocalFaq,
+    updateBusiness,
   } = useBusiness()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [showForm, setShowForm] = useState(false)
@@ -51,14 +48,6 @@ export function FaqPage() {
   const [suggestionsLoading, setSuggestionsLoading] = useState(false)
   const [hasUnsavedFaqChanges, setHasUnsavedFaqChanges] = useState(false)
   const [pendingDiscardAction, setPendingDiscardAction] = useState<(() => void) | null>(null)
-  const localFaqSource = useMemo(() => ({
-    business,
-    createFaq: createLocalFaq,
-    updateFaq: updateLocalFaq,
-    deleteFaq: deleteLocalFaq,
-    toggleFaq: toggleLocalFaq,
-  }), [business, createLocalFaq, deleteLocalFaq, toggleLocalFaq, updateLocalFaq])
-
   const {
     faqs,
     allFaqs,
@@ -69,7 +58,7 @@ export function FaqPage() {
     updateFaq,
     deleteFaq,
     toggleFaq,
-  } = useFaqs({ status: statusFilter, category: categoryFilter, sort: sortOption }, localFaqSource)
+  } = useFaqs({ status: statusFilter, category: categoryFilter, sort: sortOption })
   const addedSuggestionIds = useMemo(
     () => new Set(allFaqs.map(faq => faq.sourceSuggestionId).filter(Boolean)),
     [allFaqs],
@@ -82,6 +71,13 @@ export function FaqPage() {
   useEffect(() => {
     if (user) loadBusiness(user.id)
   }, [loadBusiness, user])
+
+  // Sincroniza las FAQs del backend al BusinessContext (localStorage)
+  // para que el chatbot público pueda leerlas en este mismo browser.
+  useEffect(() => {
+    if (isFaqLoading) return
+    updateBusiness({ faq: allFaqs })
+  }, [allFaqs, isFaqLoading, updateBusiness])
 
   useEffect(() => {
     if (!location.state?.resetFaqView) return

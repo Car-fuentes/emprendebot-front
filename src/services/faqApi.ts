@@ -3,7 +3,13 @@ import { apiRequest } from './apiClient'
 
 interface FAQListResponse {
   success: boolean
-  faqs: FAQApi[]
+  faqs: {
+    faqs: FAQApi[]
+    total: number
+    page: number
+    limit: number
+    totalPaginas: number
+  }
 }
 
 interface FAQMutationResponse {
@@ -13,8 +19,8 @@ interface FAQMutationResponse {
 }
 
 export async function getFaqsApi(): Promise<FAQApi[]> {
-  const response = await apiRequest<FAQListResponse>('/faqs')
-  return response.faqs
+  const response = await apiRequest<FAQListResponse>('/faqs?page=1&limit=200')
+  return response.faqs.faqs
 }
 
 export async function createFaqApi(payload: CreateFAQPayload): Promise<FAQApi> {
