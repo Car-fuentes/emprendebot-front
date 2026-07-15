@@ -9,12 +9,14 @@ import { QuickReplies } from '../components/chat/QuickReplies'
 import { useBusiness } from '../context/BusinessContext'
 import { useChat } from '../hooks/useChat'
 import type { Business } from '../types'
+import { useAuth } from '../context/AuthContext'
 
 // Página pública: www.emprendebot/[slug]
 export function ChatbotPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
   const { loadBusinessBySlug } = useBusiness()
+  const { user } = useAuth()
   const business = slug ? loadBusinessBySlug(slug) : null
 
   if (!business) {
@@ -43,10 +45,16 @@ export function ChatbotPage() {
     )
   }
 
-  return <PublicChat key={business.id} business={business} />
+  return (
+    <PublicChat
+      key={business.id}
+      business={business}
+      onBackToDashboard={user ? () => navigate('/dashboard') : undefined}
+    />
+  )
 }
 
-function PublicChat({ business }: { business: Business }) {
+function PublicChat({ business, onBackToDashboard }: { business: Business; onBackToDashboard?: () => void }) {
   const { messages, isTyping, sendMessage, submitOrder, reset } = useChat(business)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -94,7 +102,7 @@ function PublicChat({ business }: { business: Business }) {
 
   return (
     <div className="public-chat">
-      <ChatHeader business={business} onRefresh={reset} />
+      <ChatHeader business={business} onRefresh={reset} onBackToDashboard={onBackToDashboard} />
 
       <div ref={messagesContainerRef} className="public-chat__messages">
         {messages.map(message => (
