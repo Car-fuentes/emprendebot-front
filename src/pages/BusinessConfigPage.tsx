@@ -9,6 +9,8 @@ import { Avatar } from '../components/ui/Avatar'
 import { AppIcon } from '../components/ui/AppIcon'
 import { apiRequest } from '../services/apiClient'
 import { brand } from '../styles/brand'
+import { Switch } from '../components/ui/Switch'
+import { useTheme } from '../hooks/useTheme'
 
 interface RubroApi {
   id: string
@@ -58,6 +60,7 @@ const textareaStyle: React.CSSProperties = {
   fontSize: '15px',
   fontFamily: 'var(--font-family)',
   color: 'var(--color-text-primary)',
+  background: 'var(--color-bg)',
   resize: 'vertical',
   outline: 'none',
 }
@@ -86,6 +89,7 @@ export function BusinessConfigPage() {
   const { user } = useAuth()
   const { saveBusiness, business, updateBusiness } = useBusiness()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { isDark, setTheme } = useTheme()
 
   const isEdit = !!business
 
@@ -499,29 +503,23 @@ export function BusinessConfigPage() {
                 <span style={{ fontSize: '16px', fontWeight: 700 }}>Apariencia</span>
               </div>
 
-              {/* Toggle modo claro */}
+              {/* Selector de tema */}
               <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '14px 16px',
               }}>
                 <div>
-                  <p style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 2px' }}>Modo claro</p>
+                  <p style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 2px' }}>Modo oscuro</p>
                   <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: 0 }}>
-                    Cambia entre modo claro y oscuro
+                    Reduce el brillo y adapta los colores de la aplicación
                   </p>
                 </div>
-                <div style={{
-                  width: 44, height: 24, borderRadius: 12,
-                  background: '#E5E7EB',
-                  position: 'relative', cursor: 'not-allowed', opacity: 0.5,
-                }}>
-                  <div style={{
-                    width: 18, height: 18, borderRadius: '50%',
-                    background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                    position: 'absolute', top: 3, left: 3,
-                    transition: 'left 0.2s',
-                  }} />
-                </div>
+                <Switch
+                  checked={isDark}
+                  label={isDark ? 'Activado' : 'Desactivado'}
+                  onChange={checked => setTheme(checked ? 'dark' : 'light')}
+                  style={{ flexDirection: 'row-reverse', gap: 8 }}
+                />
               </div>
             </div>
           )}
@@ -530,8 +528,8 @@ export function BusinessConfigPage() {
           {isEdit && (
             <div style={{
               borderRadius: 'var(--radius-md)',
-              background: 'rgba(19,171,162,0.06)',
-              border: '1px solid rgba(19,171,162,0.2)',
+              background: 'var(--color-demo-bg)',
+              border: '1px solid var(--color-demo-border)',
               padding: '16px',
               display: 'flex', flexDirection: 'column', gap: '12px',
             }}>

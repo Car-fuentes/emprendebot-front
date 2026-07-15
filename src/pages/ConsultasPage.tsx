@@ -191,9 +191,9 @@ export function ConsultasPage() {
                 gap: 11,
                 padding: '12px 14px',
                 marginBottom: 15,
-                border: '1px solid #B8E5E2',
+                border: '1px solid var(--color-demo-border)',
                 borderRadius: 'var(--radius-md)',
-                background: '#F1FBFA',
+                background: 'var(--color-demo-bg)',
                 color: 'var(--color-secondary)',
                 boxShadow: 'var(--shadow-sm)',
               }}

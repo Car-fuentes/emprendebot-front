@@ -108,13 +108,13 @@ export function ProductFormPage() {
   const inputStyle: React.CSSProperties = {
     height: 48,
     padding: '0 14px',
-    border: '1px solid #E5E7EB',
+    border: '1px solid var(--color-border)',
     borderRadius: 8,
     fontSize: 15,
     fontFamily: 'var(--font-family)',
-    color: '#000',
+    color: 'var(--color-text-primary)',
     outline: 'none',
-    background: '#fff',
+    background: 'var(--color-bg)',
     width: '100%',
     boxSizing: 'border-box',
   }
@@ -122,13 +122,13 @@ export function ProductFormPage() {
   const labelStyle: React.CSSProperties = {
     fontSize: 14,
     fontWeight: 600,
-    color: '#000',
+    color: 'var(--color-text-primary)',
   }
 
   return (
     <div style={{
       minHeight: '100svh',
-      background: '#fff',
+      background: 'var(--color-bg)',
       display: 'flex',
       flexDirection: 'column',
     }}>
@@ -138,18 +138,18 @@ export function ProductFormPage() {
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '20px 20px 16px',
-        borderBottom: '1px solid #F0F0F0',
+        borderBottom: '1px solid var(--color-border)',
         position: 'sticky',
         top: 0,
-        background: '#fff',
+        background: 'var(--color-bg)',
         zIndex: 10,
       }}>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#000' }}>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--color-text-primary)' }}>
           {isEditing ? 'Editar producto' : 'Agregar al catálogo'}
         </h2>
         <button
           onClick={() => navigate('/catalogo')}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: '#555', padding: 4, lineHeight: 1 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: 'var(--color-text-secondary)', padding: 4, lineHeight: 1 }}
         >
           ✕
         </button>
@@ -164,13 +164,13 @@ export function ProductFormPage() {
           <div
             onClick={() => fileInputRef.current?.click()}
             style={{
-              border: '1.5px dashed #D1D5DB',
+              border: '1.5px dashed var(--color-border)',
               borderRadius: 12,
               height: 140,
               display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center',
               gap: 8, cursor: 'pointer',
-              background: '#FAFAFA',
+              background: 'var(--color-bg-subtle)',
               overflow: 'hidden',
             }}
           >
@@ -212,14 +212,14 @@ export function ProductFormPage() {
             rows={3}
             style={{
               padding: '12px 14px',
-              border: '1px solid #E5E7EB',
+              border: '1px solid var(--color-border)',
               borderRadius: 8,
               fontSize: 15,
               fontFamily: 'var(--font-family)',
-              color: '#000',
+              color: 'var(--color-text-primary)',
               outline: 'none',
               resize: 'vertical',
-              background: '#fff',
+              background: 'var(--color-bg)',
               width: '100%',
               boxSizing: 'border-box',
             }}
@@ -238,9 +238,9 @@ export function ProductFormPage() {
               style={{
                 flex: 1, height: 40, borderRadius: 8,
                 border: '1.5px solid',
-                borderColor: form.precioConsultar === false ? 'var(--color-primary)' : '#E5E7EB',
-                background: form.precioConsultar === false ? 'rgba(19,171,162,0.08)' : '#fff',
-                color: form.precioConsultar === false ? 'var(--color-primary)' : '#6B7280',
+                borderColor: form.precioConsultar === false ? 'var(--color-primary)' : 'var(--color-border)',
+                background: form.precioConsultar === false ? 'rgba(19,171,162,0.08)' : 'var(--color-bg)',
+                color: form.precioConsultar === false ? 'var(--color-primary)' : 'var(--color-text-secondary)',
                 fontSize: 13, fontWeight: 600,
                 cursor: 'pointer', fontFamily: 'var(--font-family)',
                 transition: 'all 0.15s',
@@ -254,9 +254,9 @@ export function ProductFormPage() {
               style={{
                 flex: 1, height: 40, borderRadius: 8,
                 border: '1.5px solid',
-                borderColor: form.precioConsultar === true ? 'var(--color-primary)' : '#E5E7EB',
-                background: form.precioConsultar === true ? 'rgba(19,171,162,0.08)' : '#fff',
-                color: form.precioConsultar === true ? 'var(--color-primary)' : '#6B7280',
+                borderColor: form.precioConsultar === true ? 'var(--color-primary)' : 'var(--color-border)',
+                background: form.precioConsultar === true ? 'rgba(19,171,162,0.08)' : 'var(--color-bg)',
+                color: form.precioConsultar === true ? 'var(--color-primary)' : 'var(--color-text-secondary)',
                 fontSize: 13, fontWeight: 600,
                 cursor: 'pointer', fontFamily: 'var(--font-family)',
                 transition: 'all 0.15s',
@@ -290,7 +290,7 @@ export function ProductFormPage() {
             onClick={() => navigate('/catalogo')}
             style={{
               flex: 1, height: 48,
-              background: '#fff', color: '#13A8A2',
+              background: 'var(--color-bg)', color: 'var(--color-primary)',
               border: '1.5px solid #13A8A2', borderRadius: 8,
               fontSize: 14, fontWeight: 700, cursor: 'pointer',
               fontFamily: 'var(--font-family)',

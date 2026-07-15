@@ -48,7 +48,7 @@ export function Switch({ checked, label, onChange, disabled, style, ...props }: 
             width: '20px',
             height: '20px',
             borderRadius: '50%',
-            background: '#fff',
+            background: '#FFFFFF',
             position: 'absolute',
             top: '2px',
             left: checked ? '22px' : '2px',

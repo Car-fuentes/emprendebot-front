@@ -424,7 +424,7 @@ export function FaqPage() {
                   width: '20px',
                   height: '20px',
                   borderRadius: '50%',
-                  background: '#EEF0F4',
+                  background: 'var(--color-surface-muted)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -616,7 +616,7 @@ export function FaqPage() {
                                   height: '19px',
                                   borderRadius: '50%',
                                   border: `1px solid ${FAQ_BORDER}`,
-                                  background: '#F8FAFC',
+                                  background: 'var(--color-bg-subtle)',
                                   flexShrink: 0,
                                 }}
                               />
