@@ -64,6 +64,7 @@ export function ConsultasPage() {
     sortOption,
     searchQuery,
     isLoading,
+    isShowingDemo,
     setEstadoFilter,
     setCanalFilter,
     setSortOption,
@@ -179,6 +180,46 @@ export function ConsultasPage() {
                 </label>
               ))}
             </section>
+          )}
+
+          {!showingDetail && isShowingDemo && !isLoading && (
+            <aside
+              aria-label="Consultas de ejemplo"
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 11,
+                padding: '12px 14px',
+                marginBottom: 15,
+                border: '1px solid #B8E5E2',
+                borderRadius: 'var(--radius-md)',
+                background: '#F1FBFA',
+                color: 'var(--color-secondary)',
+                boxShadow: 'var(--shadow-sm)',
+              }}
+            >
+              <span aria-hidden="true" style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                width: 28,
+                height: 28,
+                borderRadius: 9,
+                background: 'var(--color-primary)',
+                color: '#FFFFFF',
+              }}>
+                <AppIcon name="faq" size={16} strokeWidth={2} />
+              </span>
+              <div>
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                  Estas son consultas de ejemplo
+                </p>
+                <p style={{ margin: '3px 0 0', fontSize: 11, lineHeight: 1.45 }}>
+                  Podés explorarlas para conocer cómo funciona esta sección. Cuando recibas tu primera consulta real, estos ejemplos desaparecerán automáticamente.
+                </p>
+              </div>
+            </aside>
           )}
 
           {isLoading ? (

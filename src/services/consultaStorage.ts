@@ -241,10 +241,19 @@ function writeConsultas(consultas: Consulta[], userId?: string) {
   window.localStorage.setItem(storageKey(userId), JSON.stringify(consultas))
 }
 
-export async function getConsultas(_userId?: string): Promise<Consulta[]> {
-  void _userId
-  const response = await apiRequest<{ success: boolean; consultas: Consulta[] }>('/consultations')
-  return response.consultas.map(normalizeConsulta).sort((left, right) => (
+export async function getConsultas(userId?: string): Promise<Consulta[]> {
+  try {
+    const response = await apiRequest<{ success: boolean; consultas: Consulta[] }>('/consultations')
+    if (response.consultas.length > 0) {
+      return response.consultas.map(normalizeConsulta).sort((left, right) => (
+        new Date(right.fechaActualizacion).getTime() - new Date(left.fechaActualizacion).getTime()
+      ))
+    }
+  } catch {
+    // La vista conserva su modo demo cuando la API todavía no está disponible.
+  }
+
+  return readConsultas(userId).sort((left, right) => (
     new Date(right.fechaActualizacion).getTime() - new Date(left.fechaActualizacion).getTime()
   ))
 }
@@ -266,9 +275,29 @@ export async function saveConsulta(consulta: Consulta, userId?: string): Promise
 export async function updateConsultaEstado(
   consultaId: string,
   estado: ConsultaEstado,
-  _userId?: string,
+  userId?: string,
 ): Promise<Consulta | null> {
-  void _userId
+  const isBackendConsultation = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(consultaId)
+
+  if (!isBackendConsultation) {
+    const consultas = readConsultas(userId)
+    const now = new Date().toISOString()
+    let updated: Consulta | null = null
+    const next = consultas.map(consulta => {
+      if (consulta.id !== consultaId) return consulta
+      updated = {
+        ...consulta,
+        estado,
+        cerradaPor: estado === 'cerrada' ? 'emprendedor' : null,
+        fechaActualizacion: now,
+        fechaCierre: estado === 'cerrada' ? now : null,
+      }
+      return updated
+    })
+    writeConsultas(next, userId)
+    return updated
+  }
+
   const response = await apiRequest<{ success: boolean; consulta: Consulta }>(
     `/consultations/${consultaId}/estado`,
     { method: 'PATCH', body: JSON.stringify({ estado }) },
