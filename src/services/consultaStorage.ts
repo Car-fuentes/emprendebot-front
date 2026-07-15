@@ -1,4 +1,5 @@
 import type { Consulta, ConsultaCerradaPor, ConsultaEstado, Mensaje } from '../types'
+import { apiRequest } from './apiClient'
 
 const STORAGE_PREFIX = 'emprendebot:consultas'
 
@@ -196,6 +197,8 @@ function normalizeConsulta(raw: Omit<Consulta, 'estado'> & {
     estadoConsultaId,
     ...consulta
   } = raw
+  void estadoConsulta
+  void estadoConsultaId
 
   return {
     ...consulta,
@@ -238,8 +241,10 @@ function writeConsultas(consultas: Consulta[], userId?: string) {
   window.localStorage.setItem(storageKey(userId), JSON.stringify(consultas))
 }
 
-export async function getConsultas(userId?: string): Promise<Consulta[]> {
-  return readConsultas(userId).sort((left, right) => (
+export async function getConsultas(_userId?: string): Promise<Consulta[]> {
+  void _userId
+  const response = await apiRequest<{ success: boolean; consultas: Consulta[] }>('/consultations')
+  return response.consultas.map(normalizeConsulta).sort((left, right) => (
     new Date(right.fechaActualizacion).getTime() - new Date(left.fechaActualizacion).getTime()
   ))
 }
@@ -261,26 +266,12 @@ export async function saveConsulta(consulta: Consulta, userId?: string): Promise
 export async function updateConsultaEstado(
   consultaId: string,
   estado: ConsultaEstado,
-  userId?: string,
+  _userId?: string,
 ): Promise<Consulta | null> {
-  const consultas = readConsultas(userId)
-  const now = new Date().toISOString()
-  let updated: Consulta | null = null
-
-  const next = consultas.map(consulta => {
-    if (consulta.id !== consultaId) return consulta
-
-    updated = {
-      ...consulta,
-      estado,
-      cerradaPor: estado === 'cerrada' ? 'emprendedor' : null,
-      fechaActualizacion: now,
-      fechaCierre: estado === 'cerrada' ? now : null,
-    }
-
-    return updated
-  })
-
-  writeConsultas(next, userId)
-  return updated
+  void _userId
+  const response = await apiRequest<{ success: boolean; consulta: Consulta }>(
+    `/consultations/${consultaId}/estado`,
+    { method: 'PATCH', body: JSON.stringify({ estado }) },
+  )
+  return normalizeConsulta(response.consulta)
 }

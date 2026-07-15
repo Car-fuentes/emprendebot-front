@@ -13,6 +13,7 @@ import {
   saveAwaitingInput,
   saveChatHistory,
 } from '../services/chatStorage'
+import { createPublicConsultation, savePublicMessage, updatePublicContact } from '../services/publicConsultationApi'
 
 const QUICK_REPLIES_INICIAL = [
   'Ver catálogo',
@@ -237,6 +238,24 @@ export function useChat(business: Business) {
   const responseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingResponseResolverRef = useRef<(() => void) | null>(null)
   const conversationVersionRef = useRef(0)
+  const consultationPromiseRef = useRef<Promise<string | null> | null>(null)
+
+  const ensureConsultation = useCallback((): Promise<string | null> => {
+    if (!consultationPromiseRef.current) {
+      const storageKey = `emprendebot:consulta:${business.slug}`
+      const storedId = sessionStorage.getItem(storageKey)
+      consultationPromiseRef.current = storedId
+        ? Promise.resolve(storedId)
+        : createPublicConsultation(business.slug, crypto.randomUUID())
+            .then(async consultationId => {
+              sessionStorage.setItem(storageKey, consultationId)
+              await savePublicMessage(business.slug, consultationId, 'bot', createInitialMessage(business).text)
+              return consultationId
+            })
+            .catch(() => null)
+    }
+    return consultationPromiseRef.current
+  }, [business])
 
   const cancelPendingResponse = useCallback(() => {
     if (responseTimeoutRef.current) {
@@ -271,6 +290,11 @@ export function useChat(business: Business) {
     })
     setIsTyping(true)
 
+    const consultationId = await ensureConsultation()
+    if (consultationId) {
+      void savePublicMessage(business.slug, consultationId, 'cliente', text).catch(() => undefined)
+    }
+
     const conversationVersion = conversationVersionRef.current
     await new Promise<void>(resolve => {
       pendingResponseResolverRef.current = resolve
@@ -298,6 +322,7 @@ export function useChat(business: Business) {
         saveChatHistory(business.id, next)
         return next
       })
+      if (consultationId) void savePublicMessage(business.slug, consultationId, 'bot', botMsg.text).catch(() => undefined)
       setAwaitingInput('contact-phone')
       saveAwaitingInput(business.id, 'contact-phone')
       setIsTyping(false)
@@ -306,6 +331,9 @@ export function useChat(business: Business) {
 
     if (awaitingInput === 'contact-phone') {
       const phone = text.trim()
+      if (consultationId) {
+        void updatePublicContact(business.slug, consultationId, contactName, phone).catch(() => undefined)
+      }
       // TODO: POST /api/consultas cuando el backend esté listo
       console.log('Derivación a asesor:', { nombre: contactName, telefono: phone, businessId: business.id })
       const botMsg: Message = {
@@ -320,6 +348,7 @@ export function useChat(business: Business) {
         saveChatHistory(business.id, next)
         return next
       })
+      if (consultationId) void savePublicMessage(business.slug, consultationId, 'bot', botMsg.text).catch(() => undefined)
       setAwaitingInput(null)
       saveAwaitingInput(business.id, null)
       setContactName('')
@@ -338,10 +367,15 @@ export function useChat(business: Business) {
       saveChatHistory(business.id, nextMessages)
       return nextMessages
     })
+    if (consultationId) {
+      botMessages.forEach(message => {
+        void savePublicMessage(business.slug, consultationId, 'bot', message.text).catch(() => undefined)
+      })
+    }
     setAwaitingInput(nextAwaitingInput)
     saveAwaitingInput(business.id, nextAwaitingInput)
     setIsTyping(false)
-  }, [awaitingInput, business, contactName, isTyping])
+  }, [awaitingInput, business, contactName, ensureConsultation, isTyping])
 
   const submitOrder = useCallback((items: OrderItem[]) => {
     const summary = items.map(i => `${i.product.nombre} x${i.quantity}`).join(', ')
@@ -384,7 +418,12 @@ export function useChat(business: Business) {
       saveChatHistory(business.id, next)
       return next
     })
-  }, [business])
+    void ensureConsultation().then(async consultationId => {
+      if (!consultationId) return
+      await savePublicMessage(business.slug, consultationId, 'cliente', userMsg.text)
+      await savePublicMessage(business.slug, consultationId, 'bot', botMsg.text)
+    }).catch(() => undefined)
+  }, [business, ensureConsultation])
 
   const reset = useCallback(() => {
     conversationVersionRef.current += 1
@@ -392,6 +431,8 @@ export function useChat(business: Business) {
 
     clearChatHistory(business.id)
     clearChatState(business.id)
+    sessionStorage.removeItem(`emprendebot:consulta:${business.slug}`)
+    consultationPromiseRef.current = null
     const initialMessages = [createInitialMessage(business)]
     setMessages(initialMessages)
     setAwaitingInput(null)
