@@ -482,43 +482,79 @@ export function BusinessConfigPage() {
           {/* Apariencia — solo en modo edición (placeholder) */}
           {isEdit && (
             <div style={{
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--color-border)',
-              overflow: 'hidden',
+              padding: '16px',
+              borderRadius: 12,
+              border: `1px solid ${isDark ? '#DCE3EC' : '#31435C'}`,
+              background: isDark ? '#F7F9FC' : '#1D2A3D',
+              boxShadow: 'var(--shadow-sm)',
             }}>
-              {/* Header */}
               <div style={{
-                display: 'flex', alignItems: 'center', gap: '10px',
-                padding: '14px 16px',
-                borderBottom: '1px solid var(--color-border)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 9,
+                marginBottom: 15,
               }}>
                 <div style={{
-                  width: 36, height: 36, borderRadius: '50%',
-                  background: brand.primaryGradient,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: '#1CB8BF',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   flexShrink: 0,
                 }}>
-                  <span style={{ fontSize: '18px' }}>✨</span>
+                  {isDark ? (
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="4" />
+                      <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41" />
+                    </svg>
+                  ) : (
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M20.5 14.2A8.2 8.2 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2Z" />
+                    </svg>
+                  )}
                 </div>
-                <span style={{ fontSize: '16px', fontWeight: 700 }}>Apariencia</span>
+                <span style={{
+                  color: isDark ? '#111B27' : '#F2F7FA',
+                  fontSize: 14,
+                  fontWeight: 700,
+                }}>
+                  Apariencia
+                </span>
               </div>
 
-              {/* Selector de tema */}
               <div style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '14px 16px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 16,
               }}>
-                <div>
-                  <p style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 2px' }}>Modo oscuro</p>
-                  <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: 0 }}>
-                    Reduce el brillo y adapta los colores de la aplicación
+                <div style={{ minWidth: 0 }}>
+                  <p style={{
+                    color: isDark ? '#111B27' : '#F2F7FA',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    margin: '0 0 3px',
+                  }}>
+                    {isDark ? 'Modo claro' : 'Modo oscuro'}
+                  </p>
+                  <p style={{
+                    color: isDark ? '#6C738E' : '#A8B5C3',
+                    fontSize: 11,
+                    lineHeight: 1.4,
+                    margin: 0,
+                  }}>
+                    Cambia entre modo claro y oscuro
                   </p>
                 </div>
                 <Switch
                   checked={isDark}
-                  label={isDark ? 'Activado' : 'Desactivado'}
+                  label=""
+                  aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
                   onChange={checked => setTheme(checked ? 'dark' : 'light')}
-                  style={{ flexDirection: 'row-reverse', gap: 8 }}
+                  style={{ flexShrink: 0 }}
                 />
               </div>
             </div>
