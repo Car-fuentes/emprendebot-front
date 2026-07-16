@@ -7,6 +7,7 @@ import { AppIcon } from '../components/ui/AppIcon'
 import { Avatar } from '../components/ui/Avatar'
 import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
+import { brand } from '../styles/brand'
 import {
   useConsultas,
   type ConsultaCanalFilter,
@@ -139,7 +140,12 @@ export function ConsultasPage() {
           <Avatar name={user.nombre} size={30} />
         </header>
 
-        <main style={{ flex: 1, padding: '18px 20px 24px', overflowY: 'auto' }}>
+        <main style={{
+          flex: 1,
+          padding: '18px 20px 24px',
+          overflowY: 'auto',
+          background: showingDemoIntro ? 'var(--color-bg-subtle)' : 'var(--color-bg)',
+        }}>
           <button
             type="button"
             onClick={handleBack}
@@ -275,40 +281,42 @@ export function ConsultasPage() {
 
           {showingDemoIntro ? (
             <section style={{
-              minHeight: 392,
-              padding: '62px 22px 22px',
+              padding: '48px 24px',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
+              gap: 16,
               textAlign: 'center',
               background: 'var(--color-bg)',
               border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-md)',
+              borderRadius: 16,
               boxShadow: 'var(--shadow-sm)',
             }}>
               <span aria-hidden="true" style={{
-                width: 64,
-                height: 64,
+                width: 80,
+                height: 80,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: 17,
+                borderRadius: 20,
                 background: 'rgba(19, 168, 162, 0.11)',
                 color: 'var(--color-primary)',
               }}>
-                <AppIcon name="chat" size={31} strokeWidth={1.8} />
+                <AppIcon name="chat" size={38} strokeWidth={1.8} />
               </span>
 
-              <h2 style={{ fontSize: 18, lineHeight: 1.35, margin: '17px auto 20px', maxWidth: 250 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.35, margin: 0, padding: 10, maxWidth: 280 }}>
                 Todavía no recibiste consultas
               </h2>
 
               <p style={{
-                width: '100%',
+                maxWidth: 260,
+                margin: 0,
+                padding: 8,
                 color: 'var(--color-text-secondary)',
-                fontSize: 12,
-                lineHeight: 1.55,
-                textAlign: 'left',
+                fontSize: 14,
+                lineHeight: 1.5,
+                textAlign: 'center',
               }}>
                 Cuando un cliente inicie una conversación desde el chatbot, la consulta aparecerá aquí automáticamente.
               </p>
@@ -317,16 +325,15 @@ export function ConsultasPage() {
                 type="button"
                 onClick={() => setDemoStarted(true)}
                 style={{
-                  width: '100%',
-                  minHeight: 44,
-                  marginTop: 'auto',
-                  borderRadius: 9,
-                  background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                  margin: 12,
+                  padding: '14px 40px',
+                  borderRadius: 'var(--radius-md)',
+                  background: brand.primaryGradient,
                   color: '#FFFFFF',
-                  boxShadow: 'var(--shadow-md)',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  letterSpacing: '0.01em',
+                  boxShadow: brand.shadowAction,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  letterSpacing: 1,
                 }}
               >
                 COMENZAR

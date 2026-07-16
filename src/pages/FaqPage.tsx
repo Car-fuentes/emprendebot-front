@@ -334,6 +334,8 @@ export function FaqPage() {
 
   if (!user) return null
 
+  const showingFaqIntro = !showForm && !showSuggestions && allFaqs.length === 0
+
   return (
     <>
       <Drawer
@@ -388,7 +390,12 @@ export function FaqPage() {
           <Avatar name={user.nombre} size={32} bgColor={brand.primaryGradient} />
         </header>
 
-        <main style={{ flex: 1, padding: '18px 20px 28px', overflowY: 'auto', background: 'var(--color-bg)' }}>
+        <main style={{
+          flex: 1,
+          padding: '18px 20px 28px',
+          overflowY: 'auto',
+          background: showingFaqIntro ? 'var(--color-bg-subtle)' : 'var(--color-bg)',
+        }}>
           <>
             <button
               type="button"
@@ -673,28 +680,31 @@ export function FaqPage() {
 
               {!showSuggestions && !showForm && allFaqs.length === 0 ? (
                 <section style={{
-                  padding: '38px 22px 30px',
+                  padding: '48px 24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 16,
                   textAlign: 'center',
                   background: brand.surface,
                   border: `1px solid ${FAQ_BORDER}`,
-                  borderRadius: '10px',
+                  borderRadius: '16px',
                   boxShadow: FAQ_CARD_SHADOW,
                 }}>
                   <div style={{
-                    width: '60px',
-                    height: '60px',
-                    margin: '0 auto 18px',
-                    borderRadius: '14px',
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: '20px',
                     background: 'rgba(19, 168, 162, 0.12)',
                     color: FAQ_PRIMARY,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '28px',
+                    fontSize: '36px',
                     fontWeight: 400,
                   }}>?</div>
-                  <h2 style={{ fontSize: '17px', marginBottom: '18px', color: FAQ_TEXT, fontWeight: 800 }}>Todavia no hay FAQs</h2>
-                  <p style={{ color: FAQ_MUTED, fontSize: '12px', lineHeight: 1.45, margin: '0 auto 28px', maxWidth: '220px' }}>
+                  <h2 style={{ fontSize: '22px', margin: 0, padding: 10, color: FAQ_TEXT, fontWeight: 700 }}>Todavia no hay FAQs</h2>
+                  <p style={{ color: FAQ_MUTED, fontSize: '14px', lineHeight: 1.5, margin: 0, padding: 8, maxWidth: '260px' }}>
                     Agrega preguntas frecuentes para ayudar a tus clientes y automatizar respuestas.
                   </p>
                   <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -702,18 +712,20 @@ export function FaqPage() {
                       type="button"
                       onClick={() => void openSuggestions()}
                       style={{
-                        width: 'min(100%, 138px)',
-                        height: '45px',
-                        borderRadius: '10px',
+                        width: 'auto',
+                        height: 'auto',
+                        margin: 12,
+                        padding: '14px 40px',
+                        borderRadius: 'var(--radius-md)',
                         background: brand.primaryGradient,
                         border: 'none',
                         boxShadow: brand.shadowAction,
-                        fontSize: '12px',
-                        fontWeight: 800,
-                        letterSpacing: 0,
+                        fontSize: '14px',
+                        fontWeight: 700,
+                        letterSpacing: 1,
                       }}
                     >
-                      Comenzar
+                      COMENZAR
                     </Button>
                   </div>
                 </section>
