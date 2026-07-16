@@ -130,11 +130,6 @@ export function FaqPage() {
 
   const handleInternalBack = () => {
     if (showSuggestions) {
-      if (allFaqs.length === 0) {
-        navigate('/dashboard')
-        return
-      }
-
       closeSuggestions()
       return
     }
@@ -336,11 +331,6 @@ export function FaqPage() {
       setBusyFaqId(null)
     }
   }
-
-  useEffect(() => {
-    if (isBusinessLoading || isFaqLoading || showForm || showSuggestions || allFaqs.length > 0) return
-    void openSuggestions()
-  }, [allFaqs.length, isBusinessLoading, isFaqLoading, showForm, showSuggestions])
 
   if (!user) return null
 
