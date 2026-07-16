@@ -149,16 +149,40 @@ export function ProductFormPage() {
         <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--color-text-primary)' }}>
           {isEditing ? 'Editar producto' : 'Agregar al catálogo'}
         </h2>
-        <button
-          onClick={() => navigate('/catalogo')}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: 'var(--color-text-secondary)', padding: 4, lineHeight: 1 }}
-        >
-          ✕
-        </button>
       </div>
 
       {/* Formulario */}
       <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20, flex: 1 }}>
+
+        <button
+          type="button"
+          onClick={() => navigate('/catalogo')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            alignSelf: 'flex-start',
+            gap: 8,
+            padding: 0,
+            color: 'var(--color-text-primary)',
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
+          <span aria-hidden="true" style={{
+            width: 20,
+            height: 20,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '50%',
+            background: 'var(--color-surface-muted)',
+            fontSize: 14,
+            lineHeight: 1,
+          }}>
+            {'<'}
+          </span>
+          Volver
+        </button>
 
         {/* Tipo de precio */}
         <div style={{

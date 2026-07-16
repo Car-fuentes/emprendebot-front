@@ -76,8 +76,39 @@ export function CatalogPage() {
         <Avatar name={user?.nombre ?? ''} size={36} />
       </div>
 
+      <div style={{ padding: '18px 20px 0' }}>
+        <button
+          type="button"
+          onClick={() => navigate('/dashboard')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: 0,
+            color: 'var(--color-text-primary)',
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
+          <span aria-hidden="true" style={{
+            width: 20,
+            height: 20,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '50%',
+            background: 'var(--color-surface-muted)',
+            fontSize: 14,
+            lineHeight: 1,
+          }}>
+            {'<'}
+          </span>
+          Volver
+        </button>
+      </div>
+
       {/* Título */}
-      <div style={{ padding: '24px 20px 8px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      <div style={{ padding: '14px 20px 8px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>Catálogo</h1>
           <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>Gestiona tus productos y servicios</p>
