@@ -4,22 +4,27 @@ import { Button } from '../components/ui/Button'
 import { useAuth } from '../context/AuthContext'
 import { brand } from '../styles/brand'
 
+type GoogleMockStep = 'accounts' | 'verifying' | 'welcome' | null
+
 export function PresentationPage() {
   const navigate = useNavigate()
   const { loginWithGoogle } = useAuth()
   const [googleLoading, setGoogleLoading] = useState(false)
   const [googleError, setGoogleError] = useState('')
-  const [showGoogleMock, setShowGoogleMock] = useState(false)
+  const [googleMockStep, setGoogleMockStep] = useState<GoogleMockStep>(null)
 
   const handleGoogleLogin = async () => {
     setGoogleError('')
     setGoogleLoading(true)
+    setGoogleMockStep('verifying')
     try {
       await loginWithGoogle()
-      setShowGoogleMock(false)
+      setGoogleMockStep('welcome')
+      await new Promise(resolve => window.setTimeout(resolve, 1200))
       navigate('/configurar')
     } catch (error) {
       setGoogleError(error instanceof Error ? error.message : 'No pudimos continuar con Google.')
+      setGoogleMockStep(null)
     } finally {
       setGoogleLoading(false)
     }
@@ -98,7 +103,7 @@ export function PresentationPage() {
           size="lg"
           fullWidth
           loading={googleLoading}
-          onClick={() => setShowGoogleMock(true)}
+          onClick={() => setGoogleMockStep('accounts')}
           aria-label="Continuar con Google"
           style={{
             minHeight: 52,
@@ -136,13 +141,111 @@ export function PresentationPage() {
         </Button>
       </section>
 
-      {showGoogleMock && (
+      {googleMockStep === 'accounts' && (
         <GoogleAccountMock
           loading={googleLoading}
-          onClose={() => !googleLoading && setShowGoogleMock(false)}
+          onClose={() => !googleLoading && setGoogleMockStep(null)}
           onSelect={handleGoogleLogin}
         />
       )}
+
+      {googleMockStep === 'verifying' && (
+        <GoogleStatusMock
+          variant="verifying"
+          title="Usuario Demo"
+          description="Verificando identidad..."
+        />
+      )}
+
+      {googleMockStep === 'welcome' && (
+        <GoogleStatusMock
+          variant="welcome"
+          title="¡Bienvenido, Usuario Demo!"
+          description="Ingresando a EmprendeBot..."
+        />
+      )}
+    </div>
+  )
+}
+
+function GoogleStatusMock({
+  variant,
+  title,
+  description,
+}: {
+  variant: 'verifying' | 'welcome'
+  title: string
+  description: string
+}) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 110,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 12,
+        background: 'rgba(0, 0, 0, 0.24)',
+      }}
+    >
+      <div style={{
+        width: '100%',
+        maxWidth: 390,
+        minHeight: 195,
+        padding: '28px 24px 24px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 20,
+        background: '#fff',
+        color: '#202124',
+        boxShadow: '0 10px 32px rgba(0, 0, 0, 0.2)',
+        textAlign: 'center',
+      }}>
+        {variant === 'verifying' ? (
+          <span style={{
+            width: 50,
+            height: 50,
+            display: 'grid',
+            placeItems: 'center',
+            marginBottom: 14,
+            border: '5px solid #78909c',
+            borderTopColor: '#1a73e8',
+            borderRadius: '50%',
+            background: '#f72559',
+            color: '#fff',
+            fontSize: 22,
+            fontWeight: 500,
+            animation: 'google-verify-pulse 1s ease-in-out infinite',
+          }}>
+            M
+          </span>
+        ) : (
+          <span style={{
+            width: 50,
+            height: 50,
+            display: 'grid',
+            placeItems: 'center',
+            marginBottom: 14,
+            borderRadius: '50%',
+            background: '#00c853',
+            color: '#fff',
+            boxShadow: '0 6px 12px rgba(0, 200, 83, 0.24)',
+          }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+              <path d="m5 12 4 4L19 6" />
+            </svg>
+          </span>
+        )}
+
+        <strong style={{ marginBottom: 2, fontSize: 14 }}>{title}</strong>
+        <span style={{ color: '#6c738e', fontSize: 13 }}>{description}</span>
+      </div>
     </div>
   )
 }
