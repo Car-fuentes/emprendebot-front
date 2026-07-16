@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ConsultaCard } from '../components/consultas/ConsultaCard'
 import { ConsultaDetail } from '../components/consultas/ConsultaDetail'
 import { Drawer } from '../components/layout/Drawer'
@@ -51,6 +52,7 @@ const labelStyle: CSSProperties = {
 }
 
 export function ConsultasPage() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { business, loadBusiness } = useBusiness()
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -82,7 +84,21 @@ export function ConsultasPage() {
   if (!user) return null
 
   const showingDetail = Boolean(selectedConsultaId && selectedConsulta)
-  const showingDemoIntro = !demoStarted && (isLoading || isShowingDemo)
+  const showingDemoIntro = isLoading || (isShowingDemo && !demoStarted)
+
+  const handleBack = () => {
+    if (showingDetail) {
+      clearSelection()
+      return
+    }
+
+    if (isShowingDemo && demoStarted) {
+      setDemoStarted(false)
+      return
+    }
+
+    navigate('/dashboard')
+  }
 
   return (
     <>
@@ -124,6 +140,39 @@ export function ConsultasPage() {
         </header>
 
         <main style={{ flex: 1, padding: '18px 20px 24px', overflowY: 'auto' }}>
+          <button
+            type="button"
+            onClick={handleBack}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              marginBottom: showingDetail ? 22 : 12,
+              padding: 0,
+              color: 'var(--color-text-primary)',
+              fontSize: 12,
+              fontWeight: 700,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: 20,
+                height: 20,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%',
+                background: 'var(--color-surface-muted)',
+                fontSize: 14,
+                lineHeight: 1,
+              }}
+            >
+              {'<'}
+            </span>
+            Volver
+          </button>
+
           {!showingDetail && (
             <div style={{ marginBottom: 14 }}>
               <h1 style={{ fontSize: 21, fontWeight: 700, marginBottom: 3 }}>Consultas</h1>
@@ -266,7 +315,6 @@ export function ConsultasPage() {
 
               <button
                 type="button"
-                disabled={isLoading}
                 onClick={() => setDemoStarted(true)}
                 style={{
                   width: '100%',
@@ -306,7 +354,6 @@ export function ConsultasPage() {
             <ConsultaDetail
               consulta={selectedConsulta}
               onUpdateStatus={updateConsultaStatus}
-              onBack={clearSelection}
             />
           ) : (
             <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
