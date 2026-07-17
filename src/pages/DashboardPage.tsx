@@ -67,7 +67,7 @@ function QuickAccessCard({
         width: 42,
         height: 42,
         borderRadius: '11px',
-        background: '#EEF2F7',
+        background: 'var(--color-surface-muted)',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -282,7 +282,7 @@ export function DashboardPage() {
 
         <button
           type="button"
-          aria-label="Abrir asistente: ¿En qué te puedo ayudar?"
+          aria-label="Abrir asistente: Probá tu Bot"
           onClick={() => business && navigate(`/${business.slug}`)}
           style={{
             position: 'fixed',
@@ -324,7 +324,7 @@ export function DashboardPage() {
               flexShrink: 0,
             }} />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              ¿En qué te puedo ayudar?
+              Probá tu Bot
             </span>
           </span>
           <span aria-hidden="true" style={{
@@ -341,8 +341,9 @@ export function DashboardPage() {
             marginRight: 2,
             padding: 6,
             flexShrink: 0,
+            overflow: 'hidden',
           }}>
-            <img src="/isoBot.png" alt="" style={{ width: 50, height: 50, objectFit: 'contain' }} />
+            <img src="/isoBot-transparente.png" alt="" style={{ width: 50, height: 50, objectFit: 'contain' }} />
           </span>
         </button>
       </div>

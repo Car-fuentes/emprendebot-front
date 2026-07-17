@@ -56,8 +56,8 @@ export function CatalogPage() {
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '16px 20px',
-        background: '#fff',
-        borderBottom: '1px solid #F0F0F0',
+        background: 'var(--color-bg)',
+        borderBottom: '1px solid var(--color-border)',
         position: 'sticky',
         top: 0,
         zIndex: 10,
@@ -76,11 +76,42 @@ export function CatalogPage() {
         <Avatar name={user?.nombre ?? ''} size={36} />
       </div>
 
+      <div style={{ padding: '18px 20px 0' }}>
+        <button
+          type="button"
+          onClick={() => navigate('/dashboard')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: 0,
+            color: 'var(--color-text-primary)',
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
+          <span aria-hidden="true" style={{
+            width: 20,
+            height: 20,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '50%',
+            background: 'var(--color-surface-muted)',
+            fontSize: 14,
+            lineHeight: 1,
+          }}>
+            {'<'}
+          </span>
+          Volver
+        </button>
+      </div>
+
       {/* Título */}
-      <div style={{ padding: '24px 20px 8px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      <div style={{ padding: '14px 20px 8px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0, color: '#000' }}>Catálogo</h1>
-          <p style={{ fontSize: 14, color: '#6C738E', margin: '4px 0 0' }}>Gestiona tus productos y servicios</p>
+          <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>Catálogo</h1>
+          <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>Gestiona tus productos y servicios</p>
         </div>
         {productos.length > 0 && (
           <button
@@ -110,10 +141,10 @@ export function CatalogPage() {
         {productos.length === 0 ? (
           /* Empty state */
           <div style={{
-            background: '#fff',
+            background: 'var(--color-bg)',
             borderRadius: 16,
-            border: '1px solid #F0F0F0',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+            border: '1px solid var(--color-border)',
+            boxShadow: 'var(--shadow-sm)',
             padding: '48px 24px',
             margin: '8px 0 0',
             display: 'flex',
@@ -124,10 +155,10 @@ export function CatalogPage() {
           }}>
             <img src="/cajaVacia.png" alt="Catálogo vacío" style={{ width: 80, height: 80, objectFit: 'contain', borderRadius: 20 }} />
             <div>
-              <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 8px', padding: 10 ,color: '#000' }}>
+              <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 8px', padding: 10 ,color: 'var(--color-text-primary)' }}>
                 Tu catálogo está vacío
               </h2>
-              <p style={{ fontSize: 14, color: '#6C738E', margin: 0, padding: 8,maxWidth: 260 }}>
+              <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: 0, padding: 8,maxWidth: 260 }}>
                 Agrega tu primer producto o servicio para comenzar a recibir consultas y presupuestos.
               </p>
             </div>
@@ -155,8 +186,8 @@ export function CatalogPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {productos.map(p => (
               <div key={p.id} style={{
-                background: '#fff',
-                border: '1px solid #E5E7EB',
+                background: 'var(--color-bg)',
+                border: '1px solid var(--color-border)',
                 borderRadius: 12,
                 padding: '14px 16px',
                 display: 'flex',
@@ -178,9 +209,9 @@ export function CatalogPage() {
 
                 {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontWeight: 700, fontSize: 15, color: '#000' }}>{p.nombre}</p>
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: 15, color: 'var(--color-text-primary)' }}>{p.nombre}</p>
                   {p.descripcion && (
-                    <p style={{ margin: '2px 0 0', fontSize: 13, color: '#6C738E', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--color-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {p.descripcion}
                     </p>
                   )}
@@ -237,16 +268,16 @@ export function CatalogPage() {
             onClick={e => e.stopPropagation()}
             style={{
               width: '100%', maxWidth: 400,
-              background: '#fff', borderRadius: 20,
+              background: 'var(--color-bg)', borderRadius: 20,
               padding: '28px 20px 24px',
               display: 'flex', flexDirection: 'column', gap: 16,
             }}
           >
             <div>
-              <p style={{ margin: '0 0 6px', fontSize: 17, fontWeight: 700, color: '#111', lineHeight: 1.35 }}>
+              <p style={{ margin: '0 0 6px', fontSize: 17, fontWeight: 700, color: 'var(--color-text-primary)', lineHeight: 1.35 }}>
                 Configurá cómo querés ofrecer este producto o servicio.
               </p>
-              <p style={{ margin: 0, fontSize: 13, color: '#6C738E', lineHeight: 1.5 }}>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
                 La elección en cada producto determinará cómo se mostrará en tu catálogo.
               </p>
             </div>
@@ -257,14 +288,14 @@ export function CatalogPage() {
                 onClick={() => handlePricingChoice(false)}
                 style={{
                   flex: 1, padding: '18px 12px',
-                  border: '1.5px solid #E5E7EB', borderRadius: 14,
-                  background: '#fff', cursor: 'pointer',
+                  border: '1.5px solid var(--color-border)', borderRadius: 14,
+                  background: 'var(--color-bg)', cursor: 'pointer',
                   display: 'flex', flexDirection: 'column', gap: 10,
                   textAlign: 'left', fontFamily: 'var(--font-family)',
                   transition: 'border-color 0.15s',
                 }}
                 onMouseEnter={e => (e.currentTarget.style.borderColor = '#13A8A2')}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = '#E5E7EB')}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
               >
                 <div style={{
                   width: 44, height: 44, borderRadius: '50%',
@@ -277,7 +308,7 @@ export function CatalogPage() {
                   </svg>
                 </div>
                 <div>
-                  <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: '#111' }}>Precio fijo</p>
+                  <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: 'var(--color-text-primary)' }}>Precio fijo</p>
                   <p style={{ margin: 0, fontSize: 12, color: '#13A8A2', lineHeight: 1.4 }}>
                     El cliente ve el precio directamente
                   </p>
@@ -289,14 +320,14 @@ export function CatalogPage() {
                 onClick={() => handlePricingChoice(true)}
                 style={{
                   flex: 1, padding: '18px 12px',
-                  border: '1.5px solid #E5E7EB', borderRadius: 14,
-                  background: '#fff', cursor: 'pointer',
+                  border: '1.5px solid var(--color-border)', borderRadius: 14,
+                  background: 'var(--color-bg)', cursor: 'pointer',
                   display: 'flex', flexDirection: 'column', gap: 10,
                   textAlign: 'left', fontFamily: 'var(--font-family)',
                   transition: 'border-color 0.15s',
                 }}
                 onMouseEnter={e => (e.currentTarget.style.borderColor = '#13A8A2')}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = '#E5E7EB')}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
               >
                 <div style={{
                   width: 44, height: 44, borderRadius: '50%',
@@ -310,7 +341,7 @@ export function CatalogPage() {
                   </svg>
                 </div>
                 <div>
-                  <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: '#111' }}>Requiere cotización</p>
+                  <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 700, color: 'var(--color-text-primary)' }}>Requiere cotización</p>
                   <p style={{ margin: 0, fontSize: 12, color: '#13A8A2', lineHeight: 1.4 }}>
                     Se muestra como "Precio a convenir"
                   </p>
@@ -331,11 +362,11 @@ export function CatalogPage() {
         }}>
           <div style={{
             width: '75%', maxWidth: 340,
-            background: '#fff',
+            background: 'var(--color-bg)',
             borderRadius: 16,
             padding: '28px 20px 20px',
           }}>
-            <p style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 600, color: '#000', textAlign: 'center' }}>
+            <p style={{ margin: '0 0 20px', fontSize: 15, fontWeight: 600, color: 'var(--color-text-primary)', textAlign: 'center' }}>
               ¿Estás seguro de que deseas eliminarlo?
             </p>
             <div style={{ display: 'flex', gap: 10 }}>
@@ -343,7 +374,7 @@ export function CatalogPage() {
                 onClick={() => setDeleteTarget(null)}
                 style={{
                   flex: 1, height: 44,
-                  background: '#fff', color: '#13A8A2',
+                  background: 'var(--color-bg)', color: 'var(--color-primary)',
                   border: '1.5px solid #13A8A2', borderRadius: 8,
                   fontSize: 13, fontWeight: 700, cursor: 'pointer',
                   fontFamily: 'var(--font-family)',

@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
+  loginWithGoogle: () => Promise<User>
   register: (nombre: string, email: string, password: string, rubro: string) => Promise<User>
   logout: () => void
 }
@@ -70,6 +71,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return saved ? JSON.parse(saved) : { id: '', nombre, email, slug: '' }
   }
 
+  const loginWithGoogle = async (): Promise<User> => {
+    // TODO(auth-google): reemplazar este mock por el SDK de Google y enviar
+    // el credential obtenido al endpoint del backend.
+    await new Promise(resolve => window.setTimeout(resolve, 500))
+
+    const mockUser: User = {
+      id: 'google-mock-user',
+      nombre: 'Usuario Demo',
+      email: 'demo.google@emprendebot.test',
+      slug: 'usuario-demo',
+    }
+
+    localStorage.setItem(TOKEN_KEY, 'mock-google-token')
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(mockUser))
+    setUser(mockUser)
+    return mockUser
+  }
+
   const logout = () => {
     setUser(null)
     localStorage.removeItem(CURRENT_USER_KEY)
@@ -77,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, loginWithGoogle, register, logout }}>
       {children}
     </AuthContext.Provider>
   )

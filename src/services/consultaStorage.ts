@@ -1,4 +1,5 @@
 import type { Consulta, ConsultaCerradaPor, ConsultaEstado, Mensaje } from '../types'
+import { apiRequest } from './apiClient'
 
 const STORAGE_PREFIX = 'emprendebot:consultas'
 
@@ -196,6 +197,8 @@ function normalizeConsulta(raw: Omit<Consulta, 'estado'> & {
     estadoConsultaId,
     ...consulta
   } = raw
+  void estadoConsulta
+  void estadoConsultaId
 
   return {
     ...consulta,
@@ -239,6 +242,17 @@ function writeConsultas(consultas: Consulta[], userId?: string) {
 }
 
 export async function getConsultas(userId?: string): Promise<Consulta[]> {
+  try {
+    const response = await apiRequest<{ success: boolean; consultas: Consulta[] }>('/consultations')
+    if (response.consultas.length > 0) {
+      return response.consultas.map(normalizeConsulta).sort((left, right) => (
+        new Date(right.fechaActualizacion).getTime() - new Date(left.fechaActualizacion).getTime()
+      ))
+    }
+  } catch {
+    // La vista conserva su modo demo cuando la API todavía no está disponible.
+  }
+
   return readConsultas(userId).sort((left, right) => (
     new Date(right.fechaActualizacion).getTime() - new Date(left.fechaActualizacion).getTime()
   ))
@@ -263,24 +277,30 @@ export async function updateConsultaEstado(
   estado: ConsultaEstado,
   userId?: string,
 ): Promise<Consulta | null> {
-  const consultas = readConsultas(userId)
-  const now = new Date().toISOString()
-  let updated: Consulta | null = null
+  const isBackendConsultation = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(consultaId)
 
-  const next = consultas.map(consulta => {
-    if (consulta.id !== consultaId) return consulta
-
-    updated = {
-      ...consulta,
-      estado,
-      cerradaPor: estado === 'cerrada' ? 'emprendedor' : null,
-      fechaActualizacion: now,
-      fechaCierre: estado === 'cerrada' ? now : null,
-    }
-
+  if (!isBackendConsultation) {
+    const consultas = readConsultas(userId)
+    const now = new Date().toISOString()
+    let updated: Consulta | null = null
+    const next = consultas.map(consulta => {
+      if (consulta.id !== consultaId) return consulta
+      updated = {
+        ...consulta,
+        estado,
+        cerradaPor: estado === 'cerrada' ? 'emprendedor' : null,
+        fechaActualizacion: now,
+        fechaCierre: estado === 'cerrada' ? now : null,
+      }
+      return updated
+    })
+    writeConsultas(next, userId)
     return updated
-  })
+  }
 
-  writeConsultas(next, userId)
-  return updated
+  const response = await apiRequest<{ success: boolean; consulta: Consulta }>(
+    `/consultations/${consultaId}/estado`,
+    { method: 'PATCH', body: JSON.stringify({ estado }) },
+  )
+  return normalizeConsulta(response.consulta)
 }
