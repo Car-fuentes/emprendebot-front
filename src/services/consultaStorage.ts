@@ -2,9 +2,9 @@ import type { Consulta, ConsultaCerradaPor, ConsultaEstado, Mensaje } from '../t
 
 const STORAGE_PREFIX = 'emprendebot:consultas'
 
-type LegacyEstadoConsultaNombre = 'nueva' | 'en_proceso' | 'respondida' | 'derivada' | 'cerrada'
+type StoredConsultaEstado = ConsultaEstado | 'pendiente' | 'atendida' | 'respondida' | 'derivada'
 
-const ESTADOS_VALIDOS: ConsultaEstado[] = ['pendiente', 'atendida', 'cerrada']
+const ESTADOS_VALIDOS: ConsultaEstado[] = ['nueva', 'en_proceso', 'cerrada']
 
 function storageKey(userId?: string) {
   return `${STORAGE_PREFIX}:${userId ?? 'demo'}`
@@ -37,7 +37,7 @@ function createMockConsultas(userId?: string): Consulta[] {
       sessionAnonimaId: 'web-ana-101',
       clienteNombre: 'Ana Martinez',
       clienteTelefono: '5491123456789',
-      estado: 'pendiente',
+      estado: 'nueva',
       derivada: false,
       cerradaPor: null,
       tipoConsulta: 'presupuesto',
@@ -61,7 +61,7 @@ function createMockConsultas(userId?: string): Consulta[] {
       sessionAnonimaId: 'web-visitante-102',
       clienteNombre: null,
       clienteTelefono: null,
-      estado: 'atendida',
+      estado: 'en_proceso',
       derivada: false,
       cerradaPor: null,
       tipoConsulta: 'catalogo',
@@ -109,7 +109,7 @@ function createMockConsultas(userId?: string): Consulta[] {
       sessionAnonimaId: 'web-sofia-104',
       clienteNombre: 'Sofia Rios',
       clienteTelefono: '5491133344455',
-      estado: 'atendida',
+      estado: 'en_proceso',
       derivada: true,
       cerradaPor: null,
       tipoConsulta: 'derivacion',
@@ -155,10 +155,10 @@ function createMockConsultas(userId?: string): Consulta[] {
 }
 
 function mapLegacyEstado(
-  estadoNombre?: LegacyEstadoConsultaNombre,
+  estadoNombre?: StoredConsultaEstado,
 ): { estado: ConsultaEstado; derivada: boolean; cerradaPor: ConsultaCerradaPor | null } {
-  if (estadoNombre === 'en_proceso') {
-    return { estado: 'atendida', derivada: false, cerradaPor: null }
+  if (estadoNombre === 'en_proceso' || estadoNombre === 'atendida') {
+    return { estado: 'en_proceso', derivada: false, cerradaPor: null }
   }
 
   if (estadoNombre === 'respondida') {
@@ -166,24 +166,27 @@ function mapLegacyEstado(
   }
 
   if (estadoNombre === 'derivada') {
-    return { estado: 'atendida', derivada: true, cerradaPor: null }
+    return { estado: 'en_proceso', derivada: true, cerradaPor: null }
   }
 
   if (estadoNombre === 'cerrada') {
-    return { estado: 'cerrada', derivada: false, cerradaPor: 'bot' }
+    return { estado: 'cerrada', derivada: false, cerradaPor: null }
   }
 
-  return { estado: 'pendiente', derivada: false, cerradaPor: null }
+  return { estado: 'nueva', derivada: false, cerradaPor: null }
 }
 
-function normalizeConsulta(raw: Consulta & {
-  estadoConsulta?: { nombre?: LegacyEstadoConsultaNombre }
+function normalizeConsulta(raw: Omit<Consulta, 'estado'> & {
+  estado?: StoredConsultaEstado
+  estadoConsulta?: { nombre?: StoredConsultaEstado }
   estadoConsultaId?: string
 }): Consulta {
-  const currentEstado = ESTADOS_VALIDOS.includes(raw.estado) ? raw.estado : undefined
-  const legacy = mapLegacyEstado(raw.estadoConsulta?.nombre)
-  const estado = currentEstado ?? legacy.estado
-  const derivada = typeof raw.derivada === 'boolean' ? raw.derivada : legacy.derivada
+  const storedEstado = raw.estado ?? raw.estadoConsulta?.nombre
+  const legacy = mapLegacyEstado(storedEstado)
+  const estado = storedEstado && ESTADOS_VALIDOS.includes(storedEstado as ConsultaEstado)
+    ? storedEstado as ConsultaEstado
+    : legacy.estado
+  const derivada = raw.derivada === true || legacy.derivada
   const cerradaPor = estado === 'cerrada'
     ? raw.cerradaPor ?? legacy.cerradaPor
     : null
@@ -215,7 +218,11 @@ function readConsultas(userId?: string): Consulta[] {
   }
 
   try {
-    const parsed = JSON.parse(raw) as Consulta[]
+    const parsed = JSON.parse(raw) as Array<Omit<Consulta, 'estado'> & {
+      estado?: StoredConsultaEstado
+      estadoConsulta?: { nombre?: StoredConsultaEstado }
+      estadoConsultaId?: string
+    }>
     const normalized = parsed.map(normalizeConsulta)
     window.localStorage.setItem(key, JSON.stringify(normalized))
     return normalized
@@ -255,7 +262,6 @@ export async function updateConsultaEstado(
   consultaId: string,
   estado: ConsultaEstado,
   userId?: string,
-  cerradaPor: ConsultaCerradaPor | null = null,
 ): Promise<Consulta | null> {
   const consultas = readConsultas(userId)
   const now = new Date().toISOString()
@@ -267,7 +273,7 @@ export async function updateConsultaEstado(
     updated = {
       ...consulta,
       estado,
-      cerradaPor: estado === 'cerrada' ? cerradaPor : null,
+      cerradaPor: estado === 'cerrada' ? 'emprendedor' : null,
       fechaActualizacion: now,
       fechaCierre: estado === 'cerrada' ? now : null,
     }

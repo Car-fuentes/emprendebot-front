@@ -1,4 +1,6 @@
-import type { Consulta } from '../../types'
+import type { Consulta, ConsultaEstado } from '../../types'
+import { formatRelativeTime } from '../../utils/formatRelativeTime'
+import { AppIcon } from '../ui/AppIcon'
 
 interface ConsultaCardProps {
   consulta: Consulta
@@ -6,37 +8,21 @@ interface ConsultaCardProps {
   onSelect: (consultaId: string) => void
 }
 
-const ESTADO_LABELS: Record<string, string> = {
-  pendiente: 'Pendiente',
-  atendida: 'Atendida',
-  cerrada: 'Cerrada',
-}
-
-const ESTADO_COLORS: Record<string, string> = {
-  pendiente: '#ef4444',
-  atendida: '#0ea5e9',
-  cerrada: '#64748b',
+const ESTADO_STYLES: Record<ConsultaEstado, { label: string; color: string; background: string }> = {
+  nueva: { label: 'Nueva', color: '#EF4444', background: '#FEECEF' },
+  en_proceso: { label: 'En proceso', color: '#F97316', background: '#FFF1E8' },
+  cerrada: { label: 'Cerrada', color: '#64748B', background: '#EEF2F6' },
 }
 
 function getLastMessage(consulta: Consulta): string {
   const last = [...consulta.mensajes].sort((left, right) => (
     new Date(right.fechaCreacion).getTime() - new Date(left.fechaCreacion).getTime()
   ))[0]
-  return consulta.asunto || last?.contenido || 'Sin mensajes todavia'
-}
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat('es-AR', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value))
+  return consulta.asunto || last?.contenido || 'Sin mensajes todavía'
 }
 
 function getCanalLabel(canal?: string | null): string {
-  if (canal === 'whatsapp') return 'WhatsApp'
-  return 'Web'
+  return canal === 'whatsapp' ? 'WhatsApp' : 'Web'
 }
 
 function getDerivadaText(consulta: Consulta): string {
@@ -45,89 +31,89 @@ function getDerivadaText(consulta: Consulta): string {
 }
 
 export function ConsultaCard({ consulta, selected = false, onSelect }: ConsultaCardProps) {
-  const estado = consulta.estado
-  const estadoColor = ESTADO_COLORS[estado] ?? 'var(--color-text-secondary)'
+  const estadoStyle = ESTADO_STYLES[consulta.estado]
   const derivadaText = getDerivadaText(consulta)
 
   return (
     <button
       type="button"
       onClick={() => onSelect(consulta.id)}
+      aria-label={`Ver conversación de ${consulta.clienteNombre || 'cliente sin identificar'}`}
       style={{
         width: '100%',
         textAlign: 'left',
-        padding: '14px',
+        padding: '16px',
         border: `1px solid ${selected ? 'var(--color-primary)' : 'var(--color-border)'}`,
         borderRadius: 'var(--radius-md)',
-        background: selected ? 'rgba(19,171,162,0.08)' : 'var(--color-bg)',
-        boxShadow: selected ? '0 8px 24px rgba(15, 23, 42, 0.08)' : 'none',
-        cursor: 'pointer',
+        background: 'var(--color-bg)',
+        boxShadow: 'var(--shadow-sm)',
+        color: 'var(--color-text-primary)',
         fontFamily: 'var(--font-family)',
-        transition: 'all var(--transition)',
+        transition: 'border-color var(--transition), box-shadow var(--transition)',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', marginBottom: '8px' }}>
-        <div style={{ minWidth: 0 }}>
-          <h3 style={{ fontSize: '15px', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {consulta.clienteNombre || 'Cliente sin identificar'}
-          </h3>
-          <p style={{
-            color: 'var(--color-text-secondary)',
-            fontSize: '13px',
-            lineHeight: 1.35,
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}>
-            {getLastMessage(consulta)}
-          </p>
-        </div>
-
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginBottom: '5px' }}>
+        <h3 style={{
+          minWidth: 0,
+          fontSize: '15px',
+          fontWeight: 700,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}>
+          {consulta.clienteNombre || 'Cliente sin identificar'}
+        </h3>
         <span style={{
           flexShrink: 0,
-          alignSelf: 'flex-start',
-          padding: '4px 8px',
+          padding: '4px 9px',
           borderRadius: 'var(--radius-full)',
-          background: `${estadoColor}1A`,
-          color: estadoColor,
+          background: estadoStyle.background,
+          color: estadoStyle.color,
           fontSize: '11px',
           fontWeight: 700,
         }}>
-          {ESTADO_LABELS[estado] ?? estado}
+          {estadoStyle.label}
         </span>
       </div>
+
+      <p style={{
+        color: 'var(--color-text-secondary)',
+        fontSize: '13px',
+        lineHeight: 1.4,
+        marginBottom: derivadaText ? '3px' : '5px',
+        display: '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
+        overflow: 'hidden',
+      }}>
+        {getLastMessage(consulta)}
+      </p>
+
+      {derivadaText && (
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '11px', marginBottom: '5px' }}>
+          {derivadaText}
+        </p>
+      )}
+
+      <p style={{ color: 'var(--color-text-secondary)', fontSize: '11px', marginBottom: '10px' }}>
+        {getCanalLabel(consulta.canal)}
+      </p>
 
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: '10px',
-        color: 'var(--color-text-secondary)',
-        fontSize: '12px',
+        fontSize: '11px',
       }}>
-        <span style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          minWidth: 0,
-          overflow: 'hidden',
-        }}>
-          <span style={{ fontWeight: 600, flexShrink: 0 }}>{getCanalLabel(consulta.canal)}</span>
-          {derivadaText && (
-            <span style={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              color: 'var(--color-text-secondary)',
-              fontSize: '11px',
-              fontWeight: 500,
-            }}>
-              - {derivadaText}
-            </span>
-          )}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--color-text-secondary)' }}>
+          <AppIcon name="time" size={12} strokeWidth={1.8} />
+          {formatRelativeTime(consulta.fechaActualizacion)}
         </span>
-        <span>{formatDate(consulta.fechaActualizacion)}</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: 'var(--color-primary)', fontWeight: 600 }}>
+          <AppIcon name="chat" size={13} strokeWidth={1.8} />
+          Ver conversación
+        </span>
       </div>
     </button>
   )

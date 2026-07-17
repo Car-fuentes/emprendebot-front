@@ -30,8 +30,8 @@ export function StatCard({ label, value, description, color, icon, tone = 'prima
   return (
     <div style={{
       position: 'relative',
-      minHeight: 108,
-      padding: '16px',
+      minHeight: 148,
+      padding: '18px',
       background: 'var(--color-bg)',
       borderRadius: 'var(--radius-md)',
       border: '1px solid var(--color-border)',
@@ -40,25 +40,25 @@ export function StatCard({ label, value, description, color, icon, tone = 'prima
     }}>
       <span aria-hidden="true" style={{
         position: 'absolute',
-        top: -18,
-        right: -14,
-        width: 64,
-        height: 64,
+        top: -34,
+        right: -24,
+        width: 106,
+        height: 106,
         borderRadius: '50%',
         background: TONE_BACKGROUNDS[tone],
       }} />
 
       <div style={{
         position: 'relative',
-        width: 38,
-        height: 38,
+        width: 42,
+        height: 42,
         borderRadius: '12px',
         background: TONE_GRADIENTS[tone],
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         color: '#FFFFFF',
-        marginBottom: '12px',
+        marginBottom: '13px',
         boxShadow: `0 10px 18px ${color}30`,
       }}>
         {icon}
@@ -66,7 +66,7 @@ export function StatCard({ label, value, description, color, icon, tone = 'prima
 
       <div style={{ position: 'relative' }}>
         <p style={{
-          fontSize: '26px',
+          fontSize: '28px',
           fontWeight: 700,
           color: 'var(--color-text-primary)',
           lineHeight: 1.05,
@@ -74,10 +74,10 @@ export function StatCard({ label, value, description, color, icon, tone = 'prima
         }}>
           {value}
         </p>
-        <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)', lineHeight: 1.35 }}>
+        <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)', lineHeight: 1.35 }}>
           {label}
         </p>
-        <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px', lineHeight: 1.35 }}>
+        <p style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '3px', lineHeight: 1.35 }}>
           {description}
         </p>
       </div>
