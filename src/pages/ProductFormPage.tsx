@@ -33,7 +33,7 @@ export function ProductFormPage() {
     nombre: existing?.nombre ?? '',
     descripcion: existing?.descripcion ?? '',
     precio: existing?.precio != null ? String(existing.precio) : '',
-    precioConsultar: existing?.precioConsultar ? true : existing?.precio != null ? false : locationPrecioConsultar,
+    precioConsultar: existing?.precioConsultar ? true : existing?.precio != null ? false : locationPrecioConsultar ?? false,
     imagen: existing?.imagen ?? '',
   })
 
@@ -61,9 +61,13 @@ export function ProductFormPage() {
     reader.readAsDataURL(file)
   }
 
+  const hasValidPrice = form.precioConsultar === true
+    || (form.precio.trim() !== '' && Number.isFinite(Number(form.precio)) && Number(form.precio) > 0)
+  const canSave = !!form.nombre.trim() && hasValidPrice && !isBusinessLoading
+
   const handleSave = () => {
     console.log('handleSave clicked', { form, user, business, isBusinessLoading })
-    if (!form.nombre || !user) return
+    if (!canSave || !user) return
 
     const nuevo = {
       id: crypto.randomUUID(),
@@ -103,18 +107,16 @@ export function ProductFormPage() {
     navigate('/catalogo')
   }
 
-  const canSave = !!form.nombre && !isBusinessLoading
-
   const inputStyle: React.CSSProperties = {
     height: 48,
     padding: '0 14px',
-    border: '1px solid #E5E7EB',
+    border: '1px solid var(--color-border)',
     borderRadius: 8,
     fontSize: 15,
     fontFamily: 'var(--font-family)',
-    color: '#000',
+    color: 'var(--color-text-primary)',
     outline: 'none',
-    background: '#fff',
+    background: 'var(--color-bg)',
     width: '100%',
     boxSizing: 'border-box',
   }
@@ -122,13 +124,13 @@ export function ProductFormPage() {
   const labelStyle: React.CSSProperties = {
     fontSize: 14,
     fontWeight: 600,
-    color: '#000',
+    color: 'var(--color-text-primary)',
   }
 
   return (
     <div style={{
       minHeight: '100svh',
-      background: '#fff',
+      background: 'var(--color-bg)',
       display: 'flex',
       flexDirection: 'column',
     }}>
@@ -138,25 +140,89 @@ export function ProductFormPage() {
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '20px 20px 16px',
-        borderBottom: '1px solid #F0F0F0',
+        borderBottom: '1px solid var(--color-border)',
         position: 'sticky',
         top: 0,
-        background: '#fff',
+        background: 'var(--color-bg)',
         zIndex: 10,
       }}>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#000' }}>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--color-text-primary)' }}>
           {isEditing ? 'Editar producto' : 'Agregar al catálogo'}
         </h2>
-        <button
-          onClick={() => navigate('/catalogo')}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: '#555', padding: 4, lineHeight: 1 }}
-        >
-          ✕
-        </button>
       </div>
 
       {/* Formulario */}
       <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20, flex: 1 }}>
+
+        <button
+          type="button"
+          onClick={() => navigate('/catalogo')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            alignSelf: 'flex-start',
+            gap: 8,
+            padding: 0,
+            color: 'var(--color-text-primary)',
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
+          <span aria-hidden="true" style={{
+            width: 20,
+            height: 20,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '50%',
+            background: 'var(--color-surface-muted)',
+            fontSize: 14,
+            lineHeight: 1,
+          }}>
+            {'<'}
+          </span>
+          Volver
+        </button>
+
+        {/* Tipo de precio */}
+        <div style={{
+          minHeight: 34,
+          padding: '7px 12px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          border: '1px solid rgba(19, 168, 162, 0.22)',
+          borderRadius: 'var(--radius-full)',
+          background: 'rgba(19, 168, 162, 0.08)',
+          color: 'var(--color-primary)',
+        }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 600 }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M20.59 13.41 11 23l-9-9V2h12l6.59 6.59a3.41 3.41 0 0 1 0 4.82Z" />
+              <path d="M7 7h.01" />
+            </svg>
+            {form.precioConsultar ? 'Precio a convenir' : 'Precio fijo'}
+          </span>
+          <button
+            type="button"
+            onClick={() => setForm(prev => ({
+              ...prev,
+              precioConsultar: !prev.precioConsultar,
+              precio: prev.precioConsultar ? prev.precio : '',
+            }))}
+            style={{
+              padding: 0,
+              color: 'var(--color-primary)',
+              fontSize: 11,
+              fontWeight: 600,
+              textDecoration: 'underline',
+              textUnderlineOffset: 2,
+            }}
+          >
+            Cambiar
+          </button>
+        </div>
 
         {/* Imagen */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -164,13 +230,13 @@ export function ProductFormPage() {
           <div
             onClick={() => fileInputRef.current?.click()}
             style={{
-              border: '1.5px dashed #D1D5DB',
+              border: '1.5px dashed var(--color-border)',
               borderRadius: 12,
               height: 140,
               display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center',
               gap: 8, cursor: 'pointer',
-              background: '#FAFAFA',
+              background: 'var(--color-bg-subtle)',
               overflow: 'hidden',
             }}
           >
@@ -212,62 +278,24 @@ export function ProductFormPage() {
             rows={3}
             style={{
               padding: '12px 14px',
-              border: '1px solid #E5E7EB',
+              border: '1px solid var(--color-border)',
               borderRadius: 8,
               fontSize: 15,
               fontFamily: 'var(--font-family)',
-              color: '#000',
+              color: 'var(--color-text-primary)',
               outline: 'none',
               resize: 'vertical',
-              background: '#fff',
+              background: 'var(--color-bg)',
               width: '100%',
               boxSizing: 'border-box',
             }}
           />
         </div>
 
-        {/* Precio */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <label style={labelStyle}>Precio</label>
-
-          {/* Toggle */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              type="button"
-              onClick={() => setForm(prev => ({ ...prev, precioConsultar: false }))}
-              style={{
-                flex: 1, height: 40, borderRadius: 8,
-                border: '1.5px solid',
-                borderColor: form.precioConsultar === false ? 'var(--color-primary)' : '#E5E7EB',
-                background: form.precioConsultar === false ? 'rgba(19,171,162,0.08)' : '#fff',
-                color: form.precioConsultar === false ? 'var(--color-primary)' : '#6B7280',
-                fontSize: 13, fontWeight: 600,
-                cursor: 'pointer', fontFamily: 'var(--font-family)',
-                transition: 'all 0.15s',
-              }}
-            >
-              Ingresar precio fijo
-            </button>
-            <button
-              type="button"
-              onClick={() => setForm(prev => ({ ...prev, precioConsultar: true, precio: '' }))}
-              style={{
-                flex: 1, height: 40, borderRadius: 8,
-                border: '1.5px solid',
-                borderColor: form.precioConsultar === true ? 'var(--color-primary)' : '#E5E7EB',
-                background: form.precioConsultar === true ? 'rgba(19,171,162,0.08)' : '#fff',
-                color: form.precioConsultar === true ? 'var(--color-primary)' : '#6B7280',
-                fontSize: 13, fontWeight: 600,
-                cursor: 'pointer', fontFamily: 'var(--font-family)',
-                transition: 'all 0.15s',
-              }}
-            >
-              Precio a convenir
-            </button>
-          </div>
-
-          {/* Input numérico: solo aparece al elegir "Ingresar precio" */}
-          {form.precioConsultar === false && (
+        {/* Precio fijo */}
+        {form.precioConsultar === false ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <label style={labelStyle}>Precio</label>
             <input
               value={form.precio}
               onChange={set('precio')}
@@ -281,8 +309,41 @@ export function ProductFormPage() {
               step="0.01"
               style={inputStyle}
             />
-          )}
-        </div>
+          </div>
+        ) : (
+          <div style={{
+            minHeight: 70,
+            padding: '13px 16px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 7,
+            border: '1px solid rgba(108, 115, 142, 0.12)',
+            borderRadius: 18,
+            background: '#E7EDF5',
+            color: 'var(--color-text-secondary)',
+            fontSize: 15,
+            lineHeight: 1.5,
+          }}>
+            <span aria-hidden="true" style={{
+              width: 18,
+              height: 18,
+              flexShrink: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginTop: 2,
+              color: 'var(--color-secondary)',
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.8 8.8 0 0 1-3.6-.8L4 20l1.5-4A7.3 7.3 0 0 1 4 11.5 7.5 7.5 0 0 1 12 4a7.5 7.5 0 0 1 8 7.5Z" />
+                <path d="M9 12h.01M12 12h.01M15 12h.01" />
+              </svg>
+            </span>
+            <span>
+              En el catálogo del chatbot se mostrará como <strong>Precio a convenir.</strong>
+            </span>
+          </div>
+        )}
 
         {/* Botones */}
         <div style={{ display: 'flex', gap: 12, paddingTop: 4, marginTop: 'auto' }}>
@@ -290,7 +351,7 @@ export function ProductFormPage() {
             onClick={() => navigate('/catalogo')}
             style={{
               flex: 1, height: 48,
-              background: '#fff', color: '#13A8A2',
+              background: 'var(--color-bg)', color: 'var(--color-primary)',
               border: '1.5px solid #13A8A2', borderRadius: 8,
               fontSize: 14, fontWeight: 700, cursor: 'pointer',
               fontFamily: 'var(--font-family)',
