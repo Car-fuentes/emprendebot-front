@@ -28,6 +28,7 @@ interface BotConfigResponse {
     nombreNegocio: string
     mensajeBienvenida: string
     rubroId?: string
+    slug?: string
   }
 }
 
@@ -133,6 +134,10 @@ export function BusinessConfigPage() {
         mensajeBienvenida: data.configuracion.mensajeBienvenida || prev.mensajeBienvenida,
         rubroId: data.configuracion.rubroId || prev.rubroId,
       }))
+      // Sincronizar el slug del backend al business local
+      if (data.configuracion.slug) {
+        updateBusiness({ slug: data.configuracion.slug })
+      }
     }).catch(() => {})
   }, [isEdit])
 
@@ -176,15 +181,18 @@ export function BusinessConfigPage() {
     if (!user) return
     setLoading(true)
 
+    let backendSlug: string | undefined
     try {
-      await apiRequest('/bot', {
+      const res = await apiRequest<{ success: boolean; configuracion: { slug?: string } }>('/bot', {
         method: 'PUT',
         body: JSON.stringify({
+          activo: true,
           nombreNegocio: form.nombre,
           mensajeBienvenida: form.mensajeBienvenida || undefined,
           rubroId: form.rubroId || undefined,
         }),
       })
+      backendSlug = res.configuracion?.slug
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar en el servidor.')
       setLoading(false)
@@ -192,9 +200,9 @@ export function BusinessConfigPage() {
     }
 
     if (isEdit) {
-      updateBusiness(form)
+      updateBusiness({ ...form, ...(backendSlug ? { slug: backendSlug } : {}) })
     } else {
-      saveBusiness({ ...form, userId: user.id, rubro: user.rubro ?? '' })
+      saveBusiness({ ...form, userId: user.id, rubro: user.rubro ?? '', ...(backendSlug ? { slug: backendSlug } : {}) })
     }
 
     setLoading(false)
