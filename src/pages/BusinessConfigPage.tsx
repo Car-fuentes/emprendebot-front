@@ -34,6 +34,7 @@ interface BotConfigResponse {
     respuestaDerivacion?: string | null
     logoUrl?: string | null
     slug?: string | null
+    slugPersonalizado: boolean
   }
 }
 
@@ -128,6 +129,8 @@ export function BusinessConfigPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [slugPersonalizado, setSlugPersonalizado] = useState<boolean | null>(null)
+  const [slugOriginal, setSlugOriginal] = useState(business?.slug ?? '')
 
   const publicUrl = form.slug ? `${window.location.origin}/${form.slug}` : ''
 
@@ -156,6 +159,8 @@ export function BusinessConfigPage() {
         logo: data.configuracion.logoUrl ?? '',
         slug: data.configuracion.slug ?? '',
       }))
+      setSlugOriginal(data.configuracion.slug ?? '')
+      setSlugPersonalizado(data.configuracion.slugPersonalizado)
     }).catch(err => {
       setError(err instanceof Error ? err.message : 'No se pudo cargar la configuración.')
     })
@@ -204,6 +209,18 @@ export function BusinessConfigPage() {
     }
 
     if (!user) return
+
+    const slugCambio = isEdit && form.slug.trim() !== slugOriginal
+    if (slugCambio && slugPersonalizado) {
+      setError('El enlace público ya fue personalizado y no puede volver a modificarse.')
+      return
+    }
+    if (slugCambio && !window.confirm(
+      `¿Confirmás el enlace ${window.location.origin}/${form.slug.trim()}? Solo podés personalizarlo una vez y después no podrá modificarse.`
+    )) {
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -221,12 +238,14 @@ export function BusinessConfigPage() {
         }),
       })
 
-      if (isEdit && form.slug && form.slug !== business?.slug) {
+      if (slugCambio) {
         const slugActualizado = await apiRequest<UpdateSlugResponse>('/bot/slug', {
           method: 'PATCH',
           body: JSON.stringify({ slug: form.slug }),
         })
         setForm(prev => ({ ...prev, slug: slugActualizado.slug }))
+        setSlugOriginal(slugActualizado.slug)
+        setSlugPersonalizado(true)
       }
 
       if (selectedLogo) {
@@ -654,6 +673,7 @@ export function BusinessConfigPage() {
                   aria-label="Identificador del enlace público"
                   value={form.slug}
                   maxLength={100}
+                  disabled={slugPersonalizado !== false}
                   onChange={event => {
                     setLinkCopied(false)
                     setForm(prev => ({ ...prev, slug: event.target.value }))
@@ -673,6 +693,14 @@ export function BusinessConfigPage() {
                   }}
                 />
               </div>
+
+              <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: 0 }}>
+                {slugPersonalizado
+                  ? 'Este enlace ya fue personalizado y no puede volver a modificarse.'
+                  : slugPersonalizado === false
+                    ? 'Podés personalizar este enlace una sola vez. Después de confirmarlo no podrás volver a cambiarlo.'
+                    : 'Comprobando si el enlace puede editarse...'}
+              </p>
 
               {/* Botón copiar */}
               <button
