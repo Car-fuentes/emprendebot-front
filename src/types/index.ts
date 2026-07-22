@@ -109,6 +109,8 @@ export interface Business {
   mensajeBienvenida: string
   respuestaDerivacion: string
   rubro: Rubro | ''
+  rubroId?: string
+  rubroNombre?: string
   productos: Product[]
   faqCategories?: FAQCategory[]
   faq: FAQ[]

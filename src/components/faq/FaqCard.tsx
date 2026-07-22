@@ -55,7 +55,7 @@ export function FaqCard({
           marginBottom: '10px',
           color: FAQ_TEXT,
         }}>
-          <strong style={{ fontWeight: 800 }}>Categoria:</strong>{' '}
+          <strong style={{ fontWeight: 800 }}>Categoría:</strong>{' '}
           <span style={{ color: FAQ_MUTED, fontWeight: 500 }}>{faq.categoria}</span>
         </p>
       )}
@@ -128,7 +128,7 @@ export function FaqCard({
           borderTop: `1px solid ${FAQ_BORDER}`,
         }}>
           <p style={{ fontSize: '12px', fontWeight: 700, marginBottom: '10px', color: FAQ_TEXT }}>
-            Seguro que queres eliminar esta FAQ?
+            ¿Seguro que querés eliminar esta FAQ?
           </p>
           <div style={{ display: 'flex', gap: '8px' }}>
             <Button
@@ -165,6 +165,7 @@ export function FaqCard({
             disabled={busy}
             onClick={() => onEdit(faq)}
             aria-label={`Editar ${faq.pregunta}`}
+            title="Editar"
             style={{
               width: '24px',
               height: '24px',
@@ -186,6 +187,7 @@ export function FaqCard({
             disabled={busy}
             onClick={() => setConfirmingDelete(true)}
             aria-label={`Eliminar ${faq.pregunta}`}
+            title="Eliminar"
             style={{
               width: '24px',
               height: '24px',

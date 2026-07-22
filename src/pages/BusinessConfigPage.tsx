@@ -9,6 +9,8 @@ import { Avatar } from '../components/ui/Avatar'
 import { AppIcon } from '../components/ui/AppIcon'
 import { apiRequest } from '../services/apiClient'
 import { brand } from '../styles/brand'
+import { Switch } from '../components/ui/Switch'
+import { useTheme } from '../hooks/useTheme'
 
 interface RubroApi {
   id: string
@@ -23,10 +25,22 @@ interface RubrosResponse {
 interface BotConfigResponse {
   success: boolean
   configuracion: {
-    nombreNegocio: string
-    mensajeBienvenida: string
-    rubroId?: string
+    nombreNegocio?: string | null
+    mensajeBienvenida?: string | null
+    rubroId?: string | null
+    descripcionBreve?: string | null
+    horarioAtencion?: string | null
+    telefono?: string | null
+    respuestaDerivacion?: string | null
+    logoUrl?: string | null
+    slug?: string | null
+    slugPersonalizado: boolean
   }
+}
+
+interface UpdateSlugResponse {
+  success: boolean
+  slug: string
 }
 
 interface FormData {
@@ -38,6 +52,7 @@ interface FormData {
   mensajeBienvenida: string
   respuestaDerivacion: string
   logo: string
+  slug: string
 }
 
 const INITIAL: FormData = {
@@ -49,7 +64,12 @@ const INITIAL: FormData = {
   mensajeBienvenida: '',
   respuestaDerivacion: '',
   logo: '',
+  slug: '',
 }
+
+const MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024
+const LOGO_UPLOAD_TIMEOUT_MS = 30_000
+const VALID_LOGO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
 const textareaStyle: React.CSSProperties = {
   padding: '12px 16px',
@@ -58,6 +78,7 @@ const textareaStyle: React.CSSProperties = {
   fontSize: '15px',
   fontFamily: 'var(--font-family)',
   color: 'var(--color-text-primary)',
+  background: 'var(--color-bg)',
   resize: 'vertical',
   outline: 'none',
 }
@@ -84,8 +105,9 @@ const selectStyle: React.CSSProperties = {
 export function BusinessConfigPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { saveBusiness, business, updateBusiness } = useBusiness()
+  const { saveBusiness, business, loadBusiness } = useBusiness()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { isDark, setTheme } = useTheme()
 
   const isEdit = !!business
 
@@ -93,44 +115,63 @@ export function BusinessConfigPage() {
     business
       ? {
           nombre: business.nombre,
-          rubroId: '',
+          rubroId: business.rubroId ?? '',
           descripcion: business.descripcion,
           horario: business.horario,
           telefono: business.telefono,
           mensajeBienvenida: business.mensajeBienvenida,
           respuestaDerivacion: business.respuestaDerivacion,
           logo: business.logo ?? '',
+          slug: business.slug,
         }
       : INITIAL
   )
   const [rubros, setRubros] = useState<RubroApi[]>([])
+  const [selectedLogo, setSelectedLogo] = useState<File | null>(null)
+  const [logoValidationError, setLogoValidationError] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [slugPersonalizado, setSlugPersonalizado] = useState<boolean | null>(null)
+  const [slugOriginal, setSlugOriginal] = useState(business?.slug ?? '')
+  const [persistedLogo, setPersistedLogo] = useState(business?.logo ?? '')
 
-  const publicUrl = business?.slug ? `${window.location.origin}/${business.slug}` : ''
+  const publicUrl = form.slug ? `${window.location.origin}/${form.slug}` : ''
 
   // Cargar rubros desde el backend (no requiere auth)
   useEffect(() => {
     apiRequest<RubrosResponse>('/bot/rubros', { auth: false }).then(data => {
       setRubros(data.rubros)
-    }).catch(() => {})
+    }).catch(err => {
+      setError(err instanceof Error ? err.message : 'No se pudieron cargar los rubros.')
+    })
   }, [])
 
   // Cargar config desde el backend al entrar en modo edición
   useEffect(() => {
-    if (!isEdit) return
+    if (!user) return
     apiRequest<BotConfigResponse>('/bot').then(data => {
       setForm(prev => ({
         ...prev,
         nombre: data.configuracion.nombreNegocio || prev.nombre,
         mensajeBienvenida: data.configuracion.mensajeBienvenida || prev.mensajeBienvenida,
-        rubroId: data.configuracion.rubroId || prev.rubroId,
+        rubroId: data.configuracion.rubroId ?? '',
+        descripcion: data.configuracion.descripcionBreve ?? '',
+        horario: data.configuracion.horarioAtencion ?? '',
+        telefono: data.configuracion.telefono ?? '',
+        respuestaDerivacion: data.configuracion.respuestaDerivacion ?? '',
+        logo: data.configuracion.logoUrl ?? '',
+        slug: data.configuracion.slug ?? '',
       }))
-    }).catch(() => {})
-  }, [isEdit])
+      setSlugOriginal(data.configuracion.slug ?? '')
+      setSlugPersonalizado(data.configuracion.slugPersonalizado)
+      setPersistedLogo(data.configuracion.logoUrl ?? '')
+    }).catch(err => {
+      setError(err instanceof Error ? err.message : 'No se pudo cargar la configuración.')
+    })
+  }, [user])
 
   const set = (field: keyof FormData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -139,11 +180,54 @@ export function BusinessConfigPage() {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    setError('')
+    setLogoValidationError('')
+
+    if (file.size > MAX_LOGO_SIZE_BYTES) {
+      setSelectedLogo(null)
+      setForm(prev => ({ ...prev, logo: persistedLogo }))
+      e.target.value = ''
+      setLoading(false)
+      setLogoValidationError('La imagen no puede superar los 2 MB.')
+      setError('La imagen no puede superar los 2 MB.')
+      return
+    }
+
+    if (!VALID_LOGO_TYPES.has(file.type)) {
+      setSelectedLogo(null)
+      setForm(prev => ({ ...prev, logo: persistedLogo }))
+      e.target.value = ''
+      setLoading(false)
+      setLogoValidationError('El formato de la imagen debe ser JPG, PNG o WEBP.')
+      setError('El formato de la imagen debe ser JPG, PNG o WEBP.')
+      return
+    }
+
+    setSelectedLogo(file)
     const reader = new FileReader()
     reader.onload = ev => {
       setForm(prev => ({ ...prev, logo: ev.target?.result as string }))
     }
-    reader.readAsDataURL(file)
+    reader.onerror = () => {
+      setSelectedLogo(null)
+      setForm(prev => ({ ...prev, logo: persistedLogo }))
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      setLoading(false)
+      setLogoValidationError('No se pudo leer la imagen seleccionada.')
+      setError('No se pudo leer la imagen seleccionada.')
+    }
+
+    try {
+      reader.readAsDataURL(file)
+    } catch {
+      setSelectedLogo(null)
+      setForm(prev => ({ ...prev, logo: persistedLogo }))
+      e.target.value = ''
+      setLoading(false)
+      setLogoValidationError('No se pudo leer la imagen seleccionada.')
+      setError('No se pudo leer la imagen seleccionada.')
+    }
   }
 
   const handleCopyLink = () => {
@@ -162,6 +246,10 @@ export function BusinessConfigPage() {
         setError('Todos los campos marcados con * son obligatorios.')
         return
       }
+      if (!form.slug.trim()) {
+        setError('El enlace público es obligatorio.')
+        return
+      }
     } else {
       if (!form.nombre) {
         setError('El nombre del negocio es obligatorio.')
@@ -170,31 +258,102 @@ export function BusinessConfigPage() {
     }
 
     if (!user) return
-    setLoading(true)
 
-    try {
-      await apiRequest('/bot', {
-        method: 'PUT',
-        body: JSON.stringify({
-          nombreNegocio: form.nombre,
-          mensajeBienvenida: form.mensajeBienvenida || undefined,
-          rubroId: form.rubroId || undefined,
-        }),
-      })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al guardar en el servidor.')
+    if (logoValidationError) {
       setLoading(false)
+      setError(logoValidationError)
       return
     }
 
-    if (isEdit) {
-      updateBusiness(form)
-    } else {
-      saveBusiness({ ...form, userId: user.id, rubro: user.rubro ?? '' })
+    if (selectedLogo && selectedLogo.size > MAX_LOGO_SIZE_BYTES) {
+      setSelectedLogo(null)
+      setForm(prev => ({ ...prev, logo: persistedLogo }))
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      setLoading(false)
+      setLogoValidationError('La imagen no puede superar los 2 MB.')
+      setError('La imagen no puede superar los 2 MB.')
+      return
     }
 
-    setLoading(false)
-    setShowSuccessModal(true)
+    const slugCambio = isEdit && form.slug.trim() !== slugOriginal
+    if (slugCambio && slugPersonalizado) {
+      setError('El enlace público ya fue personalizado y no puede volver a modificarse.')
+      return
+    }
+    if (slugCambio && !window.confirm(
+      `¿Confirmás el enlace ${window.location.origin}/${form.slug.trim()}? Solo podés personalizarlo una vez y después no podrá modificarse.`
+    )) {
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      await apiRequest<{ success: boolean; configuracion: { slug?: string } }>('/bot', {
+        method: 'PUT',
+        body: JSON.stringify({
+          activo: true,
+          nombreNegocio: form.nombre,
+          mensajeBienvenida: form.mensajeBienvenida || undefined,
+          rubroId: form.rubroId || undefined,
+          descripcionBreve: form.descripcion || undefined,
+          horarioAtencion: form.horario || undefined,
+          telefono: form.telefono || undefined,
+          respuestaDerivacion: form.respuestaDerivacion || undefined,
+          logoUrl: selectedLogo ? undefined : form.logo,
+        }),
+      })
+
+      if (slugCambio) {
+        const slugActualizado = await apiRequest<UpdateSlugResponse>('/bot/slug', {
+          method: 'PATCH',
+          body: JSON.stringify({ slug: form.slug }),
+        })
+        setForm(prev => ({ ...prev, slug: slugActualizado.slug }))
+        setSlugOriginal(slugActualizado.slug)
+        setSlugPersonalizado(true)
+      }
+
+      if (selectedLogo) {
+        const logoData = new FormData()
+        logoData.append('imagenLogo', selectedLogo)
+        const controller = new AbortController()
+        const timeoutId = window.setTimeout(() => controller.abort(), LOGO_UPLOAD_TIMEOUT_MS)
+
+        try {
+          await apiRequest('/bot/config', {
+            method: 'PATCH',
+            body: logoData,
+            signal: controller.signal,
+          })
+        } catch (uploadError) {
+          if (controller.signal.aborted) {
+            throw new Error('La carga de la imagen tardó demasiado. Intentá nuevamente.')
+          }
+          throw uploadError
+        } finally {
+          window.clearTimeout(timeoutId)
+        }
+      }
+
+      const syncedBusiness = await loadBusiness(user.id)
+      if (!syncedBusiness) {
+        saveBusiness({ ...form, userId: user.id, rubro: user.rubro ?? '' })
+      } else {
+        const savedLogo = syncedBusiness.logo ?? ''
+        setPersistedLogo(savedLogo)
+        setForm(prev => ({ ...prev, logo: savedLogo }))
+      }
+
+      setSelectedLogo(null)
+      setLogoValidationError('')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      setShowSuccessModal(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al guardar en el servidor.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -355,7 +514,11 @@ export function BusinessConfigPage() {
                   {form.logo && (
                     <button
                       type="button"
-                      onClick={() => setForm(prev => ({ ...prev, logo: '' }))}
+                      onClick={() => {
+                        setSelectedLogo(null)
+                        setForm(prev => ({ ...prev, logo: '' }))
+                        if (fileInputRef.current) fileInputRef.current.value = ''
+                      }}
                       style={{
                         fontSize: '12px', color: 'var(--color-error)',
                         border: 'none', background: 'none', cursor: 'pointer',
@@ -364,14 +527,14 @@ export function BusinessConfigPage() {
                     >Eliminar</button>
                   )}
                   <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
-                    JPG, PNG o SVG · máx. 2 MB
+                    JPG, PNG o WEBP · máx. 2 MB
                   </span>
                 </div>
               </div>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/svg+xml,image/webp"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={handleLogoChange}
                 style={{ display: 'none' }}
               />
@@ -478,50 +641,80 @@ export function BusinessConfigPage() {
           {/* Apariencia — solo en modo edición (placeholder) */}
           {isEdit && (
             <div style={{
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--color-border)',
-              overflow: 'hidden',
+              padding: '16px',
+              borderRadius: 12,
+              border: `1px solid ${isDark ? '#DCE3EC' : '#31435C'}`,
+              background: isDark ? '#F7F9FC' : '#1D2A3D',
+              boxShadow: 'var(--shadow-sm)',
             }}>
-              {/* Header */}
               <div style={{
-                display: 'flex', alignItems: 'center', gap: '10px',
-                padding: '14px 16px',
-                borderBottom: '1px solid var(--color-border)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 9,
+                marginBottom: 15,
               }}>
                 <div style={{
-                  width: 36, height: 36, borderRadius: '50%',
-                  background: brand.primaryGradient,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: '#1CB8BF',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   flexShrink: 0,
                 }}>
-                  <span style={{ fontSize: '18px' }}>✨</span>
+                  {isDark ? (
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="4" />
+                      <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41" />
+                    </svg>
+                  ) : (
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M20.5 14.2A8.2 8.2 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2Z" />
+                    </svg>
+                  )}
                 </div>
-                <span style={{ fontSize: '16px', fontWeight: 700 }}>Apariencia</span>
+                <span style={{
+                  color: isDark ? '#111B27' : '#F2F7FA',
+                  fontSize: 14,
+                  fontWeight: 700,
+                }}>
+                  Apariencia
+                </span>
               </div>
 
-              {/* Toggle modo claro */}
               <div style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '14px 16px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 16,
               }}>
-                <div>
-                  <p style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 2px' }}>Modo claro</p>
-                  <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: 0 }}>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{
+                    color: isDark ? '#111B27' : '#F2F7FA',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    margin: '0 0 3px',
+                  }}>
+                    {isDark ? 'Modo claro' : 'Modo oscuro'}
+                  </p>
+                  <p style={{
+                    color: isDark ? '#6C738E' : '#A8B5C3',
+                    fontSize: 11,
+                    lineHeight: 1.4,
+                    margin: 0,
+                  }}>
                     Cambia entre modo claro y oscuro
                   </p>
                 </div>
-                <div style={{
-                  width: 44, height: 24, borderRadius: 12,
-                  background: '#E5E7EB',
-                  position: 'relative', cursor: 'not-allowed', opacity: 0.5,
-                }}>
-                  <div style={{
-                    width: 18, height: 18, borderRadius: '50%',
-                    background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                    position: 'absolute', top: 3, left: 3,
-                    transition: 'left 0.2s',
-                  }} />
-                </div>
+                <Switch
+                  checked={isDark}
+                  label=""
+                  aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+                  onChange={checked => setTheme(checked ? 'dark' : 'light')}
+                  style={{ flexShrink: 0 }}
+                />
               </div>
             </div>
           )}
@@ -530,8 +723,8 @@ export function BusinessConfigPage() {
           {isEdit && (
             <div style={{
               borderRadius: 'var(--radius-md)',
-              background: 'rgba(19,171,162,0.06)',
-              border: '1px solid rgba(19,171,162,0.2)',
+              background: 'var(--color-demo-bg)',
+              border: '1px solid var(--color-demo-border)',
               padding: '16px',
               display: 'flex', flexDirection: 'column', gap: '12px',
             }}>
@@ -541,16 +734,58 @@ export function BusinessConfigPage() {
 
               {/* URL */}
               <div style={{
+                minHeight: 44,
+                display: 'flex',
+                alignItems: 'center',
                 background: 'var(--color-bg)',
                 border: '1px solid var(--color-border)',
                 borderRadius: 'var(--radius-sm)',
-                padding: '10px 14px',
-                fontSize: '13px',
-                color: 'var(--color-text-secondary)',
-                wordBreak: 'break-all',
+                overflow: 'hidden',
               }}>
-                {publicUrl}
+                <span style={{
+                  padding: '0 0 0 14px',
+                  color: 'var(--color-text-secondary)',
+                  fontSize: '13px',
+                  whiteSpace: 'nowrap',
+                  maxWidth: '60%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}>
+                  {window.location.origin}/
+                </span>
+                <input
+                  type="text"
+                  aria-label="Identificador del enlace público"
+                  value={form.slug}
+                  maxLength={100}
+                  disabled={slugPersonalizado !== false}
+                  onChange={event => {
+                    setLinkCopied(false)
+                    setForm(prev => ({ ...prev, slug: event.target.value }))
+                  }}
+                  placeholder="mi-negocio"
+                  style={{
+                    minWidth: 0,
+                    flex: 1,
+                    height: 42,
+                    padding: '0 14px 0 2px',
+                    border: 'none',
+                    outline: 'none',
+                    background: 'transparent',
+                    color: 'var(--color-text-primary)',
+                    fontFamily: 'var(--font-family)',
+                    fontSize: '13px',
+                  }}
+                />
               </div>
+
+              <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: 0 }}>
+                {slugPersonalizado
+                  ? 'Este enlace ya fue personalizado y no puede volver a modificarse.'
+                  : slugPersonalizado === false
+                    ? 'Podés personalizar este enlace una sola vez. Después de confirmarlo no podrás volver a cambiarlo.'
+                    : 'Comprobando si el enlace puede editarse...'}
+              </p>
 
               {/* Botón copiar */}
               <button

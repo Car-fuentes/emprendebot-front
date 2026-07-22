@@ -9,9 +9,9 @@ interface ConsultaCardProps {
 }
 
 const ESTADO_STYLES: Record<ConsultaEstado, { label: string; color: string; background: string }> = {
-  nueva: { label: 'Nueva', color: '#EF4444', background: '#FEECEF' },
-  en_proceso: { label: 'En proceso', color: '#F97316', background: '#FFF1E8' },
-  cerrada: { label: 'Cerrada', color: '#64748B', background: '#EEF2F6' },
+  nueva: { label: 'Nueva', color: 'var(--status-new-text)', background: 'var(--status-new-bg)' },
+  en_proceso: { label: 'En proceso', color: 'var(--status-progress-text)', background: 'var(--status-progress-bg)' },
+  cerrada: { label: 'Cerrada', color: 'var(--status-closed-text)', background: 'var(--status-closed-bg)' },
 }
 
 function getLastMessage(consulta: Consulta): string {

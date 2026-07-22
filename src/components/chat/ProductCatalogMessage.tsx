@@ -56,9 +56,9 @@ export function ProductCatalogMessage({ products, onConfirm }: ProductCatalogMes
             <div
               key={product.id}
               style={{
-                border: selected ? '2px solid var(--color-primary)' : '1.5px solid #E5E7EB',
+                border: selected ? '2px solid var(--color-primary)' : '1.5px solid var(--color-border)',
                 borderRadius: 12,
-                background: '#fff',
+                background: 'var(--color-bg)',
                 boxShadow: selected ? '0 2px 8px rgba(19,171,162,0.15)' : '0 1px 4px rgba(0,0,0,0.06)',
                 transition: 'border-color 0.15s, box-shadow 0.15s',
                 display: 'flex',
@@ -70,7 +70,7 @@ export function ProductCatalogMessage({ products, onConfirm }: ProductCatalogMes
               {/* Imagen pequeña */}
               <div style={{
                 width: 72, height: 72, borderRadius: 8,
-                background: '#F3F4F6', flexShrink: 0, overflow: 'hidden',
+                background: 'var(--color-surface-muted)', flexShrink: 0, overflow: 'hidden',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 {product.imagen
@@ -85,7 +85,7 @@ export function ProductCatalogMessage({ products, onConfirm }: ProductCatalogMes
 
               {/* Info */}
               <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: '#111', lineHeight: 1.3 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-primary)', lineHeight: 1.3 }}>
                   {product.nombre}
                 </span>
                 {product.descripcion && (
@@ -119,7 +119,7 @@ export function ProductCatalogMessage({ products, onConfirm }: ProductCatalogMes
                 </button>
                 <span style={{
                   fontSize: 14, fontWeight: 700,
-                  color: qty > 0 ? '#111' : '#9CA3AF',
+                  color: qty > 0 ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
                   minWidth: 18, textAlign: 'center',
                 }}>
                   {qty}
@@ -152,8 +152,8 @@ export function ProductCatalogMessage({ products, onConfirm }: ProductCatalogMes
           height: 44,
           borderRadius: 'var(--radius-md)',
           border: 'none',
-          background: totalItems > 0 ? brand.primaryGradient : '#E5E7EB',
-          color: totalItems > 0 ? '#fff' : '#9CA3AF',
+          background: totalItems > 0 ? brand.primaryGradient : 'var(--color-surface-muted)',
+          color: totalItems > 0 ? '#fff' : 'var(--color-text-secondary)',
           fontSize: 14,
           fontWeight: 700,
           cursor: totalItems > 0 ? 'pointer' : 'not-allowed',

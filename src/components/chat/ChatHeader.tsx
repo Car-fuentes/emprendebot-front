@@ -5,10 +5,10 @@ import type { Business } from '../../types'
 interface ChatHeaderProps {
   business: Business
   onRefresh?: () => void
-  onClose?: () => void
+  onBackToDashboard?: () => void
 }
 
-export function ChatHeader({ business, onRefresh, onClose }: ChatHeaderProps) {
+export function ChatHeader({ business, onRefresh, onBackToDashboard }: ChatHeaderProps) {
   return (
     <header className="public-chat__header" style={{
       display: 'flex',
@@ -22,6 +22,29 @@ export function ChatHeader({ business, onRefresh, onClose }: ChatHeaderProps) {
       top: 0,
       zIndex: 3,
     }}>
+      {onBackToDashboard && (
+        <button
+          type="button"
+          onClick={onBackToDashboard}
+          title="Volver al panel"
+          aria-label="Volver al panel"
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.2)',
+            color: '#fff',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            fontSize: 20,
+          }}
+        >
+          ←
+        </button>
+      )}
+
       <Avatar name={business.nombre} src={business.logo} size={40} />
 
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -72,26 +95,6 @@ export function ChatHeader({ business, onRefresh, onClose }: ChatHeaderProps) {
             }}
           >
             Reiniciar chat
-          </button>
-        )}
-        {onClose && (
-          <button
-            onClick={onClose}
-            title="Cerrar"
-            style={{
-              width: 32, height: 32,
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: '#fff',
-              cursor: 'pointer',
-              fontSize: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            ✕
           </button>
         )}
       </div>

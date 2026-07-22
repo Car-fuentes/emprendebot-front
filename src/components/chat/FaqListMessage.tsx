@@ -18,8 +18,8 @@ export function FaqListMessage({ faqs, onSelect }: FaqListMessageProps) {
             gap: 12,
             width: '100%',
             padding: '12px 14px',
-            background: '#fff',
-            border: '1.5px solid #E5E7EB',
+            background: 'var(--color-bg)',
+            border: '1.5px solid var(--color-border)',
             borderRadius: 'var(--radius-full)',
             cursor: 'pointer',
             textAlign: 'left',
@@ -31,17 +31,17 @@ export function FaqListMessage({ faqs, onSelect }: FaqListMessageProps) {
             ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(19,171,162,0.04)'
           }}
           onMouseLeave={e => {
-            (e.currentTarget as HTMLButtonElement).style.borderColor = '#E5E7EB'
-            ;(e.currentTarget as HTMLButtonElement).style.background = '#fff'
+            (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--color-border)'
+            ;(e.currentTarget as HTMLButtonElement).style.background = 'var(--color-bg)'
           }}
         >
           {/* Círculo vacío */}
           <div style={{
             width: 20, height: 20, borderRadius: '50%',
-            border: '1.5px solid #D1D5DB',
+            border: '1.5px solid var(--color-border)',
             flexShrink: 0,
           }} />
-          <span style={{ fontSize: 14, color: '#111', lineHeight: 1.4 }}>
+          <span style={{ fontSize: 14, color: 'var(--color-text-primary)', lineHeight: 1.4 }}>
             {faq.pregunta}
           </span>
         </button>

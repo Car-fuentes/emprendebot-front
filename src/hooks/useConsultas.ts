@@ -16,6 +16,7 @@ interface UseConsultasResult {
   sortOption: ConsultaSortOption
   searchQuery: string
   isLoading: boolean
+  isShowingDemo: boolean
   setEstadoFilter: (filter: ConsultaEstadoFilter) => void
   setCanalFilter: (filter: ConsultaCanalFilter) => void
   setSortOption: (sort: ConsultaSortOption) => void
@@ -73,7 +74,8 @@ export function useConsultas(userId?: string): UseConsultasResult {
   }, [userId])
 
   useEffect(() => {
-    void reloadConsultas()
+    const timeoutId = window.setTimeout(() => void reloadConsultas(), 0)
+    return () => window.clearTimeout(timeoutId)
   }, [reloadConsultas])
 
   const filteredConsultas = useMemo(() => {
@@ -92,6 +94,10 @@ export function useConsultas(userId?: string): UseConsultasResult {
     if (!selectedConsultaId) return null
     return consultas.find(consulta => consulta.id === selectedConsultaId) ?? null
   }, [consultas, selectedConsultaId])
+
+  const isShowingDemo = useMemo(() => (
+    consultas.length > 0 && consultas.every(consulta => !consulta.id.includes('-'))
+  ), [consultas])
 
   const selectConsulta = useCallback((consultaId: string) => {
     setSelectedConsultaId(consultaId)
@@ -121,6 +127,7 @@ export function useConsultas(userId?: string): UseConsultasResult {
     sortOption,
     searchQuery,
     isLoading,
+    isShowingDemo,
     setEstadoFilter,
     setCanalFilter,
     setSortOption,

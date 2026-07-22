@@ -5,7 +5,6 @@ import { useBusiness } from '../context/BusinessContext'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
 import { brand } from '../styles/brand'
-import { getStoredBusinesses } from '../services/businessStorage'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -33,10 +32,9 @@ export function LoginPage() {
         return stored ? JSON.parse(stored) : null
       })
       if (user) {
-        loadBusiness(user.id)
+        const business = await loadBusiness(user.id)
         // Si ya tiene negocio → dashboard, si no → setup
-        const hasBusiness = getStoredBusinesses().some(business => business.userId === user.id)
-        navigate(hasBusiness ? '/dashboard' : '/configurar')
+        navigate(business ? '/dashboard' : '/configurar')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión')
@@ -64,13 +62,13 @@ export function LoginPage() {
             fontFamily: 'var(--font-family)',
           }}
         >
-          ← Crear cuenta
+          ← Inicio
         </button>
       </div>
 
       <div style={{ flex: 1, padding: '8px 24px 40px' }}>
         <h1 style={{ fontSize: '26px', fontWeight: 700, marginBottom: '6px' }}>
-          Bienvenida de nuevo
+          Bienvenida/o de nuevo
         </h1>
         <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '32px' }}>
           Ingresá a tu cuenta para continuar.
@@ -90,7 +88,7 @@ export function LoginPage() {
             <Input
               label="Contraseña"
               type={showPassword ? 'text' : 'password'}
-              placeholder="Mínimo 6 caracteres"
+              placeholder="Mínimo 8 caracteres"
               value={password}
               onChange={e => setPassword(e.target.value)}
               autoComplete="current-password"
@@ -115,7 +113,7 @@ export function LoginPage() {
           </div>
 
           <Button type="submit" fullWidth size="lg" loading={loading} style={{ background: brand.primaryGradient, borderRadius: 'var(--radius-md)', border: 'none' }}>
-            INICIA SESIÓN
+            INICIAR SESIÓN
           </Button>
         </form>
 

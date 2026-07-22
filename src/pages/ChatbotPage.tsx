@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ChatHeader } from '../components/chat/ChatHeader'
 import { ChatInput } from '../components/chat/ChatInput'
@@ -8,14 +8,26 @@ import { ProductCatalogMessage } from '../components/chat/ProductCatalogMessage'
 import { QuickReplies } from '../components/chat/QuickReplies'
 import { useBusiness } from '../context/BusinessContext'
 import { useChat } from '../hooks/useChat'
-import type { Business } from '../types'
+import type { Business, FAQ } from '../types'
+import { useAuth } from '../context/AuthContext'
+import { getPublicFaqsApi } from '../services/publicApi'
 
 // Página pública: www.emprendebot/[slug]
 export function ChatbotPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
   const { loadBusinessBySlug } = useBusiness()
+  const { user } = useAuth()
   const business = slug ? loadBusinessBySlug(slug) : null
+
+  const [publicFaqs, setPublicFaqs] = useState<FAQ[] | null>(null)
+
+  useEffect(() => {
+    if (!slug) return
+    getPublicFaqsApi(slug)
+      .then(faqs => setPublicFaqs(faqs))
+      .catch(() => setPublicFaqs([]))
+  }, [slug])
 
   if (!business) {
     return (
@@ -43,10 +55,21 @@ export function ChatbotPage() {
     )
   }
 
-  return <PublicChat key={business.id} business={business} />
+  // Merge API FAQs into business (overrides localStorage FAQs when available)
+  const businessWithFaqs: Business = publicFaqs !== null
+    ? { ...business, faq: publicFaqs }
+    : business
+
+  return (
+    <PublicChat
+      key={business.id}
+      business={businessWithFaqs}
+      onBackToDashboard={user ? () => navigate('/dashboard') : undefined}
+    />
+  )
 }
 
-function PublicChat({ business }: { business: Business }) {
+function PublicChat({ business, onBackToDashboard }: { business: Business; onBackToDashboard?: () => void }) {
   const { messages, isTyping, sendMessage, submitOrder, reset } = useChat(business)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -94,7 +117,7 @@ function PublicChat({ business }: { business: Business }) {
 
   return (
     <div className="public-chat">
-      <ChatHeader business={business} onRefresh={reset} />
+      <ChatHeader business={business} onRefresh={reset} onBackToDashboard={onBackToDashboard} />
 
       <div ref={messagesContainerRef} className="public-chat__messages">
         {messages.map(message => (

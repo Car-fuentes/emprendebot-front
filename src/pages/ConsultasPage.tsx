@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ConsultaCard } from '../components/consultas/ConsultaCard'
 import { ConsultaDetail } from '../components/consultas/ConsultaDetail'
 import { Drawer } from '../components/layout/Drawer'
@@ -6,6 +7,7 @@ import { AppIcon } from '../components/ui/AppIcon'
 import { Avatar } from '../components/ui/Avatar'
 import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
+import { brand } from '../styles/brand'
 import {
   useConsultas,
   type ConsultaCanalFilter,
@@ -51,9 +53,11 @@ const labelStyle: CSSProperties = {
 }
 
 export function ConsultasPage() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { business, loadBusiness } = useBusiness()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [demoStarted, setDemoStarted] = useState(false)
   const {
     consultas,
     filteredConsultas,
@@ -64,6 +68,7 @@ export function ConsultasPage() {
     sortOption,
     searchQuery,
     isLoading,
+    isShowingDemo,
     setEstadoFilter,
     setCanalFilter,
     setSortOption,
@@ -80,6 +85,21 @@ export function ConsultasPage() {
   if (!user) return null
 
   const showingDetail = Boolean(selectedConsultaId && selectedConsulta)
+  const showingDemoIntro = isLoading || (isShowingDemo && !demoStarted)
+
+  const handleBack = () => {
+    if (showingDetail) {
+      clearSelection()
+      return
+    }
+
+    if (isShowingDemo && demoStarted) {
+      setDemoStarted(false)
+      return
+    }
+
+    navigate('/dashboard')
+  }
 
   return (
     <>
@@ -120,7 +140,45 @@ export function ConsultasPage() {
           <Avatar name={user.nombre} size={30} />
         </header>
 
-        <main style={{ flex: 1, padding: '18px 20px 24px', overflowY: 'auto' }}>
+        <main style={{
+          flex: 1,
+          padding: '18px 20px 24px',
+          overflowY: 'auto',
+          background: showingDemoIntro ? 'var(--color-bg-subtle)' : 'var(--color-bg)',
+        }}>
+          <button
+            type="button"
+            onClick={handleBack}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              marginBottom: showingDetail ? 22 : 12,
+              padding: 0,
+              color: 'var(--color-text-primary)',
+              fontSize: 12,
+              fontWeight: 700,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: 20,
+                height: 20,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%',
+                background: 'var(--color-surface-muted)',
+                fontSize: 14,
+                lineHeight: 1,
+              }}
+            >
+              {'<'}
+            </span>
+            Volver
+          </button>
+
           {!showingDetail && (
             <div style={{ marginBottom: 14 }}>
               <h1 style={{ fontSize: 21, fontWeight: 700, marginBottom: 3 }}>Consultas</h1>
@@ -130,7 +188,7 @@ export function ConsultasPage() {
             </div>
           )}
 
-          {!showingDetail && (
+          {!showingDetail && !showingDemoIntro && (
             <section
               aria-label="Filtros de consultas"
               style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 15 }}
@@ -181,7 +239,107 @@ export function ConsultasPage() {
             </section>
           )}
 
-          {isLoading ? (
+          {!showingDetail && isShowingDemo && !isLoading && !showingDemoIntro && (
+            <aside
+              aria-label="Consultas de ejemplo"
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 11,
+                padding: '12px 14px',
+                marginBottom: 15,
+                border: '1px solid var(--color-demo-border)',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--color-demo-bg)',
+                color: 'var(--color-secondary)',
+                boxShadow: 'var(--shadow-sm)',
+              }}
+            >
+              <span aria-hidden="true" style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                width: 28,
+                height: 28,
+                borderRadius: 9,
+                background: 'var(--color-primary)',
+                color: '#FFFFFF',
+              }}>
+                <AppIcon name="faq" size={16} strokeWidth={2} />
+              </span>
+              <div>
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                  Estas son consultas de ejemplo
+                </p>
+                <p style={{ margin: '3px 0 0', fontSize: 11, lineHeight: 1.45 }}>
+                  Podés explorarlas para conocer cómo funciona esta sección. Cuando recibas tu primera consulta real, estos ejemplos desaparecerán automáticamente.
+                </p>
+              </div>
+            </aside>
+          )}
+
+          {showingDemoIntro ? (
+            <section style={{
+              padding: '48px 24px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 16,
+              textAlign: 'center',
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 16,
+              boxShadow: 'var(--shadow-sm)',
+            }}>
+              <span aria-hidden="true" style={{
+                width: 80,
+                height: 80,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 20,
+                background: 'rgba(19, 168, 162, 0.11)',
+                color: 'var(--color-primary)',
+              }}>
+                <AppIcon name="chat" size={38} strokeWidth={1.8} />
+              </span>
+
+              <h2 style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.35, margin: 0, padding: 10, maxWidth: 280 }}>
+                Todavía no recibiste consultas
+              </h2>
+
+              <p style={{
+                maxWidth: 260,
+                margin: 0,
+                padding: 8,
+                color: 'var(--color-text-secondary)',
+                fontSize: 14,
+                lineHeight: 1.5,
+                textAlign: 'center',
+              }}>
+                Cuando un cliente inicie una conversación desde el chatbot, la consulta aparecerá aquí automáticamente.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setDemoStarted(true)}
+                style={{
+                  margin: 12,
+                  padding: '14px 40px',
+                  borderRadius: 'var(--radius-md)',
+                  background: brand.primaryGradient,
+                  color: '#FFFFFF',
+                  boxShadow: brand.shadowAction,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  letterSpacing: 1,
+                }}
+              >
+                COMENZAR
+              </button>
+            </section>
+          ) : isLoading ? (
             <section style={{ padding: '28px 20px', textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: 13 }}>
               Cargando consultas...
             </section>
@@ -203,7 +361,6 @@ export function ConsultasPage() {
             <ConsultaDetail
               consulta={selectedConsulta}
               onUpdateStatus={updateConsultaStatus}
-              onBack={clearSelection}
             />
           ) : (
             <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

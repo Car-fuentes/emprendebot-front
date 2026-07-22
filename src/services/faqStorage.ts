@@ -4,6 +4,7 @@ import {
   saveStoredBusinesses,
   updateStoredBusiness,
 } from './businessStorage'
+import { DUPLICATE_FAQ_MESSAGE, normalizeFaqQuestion } from '../utils/normalizeFaqQuestion'
 
 export interface FAQFormData {
   pregunta: string
@@ -86,6 +87,7 @@ export function normalizeFaqs(
   categories: FAQCategory[] = [],
 ): FAQ[] {
   const seenSuggestionIds = new Set<string>()
+  const seenQuestions = new Set<string>()
   const orderedFaqs = faqs
     .map((faq, originalIndex) => ({ faq, originalIndex }))
     .sort((left, right) => {
@@ -97,6 +99,13 @@ export function normalizeFaqs(
       if (!faq.sourceSuggestionId) return true
       if (seenSuggestionIds.has(faq.sourceSuggestionId)) return false
       seenSuggestionIds.add(faq.sourceSuggestionId)
+      return true
+    })
+    .filter(({ faq }) => {
+      const normalizedQuestion = normalizeFaqQuestion(faq.pregunta ?? '')
+      if (!normalizedQuestion) return true
+      if (seenQuestions.has(normalizedQuestion)) return false
+      seenQuestions.add(normalizedQuestion)
       return true
     })
 
@@ -234,6 +243,11 @@ export async function createFaq(
   const now = new Date().toISOString()
   let faq: FAQ | null = null
   const result = updateBusinessFaqs(businessId, (currentFaqs, currentCategories) => {
+    const normalizedQuestion = normalizeFaqQuestion(normalizedData.pregunta)
+    if (currentFaqs.some(item => normalizeFaqQuestion(item.pregunta) === normalizedQuestion)) {
+      throw new Error(DUPLICATE_FAQ_MESSAGE)
+    }
+
     const existingFaq = normalizedData.sourceSuggestionId
       ? currentFaqs.find(item => item.sourceSuggestionId === normalizedData.sourceSuggestionId)
       : undefined
@@ -272,6 +286,11 @@ export async function updateFaq(
   const normalizedData = normalizeFaqData(data)
   let updatedFaq: FAQ | null = null
   const result = updateBusinessFaqs(businessId, (currentFaqs, currentCategories) => {
+    const normalizedQuestion = normalizeFaqQuestion(normalizedData.pregunta)
+    if (currentFaqs.some(faq => faq.id !== faqId && normalizeFaqQuestion(faq.pregunta) === normalizedQuestion)) {
+      throw new Error(DUPLICATE_FAQ_MESSAGE)
+    }
+
     const { category, categories } = resolveCategory(currentCategories, normalizedData)
     const faqs = currentFaqs.map(faq => {
       if (faq.id !== faqId) return faq

@@ -15,6 +15,16 @@
   --color-bg: #FFFFFF;
   --color-bg-subtle: #fefefe;
   --color-bg-answer: #1372a8;
+  --color-surface-muted: #F3F6F8;
+  --color-field: #F7F9FB;
+  --color-demo-bg: rgba(19, 171, 162, 0.06);
+  --color-demo-border: rgba(19, 171, 162, 0.2);
+  --status-new-bg: #FEECEF;
+  --status-new-text: #D9363E;
+  --status-progress-bg: #FFF1E8;
+  --status-progress-text: #D85C0B;
+  --status-closed-bg: #EEF2F6;
+  --status-closed-text: #556579;
 
   --color-success: #22c55e;
   --color-warning: #f59e0b;
@@ -39,6 +49,35 @@
   --transition: 200ms ease;
 }
 
+:root[data-theme='dark'] {
+  --color-primary: #2BC7C0;
+  --color-primary-hover: #43D2CC;
+  --color-primary-pressed: #1AA9A3;
+  --color-primary-disabled: #315F61;
+  --color-secondary: #70B6D9;
+  --color-secondary-hover: #8BC7E3;
+  --color-text-primary: #F2F7FA;
+  --color-text-secondary: #A8B5C3;
+  --color-border: #354861;
+  --color-bg: #1D283A;
+  --color-bg-subtle: #172130;
+  --color-bg-answer: #255F80;
+  --color-surface-muted: #26364B;
+  --color-field: #223147;
+  --color-demo-bg: rgba(19, 171, 162, 0.06);
+  --color-demo-border: rgba(19, 171, 162, 0.2);
+  --status-new-bg: #45262C;
+  --status-new-text: #FF8B92;
+  --status-progress-bg: #493222;
+  --status-progress-text: #FFAD72;
+  --status-closed-bg: #2B3A48;
+  --status-closed-text: #B8C5D1;
+  --color-info: #70B6D9;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.32), 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.38), 0 2px 4px rgba(0,0,0,0.22);
+  --shadow-lg: 0 10px 24px rgba(0,0,0,0.44), 0 4px 8px rgba(0,0,0,0.26);
+}
+
 /* ===== RESET & GLOBAL ===== */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -58,6 +97,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
+  transition: background-color var(--transition), color var(--transition);
 }
 
 /* Mobile First: contenedor centrado en pantallas grandes */
@@ -267,12 +307,12 @@ body.public-chat-active #root {
 
 .quick-replies__button:hover {
   border-color: rgba(37, 95, 128, 0.55);
-  background: #f7faff;
+  background: var(--color-surface-muted);
   box-shadow: 0 2px 6px rgba(37, 95, 128, 0.1);
 }
 
 .quick-replies__button:active {
-  background: #edf4ff;
+  background: var(--color-surface-muted);
   box-shadow: 0 1px 3px rgba(37, 95, 128, 0.12);
   transform: scale(0.98);
 }
@@ -314,6 +354,11 @@ body.public-chat-active #root {
   .quick-replies__button:active {
     transform: none;
   }
+}
+
+@keyframes google-verify-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
 }
 
 @media (min-width: 481px) {
