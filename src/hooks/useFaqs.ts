@@ -3,6 +3,7 @@ import type { Business, FAQ, FAQCategory, FAQFormData } from '../types'
 import { createFaqApi, deleteFaqApi, getFaqsApi, updateFaqApi } from '../services/faqApi'
 import { createFaqCategoryApi, getFaqCategoriesApi } from '../services/faqCategoryApi'
 import { mapFaqApiToUi, mapFaqCategoryApiToUi } from '../services/faqMappers'
+import { DUPLICATE_FAQ_MESSAGE, normalizeFaqQuestion } from '../utils/normalizeFaqQuestion'
 
 export type FAQStatusFilter = 'all' | 'active' | 'inactive'
 export type FAQSortOption = 'created-desc' | 'created-asc' | 'alpha-asc' | 'alpha-desc'
@@ -70,6 +71,14 @@ function normalizeApiError(error: unknown): Error {
     || normalized.includes('bot_not_found')
   ) {
     return new Error(BOT_CONFIG_MESSAGE)
+  }
+
+  if (
+    normalized.includes('faq_duplicate')
+    || normalized.includes('pregunta frecuente similar')
+    || normalized.includes('409')
+  ) {
+    return new Error(DUPLICATE_FAQ_MESSAGE)
   }
 
   return new Error(message)
@@ -198,6 +207,10 @@ export function useFaqs(filters: UseFaqFilters, localSource?: UseFaqLocalSource)
 
   const createFaq = useCallback(async (data: FAQFormData): Promise<FAQ> => {
     const normalizedData = normalizeFaqData(data)
+    const normalizedQuestion = normalizeFaqQuestion(normalizedData.pregunta)
+    if (allFaqs.some(faq => normalizeFaqQuestion(faq.pregunta) === normalizedQuestion)) {
+      throw new Error(DUPLICATE_FAQ_MESSAGE)
+    }
 
     if (localSource) {
       const createdFaq = await localSource.createFaq(normalizedData)
@@ -222,10 +235,14 @@ export function useFaqs(filters: UseFaqFilters, localSource?: UseFaqLocalSource)
     } catch (createError) {
       throw normalizeApiError(createError)
     }
-  }, [localSource, resolveCategoryId])
+  }, [allFaqs, localSource, resolveCategoryId])
 
   const updateFaq = useCallback(async (faqId: string, data: FAQFormData): Promise<FAQ> => {
     const normalizedData = normalizeFaqData(data)
+    const normalizedQuestion = normalizeFaqQuestion(normalizedData.pregunta)
+    if (allFaqs.some(faq => faq.id !== faqId && normalizeFaqQuestion(faq.pregunta) === normalizedQuestion)) {
+      throw new Error(DUPLICATE_FAQ_MESSAGE)
+    }
 
     if (localSource) {
       const updatedFaq = await localSource.updateFaq(faqId, normalizedData)
@@ -250,7 +267,7 @@ export function useFaqs(filters: UseFaqFilters, localSource?: UseFaqLocalSource)
     } catch (updateError) {
       throw normalizeApiError(updateError)
     }
-  }, [localSource, resolveCategoryId])
+  }, [allFaqs, localSource, resolveCategoryId])
 
   const deleteFaq = useCallback(async (faqId: string): Promise<void> => {
     if (localSource) {

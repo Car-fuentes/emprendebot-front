@@ -11,6 +11,7 @@ import { useBusiness } from '../context/BusinessContext'
 import { useFaqs, type FAQSortOption, type FAQStatusFilter } from '../hooks/useFaqs'
 import type { FAQ, FAQFormData } from '../types'
 import { brand } from '../styles/brand'
+import { DUPLICATE_FAQ_MESSAGE, normalizeFaqQuestion } from '../utils/normalizeFaqQuestion'
 import {
   getFaqSuggestions,
   mapSuggestionToFaqFormData,
@@ -281,6 +282,17 @@ export function FaqPage() {
   }
 
   const handleSubmit = async (data: FAQFormData) => {
+    const normalizedQuestion = normalizeFaqQuestion(data.pregunta)
+    const duplicateQuestion = allFaqs.some(faq => (
+      faq.id !== editingFaq?.id
+      && normalizeFaqQuestion(faq.pregunta) === normalizedQuestion
+    ))
+
+    if (duplicateQuestion) {
+      setError(DUPLICATE_FAQ_MESSAGE)
+      return
+    }
+
     setFormLoading(true)
     setError('')
     try {
