@@ -165,6 +165,7 @@ export function FaqCard({
             disabled={busy}
             onClick={() => onEdit(faq)}
             aria-label={`Editar ${faq.pregunta}`}
+            title="Editar"
             style={{
               width: '24px',
               height: '24px',
@@ -186,6 +187,7 @@ export function FaqCard({
             disabled={busy}
             onClick={() => setConfirmingDelete(true)}
             aria-label={`Eliminar ${faq.pregunta}`}
+            title="Eliminar"
             style={{
               width: '24px',
               height: '24px',
