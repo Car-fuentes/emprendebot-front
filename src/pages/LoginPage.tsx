@@ -113,7 +113,7 @@ export function LoginPage() {
           </div>
 
           <Button type="submit" fullWidth size="lg" loading={loading} style={{ background: brand.primaryGradient, borderRadius: 'var(--radius-md)', border: 'none' }}>
-            INICIA SESIÓN
+            INICIAR SESIÓN
           </Button>
         </form>
 
