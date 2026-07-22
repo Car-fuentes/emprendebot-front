@@ -33,7 +33,13 @@ interface BotConfigResponse {
     telefono?: string | null
     respuestaDerivacion?: string | null
     logoUrl?: string | null
+    slug?: string | null
   }
+}
+
+interface UpdateSlugResponse {
+  success: boolean
+  slug: string
 }
 
 interface FormData {
@@ -45,6 +51,7 @@ interface FormData {
   mensajeBienvenida: string
   respuestaDerivacion: string
   logo: string
+  slug: string
 }
 
 const INITIAL: FormData = {
@@ -56,6 +63,7 @@ const INITIAL: FormData = {
   mensajeBienvenida: '',
   respuestaDerivacion: '',
   logo: '',
+  slug: '',
 }
 
 const textareaStyle: React.CSSProperties = {
@@ -109,6 +117,7 @@ export function BusinessConfigPage() {
           mensajeBienvenida: business.mensajeBienvenida,
           respuestaDerivacion: business.respuestaDerivacion,
           logo: business.logo ?? '',
+          slug: business.slug,
         }
       : INITIAL
   )
@@ -120,7 +129,7 @@ export function BusinessConfigPage() {
   const [linkCopied, setLinkCopied] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
 
-  const publicUrl = business?.slug ? `${window.location.origin}/${business.slug}` : ''
+  const publicUrl = form.slug ? `${window.location.origin}/${form.slug}` : ''
 
   // Cargar rubros desde el backend (no requiere auth)
   useEffect(() => {
@@ -145,6 +154,7 @@ export function BusinessConfigPage() {
         telefono: data.configuracion.telefono ?? '',
         respuestaDerivacion: data.configuracion.respuestaDerivacion ?? '',
         logo: data.configuracion.logoUrl ?? '',
+        slug: data.configuracion.slug ?? '',
       }))
     }).catch(err => {
       setError(err instanceof Error ? err.message : 'No se pudo cargar la configuración.')
@@ -182,6 +192,10 @@ export function BusinessConfigPage() {
         setError('Todos los campos marcados con * son obligatorios.')
         return
       }
+      if (!form.slug.trim()) {
+        setError('El enlace público es obligatorio.')
+        return
+      }
     } else {
       if (!form.nombre) {
         setError('El nombre del negocio es obligatorio.')
@@ -206,6 +220,14 @@ export function BusinessConfigPage() {
           logoUrl: selectedLogo ? undefined : form.logo,
         }),
       })
+
+      if (isEdit && form.slug && form.slug !== business?.slug) {
+        const slugActualizado = await apiRequest<UpdateSlugResponse>('/bot/slug', {
+          method: 'PATCH',
+          body: JSON.stringify({ slug: form.slug }),
+        })
+        setForm(prev => ({ ...prev, slug: slugActualizado.slug }))
+      }
 
       if (selectedLogo) {
         const logoData = new FormData()
@@ -608,15 +630,48 @@ export function BusinessConfigPage() {
 
               {/* URL */}
               <div style={{
+                minHeight: 44,
+                display: 'flex',
+                alignItems: 'center',
                 background: 'var(--color-bg)',
                 border: '1px solid var(--color-border)',
                 borderRadius: 'var(--radius-sm)',
-                padding: '10px 14px',
-                fontSize: '13px',
-                color: 'var(--color-text-secondary)',
-                wordBreak: 'break-all',
+                overflow: 'hidden',
               }}>
-                {publicUrl}
+                <span style={{
+                  padding: '0 0 0 14px',
+                  color: 'var(--color-text-secondary)',
+                  fontSize: '13px',
+                  whiteSpace: 'nowrap',
+                  maxWidth: '60%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}>
+                  {window.location.origin}/
+                </span>
+                <input
+                  type="text"
+                  aria-label="Identificador del enlace público"
+                  value={form.slug}
+                  maxLength={100}
+                  onChange={event => {
+                    setLinkCopied(false)
+                    setForm(prev => ({ ...prev, slug: event.target.value }))
+                  }}
+                  placeholder="mi-negocio"
+                  style={{
+                    minWidth: 0,
+                    flex: 1,
+                    height: 42,
+                    padding: '0 14px 0 2px',
+                    border: 'none',
+                    outline: 'none',
+                    background: 'transparent',
+                    color: 'var(--color-text-primary)',
+                    fontFamily: 'var(--font-family)',
+                    fontSize: '13px',
+                  }}
+                />
               </div>
 
               {/* Botón copiar */}
