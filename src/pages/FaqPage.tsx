@@ -448,9 +448,7 @@ export function FaqPage() {
                 Preguntas frecuentes
               </h1>
               <p style={{ color: FAQ_MUTED, fontSize: '12px', lineHeight: 1.35 }}>
-                {allFaqs.length > 0
-                  ? `${allFaqs.length} ${allFaqs.length === 1 ? 'pregunta agregada' : 'preguntas agregadas'}`
-                  : 'Administrá las respuestas automáticas de tu negocio.'}
+                Administrá las respuestas automáticas de tu negocio. Seleccioná algunas preguntas sugeridas para comenzar o creá una nueva. Después podrás editarlas cuando quieras.
               </p>
             </div>
             {!showForm && !showSuggestions && allFaqs.length > 0 && (
@@ -526,21 +524,6 @@ export function FaqPage() {
                   gap: '10px',
                   marginBottom: '18px',
                 }}>
-                  <div style={{
-                    padding: 0,
-                    background: 'transparent',
-                    border: 'none',
-                    borderRadius: 0,
-                    boxShadow: 'none',
-                  }}>
-                    <h2 style={{ fontSize: '19px', fontWeight: 800, marginBottom: '7px', color: FAQ_TEXT, lineHeight: 1.15 }}>
-                      Agregá tus primeras preguntas frecuentes
-                    </h2>
-                    <p style={{ color: FAQ_MUTED, fontSize: '11px', lineHeight: 1.45, maxWidth: '280px' }}>
-                      Elegí algunas de estas preguntas sugeridas para comenzar. Podrás editarlas más adelante.
-                    </p>
-                  </div>
-
                   {suggestionsLoading ? (
                     <div style={{
                       padding: '20px',
