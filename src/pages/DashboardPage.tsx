@@ -96,7 +96,7 @@ export function DashboardPage() {
 
   const firstName = user.nombre.split(' ')[0]
   const businessName = business?.nombre ?? 'Tu negocio'
-  const selectedRubro = business?.rubro || user.rubro
+  const selectedRubro = business?.rubroNombre || business?.rubro || user.rubro
   const businessType = selectedRubro ? rubroLabels[selectedRubro] ?? selectedRubro : 'Rubro no configurado'
 
   const metrics = [

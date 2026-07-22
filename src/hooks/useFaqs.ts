@@ -3,6 +3,7 @@ import type { Business, FAQ, FAQCategory, FAQFormData } from '../types'
 import { createFaqApi, deleteFaqApi, getFaqsApi, updateFaqApi } from '../services/faqApi'
 import { createFaqCategoryApi, getFaqCategoriesApi } from '../services/faqCategoryApi'
 import { mapFaqApiToUi, mapFaqCategoryApiToUi } from '../services/faqMappers'
+import { DUPLICATE_FAQ_MESSAGE, normalizeFaqQuestion } from '../utils/normalizeFaqQuestion'
 
 export type FAQStatusFilter = 'all' | 'active' | 'inactive'
 export type FAQSortOption = 'created-desc' | 'created-asc' | 'alpha-asc' | 'alpha-desc'
@@ -72,6 +73,14 @@ function normalizeApiError(error: unknown): Error {
     return new Error(BOT_CONFIG_MESSAGE)
   }
 
+  if (
+    normalized.includes('faq_duplicate')
+    || normalized.includes('pregunta frecuente similar')
+    || normalized.includes('409')
+  ) {
+    return new Error(DUPLICATE_FAQ_MESSAGE)
+  }
+
   return new Error(message)
 }
 
@@ -84,7 +93,7 @@ function normalizeFaqData(data: FAQFormData): FAQFormData {
   if (!pregunta) throw new Error('La pregunta es obligatoria.')
   if (!respuesta) throw new Error('La respuesta es obligatoria.')
   if (!data.categoriaId && !nuevaCategoriaNombre) {
-    throw new Error('Selecciona o crea una categoria para la FAQ.')
+    throw new Error('Seleccioná o creá una categoría para la FAQ.')
   }
 
   return {
@@ -181,7 +190,7 @@ export function useFaqs(filters: UseFaqFilters, localSource?: UseFaqLocalSource)
     if (data.categoriaId) return { categoryId: data.categoriaId, categories }
 
     const nombre = data.nuevaCategoriaNombre?.trim() || data.categoria?.trim()
-    if (!nombre) throw new Error('Selecciona o crea una categoria para la FAQ.')
+    if (!nombre) throw new Error('Seleccioná o creá una categoría para la FAQ.')
 
     const existingCategory = categories.find(category => category.nombre.toLowerCase() === nombre.toLowerCase())
     if (existingCategory) return { categoryId: existingCategory.id, categories }
@@ -198,6 +207,10 @@ export function useFaqs(filters: UseFaqFilters, localSource?: UseFaqLocalSource)
 
   const createFaq = useCallback(async (data: FAQFormData): Promise<FAQ> => {
     const normalizedData = normalizeFaqData(data)
+    const normalizedQuestion = normalizeFaqQuestion(normalizedData.pregunta)
+    if (allFaqs.some(faq => normalizeFaqQuestion(faq.pregunta) === normalizedQuestion)) {
+      throw new Error(DUPLICATE_FAQ_MESSAGE)
+    }
 
     if (localSource) {
       const createdFaq = await localSource.createFaq(normalizedData)
@@ -222,10 +235,14 @@ export function useFaqs(filters: UseFaqFilters, localSource?: UseFaqLocalSource)
     } catch (createError) {
       throw normalizeApiError(createError)
     }
-  }, [localSource, resolveCategoryId])
+  }, [allFaqs, localSource, resolveCategoryId])
 
   const updateFaq = useCallback(async (faqId: string, data: FAQFormData): Promise<FAQ> => {
     const normalizedData = normalizeFaqData(data)
+    const normalizedQuestion = normalizeFaqQuestion(normalizedData.pregunta)
+    if (allFaqs.some(faq => faq.id !== faqId && normalizeFaqQuestion(faq.pregunta) === normalizedQuestion)) {
+      throw new Error(DUPLICATE_FAQ_MESSAGE)
+    }
 
     if (localSource) {
       const updatedFaq = await localSource.updateFaq(faqId, normalizedData)
@@ -250,7 +267,7 @@ export function useFaqs(filters: UseFaqFilters, localSource?: UseFaqLocalSource)
     } catch (updateError) {
       throw normalizeApiError(updateError)
     }
-  }, [localSource, resolveCategoryId])
+  }, [allFaqs, localSource, resolveCategoryId])
 
   const deleteFaq = useCallback(async (faqId: string): Promise<void> => {
     if (localSource) {
@@ -271,7 +288,7 @@ export function useFaqs(filters: UseFaqFilters, localSource?: UseFaqLocalSource)
 
   const toggleFaq = useCallback(async (faqId: string): Promise<FAQ> => {
     const faq = allFaqs.find(item => item.id === faqId)
-    if (!faq) throw new Error('No se encontro la FAQ que queres actualizar.')
+    if (!faq) throw new Error('No se encontró la FAQ que querés actualizar.')
 
     if (localSource) {
       const updatedFaq = await localSource.toggleFaq(faqId)
