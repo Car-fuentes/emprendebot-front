@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<void>
-  loginWithGoogle: () => Promise<User>
+  loginWithGoogle: (credential: string) => Promise<User>
   register: (nombre: string, email: string, password: string, rubro: string) => Promise<User>
   logout: () => void
 }
@@ -71,22 +71,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return saved ? JSON.parse(saved) : { id: '', nombre, email, slug: '' }
   }
 
-  const loginWithGoogle = async (): Promise<User> => {
-    // TODO(auth-google): reemplazar este mock por el SDK de Google y enviar
-    // el credential obtenido al endpoint del backend.
-    await new Promise(resolve => window.setTimeout(resolve, 500))
+  const loginWithGoogle = async (credential: string): Promise<User> => {
+    const data = await apiRequest<LoginResponse>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ credential }),
+      auth: false,
+    })
 
-    const mockUser: User = {
-      id: 'google-mock-user',
-      nombre: 'Usuario Demo',
-      email: 'demo.google@emprendebot.test',
-      slug: 'usuario-demo',
+    const googleUser: User = {
+      id: data.usuario.id,
+      nombre: data.usuario.nombre,
+      email: data.usuario.email,
+      slug: data.usuario.nombre.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, ''),
     }
 
-    localStorage.setItem(TOKEN_KEY, 'mock-google-token')
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(mockUser))
-    setUser(mockUser)
-    return mockUser
+    localStorage.setItem(TOKEN_KEY, data.token)
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(googleUser))
+    setUser(googleUser)
+    return googleUser
   }
 
   const logout = () => {

@@ -25,9 +25,14 @@ interface RubrosResponse {
 interface BotConfigResponse {
   success: boolean
   configuracion: {
-    nombreNegocio: string
-    mensajeBienvenida: string
-    rubroId?: string
+    nombreNegocio?: string | null
+    mensajeBienvenida?: string | null
+    rubroId?: string | null
+    descripcionBreve?: string | null
+    horarioAtencion?: string | null
+    telefono?: string | null
+    respuestaDerivacion?: string | null
+    logoUrl?: string | null
   }
 }
 
@@ -87,7 +92,7 @@ const selectStyle: React.CSSProperties = {
 export function BusinessConfigPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { saveBusiness, business, updateBusiness } = useBusiness()
+  const { saveBusiness, business, loadBusiness } = useBusiness()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { isDark, setTheme } = useTheme()
 
@@ -97,7 +102,7 @@ export function BusinessConfigPage() {
     business
       ? {
           nombre: business.nombre,
-          rubroId: '',
+          rubroId: business.rubroId ?? '',
           descripcion: business.descripcion,
           horario: business.horario,
           telefono: business.telefono,
@@ -108,6 +113,7 @@ export function BusinessConfigPage() {
       : INITIAL
   )
   const [rubros, setRubros] = useState<RubroApi[]>([])
+  const [selectedLogo, setSelectedLogo] = useState<File | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
@@ -120,21 +126,30 @@ export function BusinessConfigPage() {
   useEffect(() => {
     apiRequest<RubrosResponse>('/bot/rubros', { auth: false }).then(data => {
       setRubros(data.rubros)
-    }).catch(() => {})
+    }).catch(err => {
+      setError(err instanceof Error ? err.message : 'No se pudieron cargar los rubros.')
+    })
   }, [])
 
   // Cargar config desde el backend al entrar en modo edición
   useEffect(() => {
-    if (!isEdit) return
+    if (!user) return
     apiRequest<BotConfigResponse>('/bot').then(data => {
       setForm(prev => ({
         ...prev,
         nombre: data.configuracion.nombreNegocio || prev.nombre,
         mensajeBienvenida: data.configuracion.mensajeBienvenida || prev.mensajeBienvenida,
-        rubroId: data.configuracion.rubroId || prev.rubroId,
+        rubroId: data.configuracion.rubroId ?? '',
+        descripcion: data.configuracion.descripcionBreve ?? '',
+        horario: data.configuracion.horarioAtencion ?? '',
+        telefono: data.configuracion.telefono ?? '',
+        respuestaDerivacion: data.configuracion.respuestaDerivacion ?? '',
+        logo: data.configuracion.logoUrl ?? '',
       }))
-    }).catch(() => {})
-  }, [isEdit])
+    }).catch(err => {
+      setError(err instanceof Error ? err.message : 'No se pudo cargar la configuración.')
+    })
+  }, [user])
 
   const set = (field: keyof FormData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -143,6 +158,7 @@ export function BusinessConfigPage() {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setSelectedLogo(file)
     const reader = new FileReader()
     reader.onload = ev => {
       setForm(prev => ({ ...prev, logo: ev.target?.result as string }))
@@ -183,17 +199,30 @@ export function BusinessConfigPage() {
           nombreNegocio: form.nombre,
           mensajeBienvenida: form.mensajeBienvenida || undefined,
           rubroId: form.rubroId || undefined,
+          descripcionBreve: form.descripcion || undefined,
+          horarioAtencion: form.horario || undefined,
+          telefono: form.telefono || undefined,
+          respuestaDerivacion: form.respuestaDerivacion || undefined,
+          logoUrl: selectedLogo ? undefined : form.logo,
         }),
       })
+
+      if (selectedLogo) {
+        const logoData = new FormData()
+        logoData.append('imagenLogo', selectedLogo)
+        await apiRequest('/bot/config', {
+          method: 'PATCH',
+          body: logoData,
+        })
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar en el servidor.')
       setLoading(false)
       return
     }
 
-    if (isEdit) {
-      updateBusiness(form)
-    } else {
+    const syncedBusiness = await loadBusiness(user.id)
+    if (!syncedBusiness) {
       saveBusiness({ ...form, userId: user.id, rubro: user.rubro ?? '' })
     }
 
@@ -359,7 +388,11 @@ export function BusinessConfigPage() {
                   {form.logo && (
                     <button
                       type="button"
-                      onClick={() => setForm(prev => ({ ...prev, logo: '' }))}
+                      onClick={() => {
+                        setSelectedLogo(null)
+                        setForm(prev => ({ ...prev, logo: '' }))
+                        if (fileInputRef.current) fileInputRef.current.value = ''
+                      }}
                       style={{
                         fontSize: '12px', color: 'var(--color-error)',
                         border: 'none', background: 'none', cursor: 'pointer',

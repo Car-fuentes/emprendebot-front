@@ -5,7 +5,6 @@ import { useBusiness } from '../context/BusinessContext'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
 import { brand } from '../styles/brand'
-import { getStoredBusinesses } from '../services/businessStorage'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -33,10 +32,9 @@ export function LoginPage() {
         return stored ? JSON.parse(stored) : null
       })
       if (user) {
-        loadBusiness(user.id)
+        const business = await loadBusiness(user.id)
         // Si ya tiene negocio → dashboard, si no → setup
-        const hasBusiness = getStoredBusinesses().some(business => business.userId === user.id)
-        navigate(hasBusiness ? '/dashboard' : '/configurar')
+        navigate(business ? '/dashboard' : '/configurar')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión')
