@@ -67,6 +67,10 @@ const INITIAL: FormData = {
   slug: '',
 }
 
+const MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024
+const LOGO_UPLOAD_TIMEOUT_MS = 30_000
+const VALID_LOGO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+
 const textareaStyle: React.CSSProperties = {
   padding: '12px 16px',
   borderRadius: 'var(--radius-sm)',
@@ -124,6 +128,7 @@ export function BusinessConfigPage() {
   )
   const [rubros, setRubros] = useState<RubroApi[]>([])
   const [selectedLogo, setSelectedLogo] = useState<File | null>(null)
+  const [logoValidationError, setLogoValidationError] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
@@ -131,6 +136,7 @@ export function BusinessConfigPage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [slugPersonalizado, setSlugPersonalizado] = useState<boolean | null>(null)
   const [slugOriginal, setSlugOriginal] = useState(business?.slug ?? '')
+  const [persistedLogo, setPersistedLogo] = useState(business?.logo ?? '')
 
   const publicUrl = form.slug ? `${window.location.origin}/${form.slug}` : ''
 
@@ -161,6 +167,7 @@ export function BusinessConfigPage() {
       }))
       setSlugOriginal(data.configuracion.slug ?? '')
       setSlugPersonalizado(data.configuracion.slugPersonalizado)
+      setPersistedLogo(data.configuracion.logoUrl ?? '')
     }).catch(err => {
       setError(err instanceof Error ? err.message : 'No se pudo cargar la configuración.')
     })
@@ -173,12 +180,54 @@ export function BusinessConfigPage() {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    setError('')
+    setLogoValidationError('')
+
+    if (file.size > MAX_LOGO_SIZE_BYTES) {
+      setSelectedLogo(null)
+      setForm(prev => ({ ...prev, logo: persistedLogo }))
+      e.target.value = ''
+      setLoading(false)
+      setLogoValidationError('La imagen no puede superar los 2 MB.')
+      setError('La imagen no puede superar los 2 MB.')
+      return
+    }
+
+    if (!VALID_LOGO_TYPES.has(file.type)) {
+      setSelectedLogo(null)
+      setForm(prev => ({ ...prev, logo: persistedLogo }))
+      e.target.value = ''
+      setLoading(false)
+      setLogoValidationError('El formato de la imagen debe ser JPG, PNG o WEBP.')
+      setError('El formato de la imagen debe ser JPG, PNG o WEBP.')
+      return
+    }
+
     setSelectedLogo(file)
     const reader = new FileReader()
     reader.onload = ev => {
       setForm(prev => ({ ...prev, logo: ev.target?.result as string }))
     }
-    reader.readAsDataURL(file)
+    reader.onerror = () => {
+      setSelectedLogo(null)
+      setForm(prev => ({ ...prev, logo: persistedLogo }))
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      setLoading(false)
+      setLogoValidationError('No se pudo leer la imagen seleccionada.')
+      setError('No se pudo leer la imagen seleccionada.')
+    }
+
+    try {
+      reader.readAsDataURL(file)
+    } catch {
+      setSelectedLogo(null)
+      setForm(prev => ({ ...prev, logo: persistedLogo }))
+      e.target.value = ''
+      setLoading(false)
+      setLogoValidationError('No se pudo leer la imagen seleccionada.')
+      setError('No se pudo leer la imagen seleccionada.')
+    }
   }
 
   const handleCopyLink = () => {
@@ -209,6 +258,22 @@ export function BusinessConfigPage() {
     }
 
     if (!user) return
+
+    if (logoValidationError) {
+      setLoading(false)
+      setError(logoValidationError)
+      return
+    }
+
+    if (selectedLogo && selectedLogo.size > MAX_LOGO_SIZE_BYTES) {
+      setSelectedLogo(null)
+      setForm(prev => ({ ...prev, logo: persistedLogo }))
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      setLoading(false)
+      setLogoValidationError('La imagen no puede superar los 2 MB.')
+      setError('La imagen no puede superar los 2 MB.')
+      return
+    }
 
     const slugCambio = isEdit && form.slug.trim() !== slugOriginal
     if (slugCambio && slugPersonalizado) {
@@ -251,24 +316,43 @@ export function BusinessConfigPage() {
       if (selectedLogo) {
         const logoData = new FormData()
         logoData.append('imagenLogo', selectedLogo)
-        await apiRequest('/bot/config', {
-          method: 'PATCH',
-          body: logoData,
-        })
+        const controller = new AbortController()
+        const timeoutId = window.setTimeout(() => controller.abort(), LOGO_UPLOAD_TIMEOUT_MS)
+
+        try {
+          await apiRequest('/bot/config', {
+            method: 'PATCH',
+            body: logoData,
+            signal: controller.signal,
+          })
+        } catch (uploadError) {
+          if (controller.signal.aborted) {
+            throw new Error('La carga de la imagen tardó demasiado. Intentá nuevamente.')
+          }
+          throw uploadError
+        } finally {
+          window.clearTimeout(timeoutId)
+        }
       }
+
+      const syncedBusiness = await loadBusiness(user.id)
+      if (!syncedBusiness) {
+        saveBusiness({ ...form, userId: user.id, rubro: user.rubro ?? '' })
+      } else {
+        const savedLogo = syncedBusiness.logo ?? ''
+        setPersistedLogo(savedLogo)
+        setForm(prev => ({ ...prev, logo: savedLogo }))
+      }
+
+      setSelectedLogo(null)
+      setLogoValidationError('')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      setShowSuccessModal(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar en el servidor.')
+    } finally {
       setLoading(false)
-      return
     }
-
-    const syncedBusiness = await loadBusiness(user.id)
-    if (!syncedBusiness) {
-      saveBusiness({ ...form, userId: user.id, rubro: user.rubro ?? '' })
-    }
-
-    setLoading(false)
-    setShowSuccessModal(true)
   }
 
   return (
@@ -442,14 +526,14 @@ export function BusinessConfigPage() {
                     >Eliminar</button>
                   )}
                   <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
-                    JPG, PNG o SVG · máx. 2 MB
+                    JPG, PNG o WEBP · máx. 2 MB
                   </span>
                 </div>
               </div>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/svg+xml,image/webp"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={handleLogoChange}
                 style={{ display: 'none' }}
               />
