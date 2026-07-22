@@ -68,7 +68,7 @@ export function LoginPage() {
 
       <div style={{ flex: 1, padding: '8px 24px 40px' }}>
         <h1 style={{ fontSize: '26px', fontWeight: 700, marginBottom: '6px' }}>
-          Bienvenida de nuevo
+          Bienvenida/o de nuevo
         </h1>
         <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '32px' }}>
           Ingresá a tu cuenta para continuar.
