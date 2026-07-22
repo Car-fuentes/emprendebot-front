@@ -110,6 +110,7 @@ export interface Business {
   respuestaDerivacion: string
   rubro: Rubro | ''
   rubroId?: string
+  rubroNombre?: string
   productos: Product[]
   faqCategories?: FAQCategory[]
   faq: FAQ[]

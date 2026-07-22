@@ -29,6 +29,10 @@ interface BotConfigResponse {
     respuestaDerivacion?: string | null
     logoUrl?: string | null
     rubroId?: string | null
+    rubro?: {
+      id: string
+      nombre: string
+    } | null
     slug?: string | null
   }
 }
@@ -81,6 +85,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         logo: configuracion.logoUrl ?? undefined,
         rubro: stored?.rubro ?? '',
         rubroId: configuracion.rubroId ?? undefined,
+        rubroNombre: configuracion.rubro?.nombre ?? undefined,
         productos: stored?.productos ?? [],
         faq: stored?.faq ?? [],
         faqCategories: stored?.faqCategories ?? [],
