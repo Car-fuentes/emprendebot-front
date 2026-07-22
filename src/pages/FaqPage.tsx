@@ -260,7 +260,7 @@ export function FaqPage() {
     if (formLoading) return
 
     if (selectedSuggestionIds.length === 0) {
-      setError('Selecciona al menos una pregunta sugerida para agregar.')
+      setError('Seleccioná al menos una pregunta sugerida para agregar.')
       return
     }
 
@@ -365,7 +365,7 @@ export function FaqPage() {
         }}>
           <button
             type="button"
-            aria-label="Abrir navegacion"
+            aria-label="Abrir navegación"
             onClick={() => runWithUnsavedCheck(() => {
               setHasUnsavedFaqChanges(false)
               setShowForm(false)
@@ -450,7 +450,7 @@ export function FaqPage() {
               <p style={{ color: FAQ_MUTED, fontSize: '12px', lineHeight: 1.35 }}>
                 {allFaqs.length > 0
                   ? `${allFaqs.length} ${allFaqs.length === 1 ? 'pregunta agregada' : 'preguntas agregadas'}`
-                  : 'Administra las respuestas automaticas de tu negocio.'}
+                  : 'Administrá las respuestas automáticas de tu negocio.'}
               </p>
             </div>
             {!showForm && !showSuggestions && allFaqs.length > 0 && (
@@ -534,10 +534,10 @@ export function FaqPage() {
                     boxShadow: 'none',
                   }}>
                     <h2 style={{ fontSize: '19px', fontWeight: 800, marginBottom: '7px', color: FAQ_TEXT, lineHeight: 1.15 }}>
-                      Agrega tus primeras preguntas frecuentes
+                      Agregá tus primeras preguntas frecuentes
                     </h2>
                     <p style={{ color: FAQ_MUTED, fontSize: '11px', lineHeight: 1.45, maxWidth: '280px' }}>
-                      Elegi algunas de estas preguntas sugeridas para comenzar. Podras editarlas mas adelante.
+                      Elegí algunas de estas preguntas sugeridas para comenzar. Podrás editarlas más adelante.
                     </p>
                   </div>
 
@@ -557,7 +557,7 @@ export function FaqPage() {
                       fontSize: '13px',
                       lineHeight: 1.5,
                     }}>
-                      Ya agregaste todas las preguntas sugeridas disponibles. Si eliminas una FAQ creada desde sugerencias, volvera a aparecer aca.
+                      Ya agregaste todas las preguntas sugeridas disponibles. Si eliminás una FAQ creada desde sugerencias, volverá a aparecer acá.
                     </div>
                   ) : (
                     availableSuggestions.map(suggestion => {
@@ -703,9 +703,9 @@ export function FaqPage() {
                     fontSize: '36px',
                     fontWeight: 400,
                   }}>?</div>
-                  <h2 style={{ fontSize: '22px', margin: 0, padding: 10, color: FAQ_TEXT, fontWeight: 700 }}>Todavia no hay FAQs</h2>
+                  <h2 style={{ fontSize: '22px', margin: 0, padding: 10, color: FAQ_TEXT, fontWeight: 700 }}>Todavía no hay FAQs</h2>
                   <p style={{ color: FAQ_MUTED, fontSize: '14px', lineHeight: 1.5, margin: 0, padding: 8, maxWidth: '260px' }}>
-                    Agrega preguntas frecuentes para ayudar a tus clientes y automatizar respuestas.
+                    Agregá preguntas frecuentes para ayudar a tus clientes y automatizar respuestas.
                   </p>
                   <div style={{ display: 'flex', justifyContent: 'center' }}>
                     <Button
@@ -774,7 +774,7 @@ export function FaqPage() {
                     <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', verticalAlign: '-2px', marginRight: '6px' }}>
                       <AppIcon name="plus" size={13} strokeWidth={2.4} />
                     </span>
-                    Agregar mas preguntas sugeridas
+                    Agregar más preguntas sugeridas
                   </button>
                 </section>
               ) : null}
@@ -811,7 +811,7 @@ export function FaqPage() {
               Cambios sin guardar
             </h2>
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', lineHeight: 1.45, marginBottom: '14px' }}>
-              Si salis ahora, se van a perder los cambios de esta pregunta.
+              Si salís ahora, se van a perder los cambios de esta pregunta.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <Button type="button" fullWidth onClick={() => setPendingDiscardAction(null)}>

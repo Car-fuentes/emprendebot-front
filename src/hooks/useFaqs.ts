@@ -84,7 +84,7 @@ function normalizeFaqData(data: FAQFormData): FAQFormData {
   if (!pregunta) throw new Error('La pregunta es obligatoria.')
   if (!respuesta) throw new Error('La respuesta es obligatoria.')
   if (!data.categoriaId && !nuevaCategoriaNombre) {
-    throw new Error('Selecciona o crea una categoria para la FAQ.')
+    throw new Error('Seleccioná o creá una categoría para la FAQ.')
   }
 
   return {
@@ -181,7 +181,7 @@ export function useFaqs(filters: UseFaqFilters, localSource?: UseFaqLocalSource)
     if (data.categoriaId) return { categoryId: data.categoriaId, categories }
 
     const nombre = data.nuevaCategoriaNombre?.trim() || data.categoria?.trim()
-    if (!nombre) throw new Error('Selecciona o crea una categoria para la FAQ.')
+    if (!nombre) throw new Error('Seleccioná o creá una categoría para la FAQ.')
 
     const existingCategory = categories.find(category => category.nombre.toLowerCase() === nombre.toLowerCase())
     if (existingCategory) return { categoryId: existingCategory.id, categories }
@@ -271,7 +271,7 @@ export function useFaqs(filters: UseFaqFilters, localSource?: UseFaqLocalSource)
 
   const toggleFaq = useCallback(async (faqId: string): Promise<FAQ> => {
     const faq = allFaqs.find(item => item.id === faqId)
-    if (!faq) throw new Error('No se encontro la FAQ que queres actualizar.')
+    if (!faq) throw new Error('No se encontró la FAQ que querés actualizar.')
 
     if (localSource) {
       const updatedFaq = await localSource.toggleFaq(faqId)
