@@ -6,6 +6,7 @@ import { brand } from '../../styles/brand'
 interface ProductCatalogMessageProps {
   products: Product[]
   onConfirm: (items: OrderItem[]) => void
+  onBack?: () => void
 }
 
 function PriceTag({ product }: { product: Product }) {
@@ -26,7 +27,7 @@ function PriceTag({ product }: { product: Product }) {
   return null
 }
 
-export function ProductCatalogMessage({ products, onConfirm }: ProductCatalogMessageProps) {
+export function ProductCatalogMessage({ products, onConfirm, onBack }: ProductCatalogMessageProps) {
   const [quantities, setQuantities] = useState<Record<string, number>>({})
 
   const change = (id: string, delta: number) => {
@@ -46,9 +47,9 @@ export function ProductCatalogMessage({ products, onConfirm }: ProductCatalogMes
   }
 
   return (
-    <div style={{ paddingLeft: 44, paddingBottom: 8 }}>
+    <div style={{ paddingBottom: 8 }}>
       {/* Lista de productos */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
+      <div style={{ paddingLeft: 44, display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
         {products.map(product => {
           const qty = quantities[product.id] ?? 0
           const selected = qty > 0
@@ -143,6 +144,32 @@ export function ProductCatalogMessage({ products, onConfirm }: ProductCatalogMes
         })}
       </div>
 
+      {/* Mensaje instrucción */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'flex-end',
+        gap: 8,
+        marginBottom: 10,
+      }}>
+        <img
+          src="/isoBot-transparente.png"
+          alt="EmprendeBot"
+          style={{ width: 36, height: 36, flexShrink: 0 }}
+        />
+        <div style={{
+          background: 'var(--color-bg)',
+          borderRadius: '4px var(--radius-md) var(--radius-md) var(--radius-md)',
+          padding: '10px 14px',
+          fontSize: '14px',
+          color: 'var(--color-text-primary)',
+          lineHeight: '1.5',
+          boxShadow: 'var(--shadow-sm)',
+          maxWidth: '82%',
+        }}>
+          Seleccioná las opciones y cantidades que te interesan y confirmá tu elección.
+        </div>
+      </div>
+
       {/* Botón confirmar */}
       <button
         onClick={handleConfirm}
@@ -159,12 +186,37 @@ export function ProductCatalogMessage({ products, onConfirm }: ProductCatalogMes
           cursor: totalItems > 0 ? 'pointer' : 'not-allowed',
           fontFamily: 'var(--font-family)',
           transition: 'background 0.2s',
+          marginBottom: 8,
         }}
       >
         {totalItems > 0
           ? `Confirmar selección (${totalItems} ${totalItems === 1 ? 'item' : 'items'})`
           : 'Seleccioná al menos un producto'}
       </button>
+
+      {/* Volver al menú */}
+      {onBack && (
+        <button
+          onClick={onBack}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '4px 12px',
+            border: '1.5px solid var(--color-primary)',
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--color-bg)',
+            color: 'var(--color-bg-answer)',
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontFamily: 'var(--font-family)',
+            boxShadow: '0 1px 3px rgba(17,27,39,0.05)',
+          }}
+        >
+          ← Volver al menú
+        </button>
+      )}
     </div>
   )
 }

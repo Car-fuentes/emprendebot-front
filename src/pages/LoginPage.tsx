@@ -34,7 +34,7 @@ export function LoginPage() {
       if (user) {
         const business = await loadBusiness(user.id)
         // Si ya tiene negocio → dashboard, si no → setup
-        navigate(business ? '/dashboard' : '/configurar')
+        navigate(business ? '/dashboard' : '/configurar', { replace: true })
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión')
@@ -54,7 +54,7 @@ export function LoginPage() {
       {/* Back button */}
       <div style={{ padding: '16px 24px' }}>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/')}
           style={{
             display: 'flex', alignItems: 'center', gap: '6px',
             fontSize: '14px', color: 'var(--color-text-secondary)',

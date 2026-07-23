@@ -124,7 +124,7 @@ function PublicChat({ business, onBackToDashboard }: { business: Business; onBac
           <div key={message.id}>
             {message.text && <MessageBubble message={message} />}
             {message.products && message.products.length > 0 && message.id === lastProductsMessageId && !isTyping && (
-              <ProductCatalogMessage products={message.products} onConfirm={submitOrder} />
+              <ProductCatalogMessage products={message.products} onConfirm={submitOrder} onBack={() => sendMessage('Volver al menú principal')} />
             )}
             {message.faqs && message.faqs.length > 0 && message.id === lastFaqsMessageId && !isTyping && (
               <FaqListMessage faqs={message.faqs} onSelect={sendMessage} />
