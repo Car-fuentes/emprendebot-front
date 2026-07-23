@@ -149,12 +149,14 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const updateBusiness = useCallback((data: Partial<Business>) => {
-    if (!business) return
-    const updated = { ...business, ...data }
-    const all = getStoredBusinesses().map(item => item.id === updated.id ? updated : item)
-    saveStoredBusinesses(all)
-    setBusiness(updated)
-  }, [business])
+    setBusiness(current => {
+      if (!current) return current
+      const updated = { ...current, ...data }
+      const all = getStoredBusinesses().map(item => item.id === updated.id ? updated : item)
+      saveStoredBusinesses(all)
+      return updated
+    })
+  }, [])
 
   const createFaq = useCallback(async (data: FAQFormData): Promise<FAQ> => {
     if (!business) throw new Error('Primero tenés que configurar tu negocio.')

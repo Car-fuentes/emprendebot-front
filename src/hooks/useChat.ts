@@ -17,7 +17,6 @@ import { createPublicConsultation, savePublicMessage, updatePublicContact } from
 
 const QUICK_REPLIES_INICIAL = [
   'Ver catálogo',
-  'Solicitar presupuesto',
   'Horarios de atención',
   'Preguntas frecuentes',
   'Hablar con una persona',

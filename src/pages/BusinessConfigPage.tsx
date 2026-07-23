@@ -285,9 +285,10 @@ export function BusinessConfigPage() {
     setLoading(true)
 
     try {
-      await apiRequest('/bot', {
+      await apiRequest<{ success: boolean; configuracion: { slug?: string } }>('/bot', {
         method: 'PUT',
         body: JSON.stringify({
+          activo: true,
           nombreNegocio: form.nombre,
           mensajeBienvenida: form.mensajeBienvenida || undefined,
           rubroId: form.rubroId || undefined,
