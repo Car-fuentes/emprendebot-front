@@ -8,6 +8,10 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
 
+<p align="center">
+  <img src="./public/imagoBotTransparente.png" alt="EmprendeBot" width="280" />
+</p>
+
 **EmprendeBot** es una plataforma web que permite a emprendedores configurar un asistente comercial, publicar productos y servicios, administrar preguntas frecuentes, recibir consultas y ofrecer un chatbot público mediante un enlace único para su negocio.
 
 El frontend está construido como una SPA con React, TypeScript y Vite. Consume una API REST desarrollada con Node.js y Express, conectada a PostgreSQL mediante Prisma.
