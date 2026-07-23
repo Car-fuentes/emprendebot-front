@@ -22,7 +22,7 @@ export function PresentationPage() {
     setGoogleLoading(true)
     try {
       await loginWithGoogle(response.credential)
-      navigate('/configurar')
+      navigate('/configurar', { replace: true })
     } catch (error) {
       setGoogleError(error instanceof Error ? error.message : 'No pudimos continuar con Google.')
     } finally {

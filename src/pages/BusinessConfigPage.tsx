@@ -246,10 +246,6 @@ export function BusinessConfigPage() {
         setError('Todos los campos marcados con * son obligatorios.')
         return
       }
-      if (!form.slug.trim()) {
-        setError('El enlace público es obligatorio.')
-        return
-      }
     } else {
       if (!form.nombre) {
         setError('El nombre del negocio es obligatorio.')
@@ -275,7 +271,7 @@ export function BusinessConfigPage() {
       return
     }
 
-    const slugCambio = isEdit && form.slug.trim() !== slugOriginal
+    const slugCambio = isEdit && Boolean(slugOriginal) && form.slug.trim() !== slugOriginal
     if (slugCambio && slugPersonalizado) {
       setError('El enlace público ya fue personalizado y no puede volver a modificarse.')
       return
@@ -341,7 +337,8 @@ export function BusinessConfigPage() {
       } else {
         const savedLogo = syncedBusiness.logo ?? ''
         setPersistedLogo(savedLogo)
-        setForm(prev => ({ ...prev, logo: savedLogo }))
+        setForm(prev => ({ ...prev, logo: savedLogo, slug: syncedBusiness.slug }))
+        setSlugOriginal(syncedBusiness.slug)
       }
 
       setSelectedLogo(null)
