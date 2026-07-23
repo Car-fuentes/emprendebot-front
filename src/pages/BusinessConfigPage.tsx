@@ -155,7 +155,7 @@ export function BusinessConfigPage() {
     apiRequest<BotConfigResponse>('/bot').then(data => {
       setForm(prev => ({
         ...prev,
-        nombre: data.configuracion.nombreNegocio || prev.nombre,
+        nombre: data.configuracion.nombreNegocio ?? '',
         mensajeBienvenida: data.configuracion.mensajeBienvenida || prev.mensajeBienvenida,
         rubroId: data.configuracion.rubroId ?? '',
         descripcion: data.configuracion.descripcionBreve ?? '',

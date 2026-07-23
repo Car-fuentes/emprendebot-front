@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
 import type { Business, DashboardStats, FAQ, FAQCategory } from '../types'
 import {
   createFaq as createStoredFaq,
@@ -15,6 +15,7 @@ import {
   saveStoredBusinesses,
 } from '../services/businessStorage'
 import { apiRequest } from '../services/apiClient'
+import { useAuth } from './AuthContext'
 
 interface BotConfigResponse {
   success: boolean
@@ -63,9 +64,17 @@ const DEFAULT_STATS: DashboardStats = {
 const BusinessContext = createContext<BusinessContextType | null>(null)
 
 export function BusinessProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
   const [business, setBusiness] = useState<Business | null>(null)
   const [isBusinessLoading, setIsBusinessLoading] = useState(true)
   const faqCategories = business?.faqCategories ?? []
+
+  useEffect(() => {
+    if (!user || (business && business.userId !== user.id)) {
+      setBusiness(null)
+      setIsBusinessLoading(false)
+    }
+  }, [user, business])
 
   const loadBusiness = useCallback(async (userId: string): Promise<Business | null> => {
     setIsBusinessLoading(true)
