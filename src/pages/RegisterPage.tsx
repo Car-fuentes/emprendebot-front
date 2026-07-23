@@ -79,7 +79,7 @@ export function RegisterPage() {
             textAlign: 'center',
           }}>
             <button
-              onClick={() => navigate('/configurar')}
+              onClick={() => navigate('/configurar', { replace: true })}
               style={{
                 position: 'absolute', top: 12, right: 14,
                 background: 'none', border: 'none',
@@ -102,7 +102,7 @@ export function RegisterPage() {
             </p>
 
             <button
-              onClick={() => navigate('/configurar')}
+              onClick={() => navigate('/configurar', { replace: true })}
               style={{
                 marginTop: '8px',
                 width: '100%', height: 52,
@@ -123,7 +123,7 @@ export function RegisterPage() {
       {/* Back */}
       <div style={{ padding: '16px 24px' }}>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/')}
           style={{
             display: 'flex', alignItems: 'center', gap: '6px',
             fontSize: '14px', color: 'var(--color-text-secondary)',
