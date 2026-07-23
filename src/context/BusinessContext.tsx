@@ -14,13 +14,35 @@ import {
   getStoredBusinesses,
   saveStoredBusinesses,
 } from '../services/businessStorage'
+import { apiRequest } from '../services/apiClient'
+
+interface BotConfigResponse {
+  success: boolean
+  configuracion: {
+    id: string
+    usuarioId: string
+    nombreNegocio?: string | null
+    descripcionBreve?: string | null
+    horarioAtencion?: string | null
+    telefono?: string | null
+    mensajeBienvenida?: string | null
+    respuestaDerivacion?: string | null
+    logoUrl?: string | null
+    rubroId?: string | null
+    rubro?: {
+      id: string
+      nombre: string
+    } | null
+    slug?: string | null
+  }
+}
 
 interface BusinessContextType {
   business: Business | null
   faqCategories: FAQCategory[]
   isBusinessLoading: boolean
   stats: DashboardStats
-  loadBusiness: (userId: string) => void
+  loadBusiness: (userId: string) => Promise<Business | null>
   loadBusinessBySlug: (slug: string) => Business | null
   saveBusiness: (data: Partial<Business> & { userId: string }) => Business
   updateBusiness: (data: Partial<Business>) => void
@@ -45,11 +67,41 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   const [isBusinessLoading, setIsBusinessLoading] = useState(true)
   const faqCategories = business?.faqCategories ?? []
 
-  const loadBusiness = useCallback((userId: string) => {
+  const loadBusiness = useCallback(async (userId: string): Promise<Business | null> => {
     setIsBusinessLoading(true)
     try {
-      const found = getStoredBusinesses().find(item => item.userId === userId) ?? null
-      setBusiness(found ? migrateBusinessFaqs(found) : null)
+      const storedBusinesses = getStoredBusinesses()
+      const stored = storedBusinesses.find(item => item.userId === userId)
+      const { configuracion } = await apiRequest<BotConfigResponse>('/bot')
+      const synced = migrateBusinessFaqs({
+        id: configuracion.id,
+        userId: configuracion.usuarioId || userId,
+        nombre: configuracion.nombreNegocio ?? stored?.nombre ?? '',
+        descripcion: configuracion.descripcionBreve ?? '',
+        horario: configuracion.horarioAtencion ?? '',
+        telefono: configuracion.telefono ?? '',
+        mensajeBienvenida: configuracion.mensajeBienvenida ?? '¡Hola! ¿En qué te puedo ayudar?',
+        respuestaDerivacion: configuracion.respuestaDerivacion ?? 'Te voy a conectar con un asesor en breve.',
+        logo: configuracion.logoUrl ?? undefined,
+        rubro: stored?.rubro ?? '',
+        rubroId: configuracion.rubroId ?? undefined,
+        rubroNombre: configuracion.rubro?.nombre ?? undefined,
+        productos: stored?.productos ?? [],
+        faq: stored?.faq ?? [],
+        faqCategories: stored?.faqCategories ?? [],
+        slug: configuracion.slug ?? stored?.slug ?? crypto.randomUUID(),
+      })
+      const updatedBusinesses = stored
+        ? storedBusinesses.map(item => item.userId === userId ? synced : item)
+        : [...storedBusinesses, synced]
+      saveStoredBusinesses(updatedBusinesses)
+      setBusiness(synced)
+      return synced
+    } catch {
+      const stored = getStoredBusinesses().find(item => item.userId === userId) ?? null
+      const fallback = stored ? migrateBusinessFaqs(stored) : null
+      setBusiness(fallback)
+      return fallback
     } finally {
       setIsBusinessLoading(false)
     }
@@ -62,12 +114,14 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
 
   const saveBusiness = useCallback((data: Partial<Business> & { userId: string }): Business => {
     const all = getStoredBusinesses()
+    const existing = all.find(item => item.userId === data.userId)
     const newBusiness: Business = {
-      id: crypto.randomUUID(),
-      productos: [],
-      faq: [],
-      faqCategories: [],
-      rubro: '',
+      id: existing?.id ?? crypto.randomUUID(),
+      productos: existing?.productos ?? [],
+      faq: existing?.faq ?? [],
+      faqCategories: existing?.faqCategories ?? [],
+      rubro: existing?.rubro ?? '',
+      ...existing,
       ...data,
       nombre: data.nombre ?? '',
       descripcion: data.descripcion ?? '',
@@ -77,19 +131,23 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       respuestaDerivacion: data.respuestaDerivacion ?? 'Te voy a conectar con un asesor en breve.',
       slug: data.slug ?? data.nombre?.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '') ?? crypto.randomUUID(),
     }
-    all.push(newBusiness)
-    saveStoredBusinesses(all)
+    const updated = existing
+      ? all.map(item => item.userId === data.userId ? newBusiness : item)
+      : [...all, newBusiness]
+    saveStoredBusinesses(updated)
     setBusiness(newBusiness)
     return newBusiness
   }, [])
 
   const updateBusiness = useCallback((data: Partial<Business>) => {
-    if (!business) return
-    const updated = { ...business, ...data }
-    const all = getStoredBusinesses().map(item => item.id === updated.id ? updated : item)
-    saveStoredBusinesses(all)
-    setBusiness(updated)
-  }, [business])
+    setBusiness(current => {
+      if (!current) return current
+      const updated = { ...current, ...data }
+      const all = getStoredBusinesses().map(item => item.id === updated.id ? updated : item)
+      saveStoredBusinesses(all)
+      return updated
+    })
+  }, [])
 
   const createFaq = useCallback(async (data: FAQFormData): Promise<FAQ> => {
     if (!business) throw new Error('Primero tenés que configurar tu negocio.')

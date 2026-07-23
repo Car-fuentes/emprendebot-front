@@ -131,7 +131,7 @@ export function RegisterPage() {
             fontFamily: 'var(--font-family)',
           }}
         >
-          ← Iniciar sesion
+          ← Inicio
         </button>
       </div>
 

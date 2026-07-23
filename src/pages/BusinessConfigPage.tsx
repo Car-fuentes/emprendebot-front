@@ -25,10 +25,22 @@ interface RubrosResponse {
 interface BotConfigResponse {
   success: boolean
   configuracion: {
-    nombreNegocio: string
-    mensajeBienvenida: string
-    rubroId?: string
+    nombreNegocio?: string | null
+    mensajeBienvenida?: string | null
+    rubroId?: string | null
+    descripcionBreve?: string | null
+    horarioAtencion?: string | null
+    telefono?: string | null
+    respuestaDerivacion?: string | null
+    logoUrl?: string | null
+    slug?: string | null
+    slugPersonalizado: boolean
   }
+}
+
+interface UpdateSlugResponse {
+  success: boolean
+  slug: string
 }
 
 interface FormData {
@@ -40,6 +52,7 @@ interface FormData {
   mensajeBienvenida: string
   respuestaDerivacion: string
   logo: string
+  slug: string
 }
 
 const INITIAL: FormData = {
@@ -51,7 +64,12 @@ const INITIAL: FormData = {
   mensajeBienvenida: '',
   respuestaDerivacion: '',
   logo: '',
+  slug: '',
 }
+
+const MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024
+const LOGO_UPLOAD_TIMEOUT_MS = 30_000
+const VALID_LOGO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
 const textareaStyle: React.CSSProperties = {
   padding: '12px 16px',
@@ -87,7 +105,7 @@ const selectStyle: React.CSSProperties = {
 export function BusinessConfigPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { saveBusiness, business, updateBusiness } = useBusiness()
+  const { saveBusiness, business, loadBusiness } = useBusiness()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { isDark, setTheme } = useTheme()
 
@@ -97,44 +115,63 @@ export function BusinessConfigPage() {
     business
       ? {
           nombre: business.nombre,
-          rubroId: '',
+          rubroId: business.rubroId ?? '',
           descripcion: business.descripcion,
           horario: business.horario,
           telefono: business.telefono,
           mensajeBienvenida: business.mensajeBienvenida,
           respuestaDerivacion: business.respuestaDerivacion,
           logo: business.logo ?? '',
+          slug: business.slug,
         }
       : INITIAL
   )
   const [rubros, setRubros] = useState<RubroApi[]>([])
+  const [selectedLogo, setSelectedLogo] = useState<File | null>(null)
+  const [logoValidationError, setLogoValidationError] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [slugPersonalizado, setSlugPersonalizado] = useState<boolean | null>(null)
+  const [slugOriginal, setSlugOriginal] = useState(business?.slug ?? '')
+  const [persistedLogo, setPersistedLogo] = useState(business?.logo ?? '')
 
-  const publicUrl = business?.slug ? `${window.location.origin}/${business.slug}` : ''
+  const publicUrl = form.slug ? `${window.location.origin}/${form.slug}` : ''
 
   // Cargar rubros desde el backend (no requiere auth)
   useEffect(() => {
     apiRequest<RubrosResponse>('/bot/rubros', { auth: false }).then(data => {
       setRubros(data.rubros)
-    }).catch(() => {})
+    }).catch(err => {
+      setError(err instanceof Error ? err.message : 'No se pudieron cargar los rubros.')
+    })
   }, [])
 
   // Cargar config desde el backend al entrar en modo edición
   useEffect(() => {
-    if (!isEdit) return
+    if (!user) return
     apiRequest<BotConfigResponse>('/bot').then(data => {
       setForm(prev => ({
         ...prev,
         nombre: data.configuracion.nombreNegocio || prev.nombre,
         mensajeBienvenida: data.configuracion.mensajeBienvenida || prev.mensajeBienvenida,
-        rubroId: data.configuracion.rubroId || prev.rubroId,
+        rubroId: data.configuracion.rubroId ?? '',
+        descripcion: data.configuracion.descripcionBreve ?? '',
+        horario: data.configuracion.horarioAtencion ?? '',
+        telefono: data.configuracion.telefono ?? '',
+        respuestaDerivacion: data.configuracion.respuestaDerivacion ?? '',
+        logo: data.configuracion.logoUrl ?? '',
+        slug: data.configuracion.slug ?? '',
       }))
-    }).catch(() => {})
-  }, [isEdit])
+      setSlugOriginal(data.configuracion.slug ?? '')
+      setSlugPersonalizado(data.configuracion.slugPersonalizado)
+      setPersistedLogo(data.configuracion.logoUrl ?? '')
+    }).catch(err => {
+      setError(err instanceof Error ? err.message : 'No se pudo cargar la configuración.')
+    })
+  }, [user])
 
   const set = (field: keyof FormData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -143,11 +180,54 @@ export function BusinessConfigPage() {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    setError('')
+    setLogoValidationError('')
+
+    if (file.size > MAX_LOGO_SIZE_BYTES) {
+      setSelectedLogo(null)
+      setForm(prev => ({ ...prev, logo: persistedLogo }))
+      e.target.value = ''
+      setLoading(false)
+      setLogoValidationError('La imagen no puede superar los 2 MB.')
+      setError('La imagen no puede superar los 2 MB.')
+      return
+    }
+
+    if (!VALID_LOGO_TYPES.has(file.type)) {
+      setSelectedLogo(null)
+      setForm(prev => ({ ...prev, logo: persistedLogo }))
+      e.target.value = ''
+      setLoading(false)
+      setLogoValidationError('El formato de la imagen debe ser JPG, PNG o WEBP.')
+      setError('El formato de la imagen debe ser JPG, PNG o WEBP.')
+      return
+    }
+
+    setSelectedLogo(file)
     const reader = new FileReader()
     reader.onload = ev => {
       setForm(prev => ({ ...prev, logo: ev.target?.result as string }))
     }
-    reader.readAsDataURL(file)
+    reader.onerror = () => {
+      setSelectedLogo(null)
+      setForm(prev => ({ ...prev, logo: persistedLogo }))
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      setLoading(false)
+      setLogoValidationError('No se pudo leer la imagen seleccionada.')
+      setError('No se pudo leer la imagen seleccionada.')
+    }
+
+    try {
+      reader.readAsDataURL(file)
+    } catch {
+      setSelectedLogo(null)
+      setForm(prev => ({ ...prev, logo: persistedLogo }))
+      e.target.value = ''
+      setLoading(false)
+      setLogoValidationError('No se pudo leer la imagen seleccionada.')
+      setError('No se pudo leer la imagen seleccionada.')
+    }
   }
 
   const handleCopyLink = () => {
@@ -166,6 +246,10 @@ export function BusinessConfigPage() {
         setError('Todos los campos marcados con * son obligatorios.')
         return
       }
+      if (!form.slug.trim()) {
+        setError('El enlace público es obligatorio.')
+        return
+      }
     } else {
       if (!form.nombre) {
         setError('El nombre del negocio es obligatorio.')
@@ -174,31 +258,102 @@ export function BusinessConfigPage() {
     }
 
     if (!user) return
-    setLoading(true)
 
-    try {
-      await apiRequest('/bot', {
-        method: 'PUT',
-        body: JSON.stringify({
-          nombreNegocio: form.nombre,
-          mensajeBienvenida: form.mensajeBienvenida || undefined,
-          rubroId: form.rubroId || undefined,
-        }),
-      })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al guardar en el servidor.')
+    if (logoValidationError) {
       setLoading(false)
+      setError(logoValidationError)
       return
     }
 
-    if (isEdit) {
-      updateBusiness(form)
-    } else {
-      saveBusiness({ ...form, userId: user.id, rubro: user.rubro ?? '' })
+    if (selectedLogo && selectedLogo.size > MAX_LOGO_SIZE_BYTES) {
+      setSelectedLogo(null)
+      setForm(prev => ({ ...prev, logo: persistedLogo }))
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      setLoading(false)
+      setLogoValidationError('La imagen no puede superar los 2 MB.')
+      setError('La imagen no puede superar los 2 MB.')
+      return
     }
 
-    setLoading(false)
-    setShowSuccessModal(true)
+    const slugCambio = isEdit && form.slug.trim() !== slugOriginal
+    if (slugCambio && slugPersonalizado) {
+      setError('El enlace público ya fue personalizado y no puede volver a modificarse.')
+      return
+    }
+    if (slugCambio && !window.confirm(
+      `¿Confirmás el enlace ${window.location.origin}/${form.slug.trim()}? Solo podés personalizarlo una vez y después no podrá modificarse.`
+    )) {
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      await apiRequest<{ success: boolean; configuracion: { slug?: string } }>('/bot', {
+        method: 'PUT',
+        body: JSON.stringify({
+          activo: true,
+          nombreNegocio: form.nombre,
+          mensajeBienvenida: form.mensajeBienvenida || undefined,
+          rubroId: form.rubroId || undefined,
+          descripcionBreve: form.descripcion || undefined,
+          horarioAtencion: form.horario || undefined,
+          telefono: form.telefono || undefined,
+          respuestaDerivacion: form.respuestaDerivacion || undefined,
+          logoUrl: selectedLogo ? undefined : form.logo,
+        }),
+      })
+
+      if (slugCambio) {
+        const slugActualizado = await apiRequest<UpdateSlugResponse>('/bot/slug', {
+          method: 'PATCH',
+          body: JSON.stringify({ slug: form.slug }),
+        })
+        setForm(prev => ({ ...prev, slug: slugActualizado.slug }))
+        setSlugOriginal(slugActualizado.slug)
+        setSlugPersonalizado(true)
+      }
+
+      if (selectedLogo) {
+        const logoData = new FormData()
+        logoData.append('imagenLogo', selectedLogo)
+        const controller = new AbortController()
+        const timeoutId = window.setTimeout(() => controller.abort(), LOGO_UPLOAD_TIMEOUT_MS)
+
+        try {
+          await apiRequest('/bot/config', {
+            method: 'PATCH',
+            body: logoData,
+            signal: controller.signal,
+          })
+        } catch (uploadError) {
+          if (controller.signal.aborted) {
+            throw new Error('La carga de la imagen tardó demasiado. Intentá nuevamente.')
+          }
+          throw uploadError
+        } finally {
+          window.clearTimeout(timeoutId)
+        }
+      }
+
+      const syncedBusiness = await loadBusiness(user.id)
+      if (!syncedBusiness) {
+        saveBusiness({ ...form, userId: user.id, rubro: user.rubro ?? '' })
+      } else {
+        const savedLogo = syncedBusiness.logo ?? ''
+        setPersistedLogo(savedLogo)
+        setForm(prev => ({ ...prev, logo: savedLogo }))
+      }
+
+      setSelectedLogo(null)
+      setLogoValidationError('')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      setShowSuccessModal(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al guardar en el servidor.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -359,7 +514,11 @@ export function BusinessConfigPage() {
                   {form.logo && (
                     <button
                       type="button"
-                      onClick={() => setForm(prev => ({ ...prev, logo: '' }))}
+                      onClick={() => {
+                        setSelectedLogo(null)
+                        setForm(prev => ({ ...prev, logo: '' }))
+                        if (fileInputRef.current) fileInputRef.current.value = ''
+                      }}
                       style={{
                         fontSize: '12px', color: 'var(--color-error)',
                         border: 'none', background: 'none', cursor: 'pointer',
@@ -368,14 +527,14 @@ export function BusinessConfigPage() {
                     >Eliminar</button>
                   )}
                   <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
-                    JPG, PNG o SVG · máx. 2 MB
+                    JPG, PNG o WEBP · máx. 2 MB
                   </span>
                 </div>
               </div>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/svg+xml,image/webp"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={handleLogoChange}
                 style={{ display: 'none' }}
               />
@@ -575,16 +734,58 @@ export function BusinessConfigPage() {
 
               {/* URL */}
               <div style={{
+                minHeight: 44,
+                display: 'flex',
+                alignItems: 'center',
                 background: 'var(--color-bg)',
                 border: '1px solid var(--color-border)',
                 borderRadius: 'var(--radius-sm)',
-                padding: '10px 14px',
-                fontSize: '13px',
-                color: 'var(--color-text-secondary)',
-                wordBreak: 'break-all',
+                overflow: 'hidden',
               }}>
-                {publicUrl}
+                <span style={{
+                  padding: '0 0 0 14px',
+                  color: 'var(--color-text-secondary)',
+                  fontSize: '13px',
+                  whiteSpace: 'nowrap',
+                  maxWidth: '60%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}>
+                  {window.location.origin}/
+                </span>
+                <input
+                  type="text"
+                  aria-label="Identificador del enlace público"
+                  value={form.slug}
+                  maxLength={100}
+                  disabled={slugPersonalizado !== false}
+                  onChange={event => {
+                    setLinkCopied(false)
+                    setForm(prev => ({ ...prev, slug: event.target.value }))
+                  }}
+                  placeholder="mi-negocio"
+                  style={{
+                    minWidth: 0,
+                    flex: 1,
+                    height: 42,
+                    padding: '0 14px 0 2px',
+                    border: 'none',
+                    outline: 'none',
+                    background: 'transparent',
+                    color: 'var(--color-text-primary)',
+                    fontFamily: 'var(--font-family)',
+                    fontSize: '13px',
+                  }}
+                />
               </div>
+
+              <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: 0 }}>
+                {slugPersonalizado
+                  ? 'Este enlace ya fue personalizado y no puede volver a modificarse.'
+                  : slugPersonalizado === false
+                    ? 'Podés personalizar este enlace una sola vez. Después de confirmarlo no podrás volver a cambiarlo.'
+                    : 'Comprobando si el enlace puede editarse...'}
+              </p>
 
               {/* Botón copiar */}
               <button

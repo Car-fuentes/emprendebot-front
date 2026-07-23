@@ -5,8 +5,7 @@ interface QuickRepliesProps {
 
 const ICON_MAP: Record<string, string> = {
   'Ver catálogo':           '/Package.png',
-  'Horarios de atención': '/time.png',
-  'Solicitar presupuesto':  '/bag.png',
+  'Horarios de atención':   '/time.png',
   'Preguntas frecuentes':   '/help.png',
   'Hablar con una persona': '/agent.png',
 }

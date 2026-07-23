@@ -19,7 +19,8 @@ interface FAQMutationResponse {
 }
 
 export async function getFaqsApi(): Promise<FAQApi[]> {
-  const response = await apiRequest<FAQListResponse>('/faqs?page=1&limit=200')
+  // Backend limita a máx. 100 por página; para la mayoría de los negocios alcanza
+  const response = await apiRequest<FAQListResponse>('/faqs?page=1&limit=100')
   return response.faqs.faqs
 }
 

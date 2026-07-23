@@ -73,7 +73,7 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
     const nextErrors = {
       pregunta: form.pregunta.trim() ? undefined : 'La pregunta es obligatoria.',
       respuesta: form.respuesta.trim() ? undefined : 'La respuesta es obligatoria.',
-      categoria: hasCategory ? undefined : 'Selecciona o crea una categoria.',
+      categoria: hasCategory ? undefined : 'Seleccioná o creá una categoría.',
     }
     setErrors(nextErrors)
     if (nextErrors.pregunta || nextErrors.respuesta || nextErrors.categoria) return
@@ -110,7 +110,7 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
 
       <Input
         label="Pregunta *"
-        placeholder="Ej: Cuales son los medios de pago?"
+        placeholder="Ej.: ¿Cuáles son los medios de pago?"
         value={form.pregunta}
         error={errors.pregunta}
         style={{
@@ -129,7 +129,7 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
 
       <Textarea
         label="Respuesta *"
-        placeholder="Escribi una respuesta clara y breve para tus clientes."
+        placeholder="Escribí una respuesta clara y breve para tus clientes."
         value={form.respuesta}
         error={errors.respuesta}
         style={{
@@ -148,7 +148,7 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
       />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <label style={labelStyle}>Categoria *</label>
+        <label style={labelStyle}>Categoría *</label>
 
         {categories.length > 0 && (
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -172,7 +172,7 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
         {categoryMode === 'existing' && categories.length > 0 ? (
           <>
             <select
-              aria-label="Categoria de la FAQ"
+              aria-label="Categoría de la FAQ"
               value={form.categoriaId ?? ''}
               onChange={event => {
                 const category = categories.find(item => item.id === event.target.value)
@@ -196,7 +196,7 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
                 width: '100%',
               }}
             >
-              <option value="">Selecciona una categoria</option>
+              <option value="">Seleccioná una categoría</option>
               {categories.map(category => (
                 <option key={category.id} value={category.id}>{category.nombre}</option>
               ))}
@@ -207,10 +207,10 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
           </>
         ) : (
           <Input
-            placeholder="Ej: Pagos, envios o productos"
+            placeholder="Ej.: Pagos, envíos o productos"
             value={form.nuevaCategoriaNombre}
             error={errors.categoria}
-            hint="Se creara como categoria real antes de enviar la FAQ al backend."
+            hint="Se creará como categoría real antes de enviar la FAQ al backend."
             style={{
               height: '44px',
               borderRadius: '10px',
