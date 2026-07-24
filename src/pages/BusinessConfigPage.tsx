@@ -619,6 +619,7 @@ export function BusinessConfigPage() {
 
           <Button
             type="submit"
+            className="business-config__save-button business-config__save-button--desktop"
             fullWidth
             size="lg"
             loading={loading}
@@ -809,6 +810,19 @@ export function BusinessConfigPage() {
                 />
               </div>
             </div>
+          )}
+
+          {isEdit && (
+            <Button
+              type="submit"
+              className="business-config__save-button business-config__save-button--mobile"
+              fullWidth
+              size="lg"
+              loading={loading}
+              style={{ background: brand.primaryGradient, borderRadius: 'var(--radius-md)', border: 'none' }}
+            >
+              GUARDAR CAMBIOS
+            </Button>
           )}
 
           {/* Enlace público — solo en modo edición */}
@@ -1036,6 +1050,10 @@ export function BusinessConfigPage() {
         .business-config__link-card {
           flex: 1;
           background: var(--color-bg) !important;
+        }
+
+        .business-config__save-button--mobile {
+          display: none !important;
         }
 
         .business-config__form > [role='alert'],
@@ -1303,6 +1321,14 @@ export function BusinessConfigPage() {
 
           .business-config__color-grid {
             grid-template-columns: 1fr;
+          }
+
+          .business-config-page--editing .business-config__save-button--desktop {
+            display: none !important;
+          }
+
+          .business-config-page--editing .business-config__save-button--mobile {
+            display: inline-flex !important;
           }
 
           .business-config__public-chat-bot {
