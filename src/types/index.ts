@@ -115,6 +115,8 @@ export interface Business {
   faqCategories?: FAQCategory[]
   faq: FAQ[]
   slug: string
+  colorPrimario?: string
+  colorSecundario?: string
 }
 
 // ===== CHAT =====

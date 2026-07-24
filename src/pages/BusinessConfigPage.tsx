@@ -11,6 +11,7 @@ import { apiRequest } from '../services/apiClient'
 import { brand } from '../styles/brand'
 import { Switch } from '../components/ui/Switch'
 import { useTheme } from '../hooks/useTheme'
+import { DEFAULT_CHAT_APPEARANCE, isValidHexColor } from '../services/chatAppearance'
 
 interface RubroApi {
   id: string
@@ -35,6 +36,8 @@ interface BotConfigResponse {
     logoUrl?: string | null
     slug?: string | null
     slugPersonalizado: boolean
+    colorPrimario?: string | null
+    colorSecundario?: string | null
   }
 }
 
@@ -53,6 +56,8 @@ interface FormData {
   respuestaDerivacion: string
   logo: string
   slug: string
+  colorPrimario: string
+  colorSecundario: string
 }
 
 const INITIAL: FormData = {
@@ -65,6 +70,8 @@ const INITIAL: FormData = {
   respuestaDerivacion: '',
   logo: '',
   slug: '',
+  colorPrimario: DEFAULT_CHAT_APPEARANCE.primary,
+  colorSecundario: DEFAULT_CHAT_APPEARANCE.secondary,
 }
 
 const MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024
@@ -105,7 +112,7 @@ const selectStyle: React.CSSProperties = {
 export function BusinessConfigPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { saveBusiness, business, loadBusiness } = useBusiness()
+  const { saveBusiness, updateBusiness, business, loadBusiness } = useBusiness()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { isDark, setTheme } = useTheme()
 
@@ -123,6 +130,8 @@ export function BusinessConfigPage() {
           respuestaDerivacion: business.respuestaDerivacion,
           logo: business.logo ?? '',
           slug: business.slug,
+          colorPrimario: business.colorPrimario ?? DEFAULT_CHAT_APPEARANCE.primary,
+          colorSecundario: business.colorSecundario ?? DEFAULT_CHAT_APPEARANCE.secondary,
         }
       : INITIAL
   )
@@ -164,6 +173,8 @@ export function BusinessConfigPage() {
         respuestaDerivacion: data.configuracion.respuestaDerivacion ?? '',
         logo: data.configuracion.logoUrl ?? '',
         slug: data.configuracion.slug ?? '',
+        colorPrimario: data.configuracion.colorPrimario ?? prev.colorPrimario,
+        colorSecundario: data.configuracion.colorSecundario ?? prev.colorSecundario,
       }))
       setSlugOriginal(data.configuracion.slug ?? '')
       setSlugPersonalizado(data.configuracion.slugPersonalizado)
@@ -255,6 +266,11 @@ export function BusinessConfigPage() {
 
     if (!user) return
 
+    if (!isValidHexColor(form.colorPrimario) || !isValidHexColor(form.colorSecundario)) {
+      setError('Los colores deben tener formato hexadecimal, por ejemplo #13A8A2.')
+      return
+    }
+
     if (logoValidationError) {
       setLoading(false)
       setError(logoValidationError)
@@ -336,6 +352,10 @@ export function BusinessConfigPage() {
       if (!syncedBusiness) {
         saveBusiness({ ...form, userId: user.id, rubro: user.rubro ?? '' })
       } else {
+        updateBusiness({
+          colorPrimario: form.colorPrimario.toUpperCase(),
+          colorSecundario: form.colorSecundario.toUpperCase(),
+        })
         const savedLogo = syncedBusiness.logo ?? ''
         setPersistedLogo(savedLogo)
         setForm(prev => ({ ...prev, logo: savedLogo, slug: syncedBusiness.slug }))
@@ -354,7 +374,7 @@ export function BusinessConfigPage() {
   }
 
   return (
-    <div style={{
+    <div className={`business-config-page${isEdit ? ' business-config-page--editing' : ''}`} style={{
       flex: 1,
       display: 'flex',
       flexDirection: 'column',
@@ -425,9 +445,10 @@ export function BusinessConfigPage() {
             business={business}
             isOpen={drawerOpen}
             onClose={() => setDrawerOpen(false)}
-            activeItem="configurar"
+            activeItem="configuracion"
+            desktopPersistent
           />
-          <header style={{
+          <header className="business-config-page__header" style={{
             height: 56, padding: '12px 20px 4px',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             background: 'var(--color-bg)',
@@ -458,7 +479,7 @@ export function BusinessConfigPage() {
         </div>
       )}
 
-      <div style={{ flex: 1, padding: '0 24px 40px', overflowY: 'auto' }}>
+      <div className="business-config-page__content" style={{ flex: 1, padding: '0 24px 40px', overflowY: 'auto' }}>
 
         {/* Título y subtítulo según modo */}
         <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '6px' }}>
@@ -470,73 +491,17 @@ export function BusinessConfigPage() {
             : 'Solo una vez. Luego podrás editar estos datos y personalizar tu negocio desde Configuración.'}
         </p>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-          {/* Logo — solo en modo edición */}
-          {isEdit && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={labelStyle}>Logo o imagen del negocio</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  style={{
-                    width: 72, height: 72, borderRadius: '50%',
-                    border: '2px dashed var(--color-border)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', overflow: 'hidden', flexShrink: 0,
-                    background: 'var(--color-bg-subtle)',
-                  }}
-                >
-                  {form.logo
-                    ? <img src={form.logo} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <span style={{ fontSize: '28px' }}>🏪</span>
-                  }
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    style={{
-                      fontSize: '13px', fontWeight: 600,
-                      color: 'var(--color-primary)',
-                      border: '1px solid var(--color-primary)',
-                      borderRadius: 'var(--radius-sm)',
-                      background: 'none', cursor: 'pointer',
-                      fontFamily: 'var(--font-family)',
-                      padding: '6px 14px',
-                    }}
-                  >
-                    {form.logo ? 'Cambiar imagen' : 'Subir imagen'}
-                  </button>
-                  {form.logo && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedLogo(null)
-                        setForm(prev => ({ ...prev, logo: '' }))
-                        if (fileInputRef.current) fileInputRef.current.value = ''
-                      }}
-                      style={{
-                        fontSize: '12px', color: 'var(--color-error)',
-                        border: 'none', background: 'none', cursor: 'pointer',
-                        fontFamily: 'var(--font-family)', padding: 0, textAlign: 'left',
-                      }}
-                    >Eliminar</button>
-                  )}
-                  <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
-                    JPG, PNG o WEBP · máx. 2 MB
-                  </span>
-                </div>
+        <form className="business-config__form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <section className="business-config__data-card">
+            <div className="business-config__section-heading">
+              <span className="business-config__section-icon" aria-hidden="true">
+                <AppIcon name="business" size={20} />
+              </span>
+              <div>
+                <h2>Datos del negocio</h2>
+                <p>Información visible para tus clientes y tu asistente.</p>
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleLogoChange}
-                style={{ display: 'none' }}
-              />
             </div>
-          )}
 
           {/* Nombre */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -599,6 +564,89 @@ export function BusinessConfigPage() {
             />
           </div>
 
+          {/* Logo — amplio como en la referencia de EmprendeBot */}
+          {isEdit && (
+            <div className="business-config__logo-field">
+              <label style={labelStyle}>Logo del negocio</label>
+              <button
+                type="button"
+                className={`business-config__logo-upload${form.logo ? ' business-config__logo-upload--filled' : ''}`}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {form.logo ? (
+                  <>
+                    <img src={form.logo} alt={`Logo de ${form.nombre || 'tu negocio'}`} />
+                    <span>Cambiar logo</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="business-config__logo-placeholder" aria-hidden="true">
+                      <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="4" width="18" height="16" rx="2" />
+                        <circle cx="9" cy="10" r="2" />
+                        <path d="m21 15-4.5-4.5L7 20" />
+                      </svg>
+                    </span>
+                    <strong>Subir logo</strong>
+                    <small>PNG, JPG o WEBP · Máx. 2 MB</small>
+                  </>
+                )}
+              </button>
+
+              {form.logo && (
+                <button
+                  type="button"
+                  className="business-config__logo-remove"
+                  onClick={() => {
+                    setSelectedLogo(null)
+                    setForm(prev => ({ ...prev, logo: '' }))
+                    if (fileInputRef.current) fileInputRef.current.value = ''
+                  }}
+                >
+                  Eliminar logo
+                </button>
+              )}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleLogoChange}
+                hidden
+              />
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            fullWidth
+            size="lg"
+            loading={loading}
+            style={{ background: brand.primaryGradient, borderRadius: 'var(--radius-md)', border: 'none' }}
+          >
+            {isEdit ? 'GUARDAR CAMBIOS' : 'CREAR NEGOCIO'}
+          </Button>
+
+          </section>
+
+          <div className="business-config__right-column">
+            <section className="business-config__personalization-card">
+              <div className="business-config__section-heading">
+                <span className="business-config__section-icon" aria-hidden="true">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+                    <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+                    <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+                    <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+                    <path d="M12 3a9 9 0 1 0 9 9c0-1.1-.9-2-2-2h-1.2a2 2 0 0 1-1.7-3l.3-.5A2.3 2.3 0 0 0 14.4 3H12Z" />
+                  </svg>
+                </span>
+                <div>
+                  <h2>Personalización del chatbot</h2>
+                  <p>Mensaje, identidad visual y colores del chat público.</p>
+                </div>
+              </div>
+
           {/* Mensaje de bienvenida */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -635,9 +683,56 @@ export function BusinessConfigPage() {
             />
           </div>
 
-          {/* Apariencia — solo en modo edición (placeholder) */}
+          {/* Colores del chatbot — persistencia local por negocio */}
+          <div className="business-config__color-fields">
+              <div className="business-config__color-grid">
+                {([
+                  ['colorPrimario', 'Color primario'],
+                  ['colorSecundario', 'Color secundario'],
+                ] as const).map(([field, label]) => (
+                  <div key={field} className="business-config__color-field">
+                    <label htmlFor={field}>{label}</label>
+                    <div>
+                      <input
+                        id={`${field}-picker`}
+                        type="color"
+                        aria-label={`Selector de ${label.toLowerCase()}`}
+                        value={isValidHexColor(form[field]) ? form[field] : DEFAULT_CHAT_APPEARANCE[field === 'colorPrimario' ? 'primary' : 'secondary']}
+                        onChange={event => setForm(prev => ({ ...prev, [field]: event.target.value.toUpperCase() }))}
+                      />
+                      <input
+                        id={field}
+                        type="text"
+                        value={form[field]}
+                        maxLength={7}
+                        spellCheck={false}
+                        aria-describedby={`${field}-hint`}
+                        onChange={event => setForm(prev => ({ ...prev, [field]: event.target.value }))}
+                      />
+                    </div>
+                    <small id={`${field}-hint`}>Formato hexadecimal: #RRGGBB</small>
+                  </div>
+                ))}
+              </div>
+
+              <div
+                className="business-config__chat-preview"
+                style={{
+                  background: `linear-gradient(90deg, ${isValidHexColor(form.colorPrimario) ? form.colorPrimario : DEFAULT_CHAT_APPEARANCE.primary}, ${isValidHexColor(form.colorSecundario) ? form.colorSecundario : DEFAULT_CHAT_APPEARANCE.secondary})`,
+                }}
+              >
+                <img src={form.logo || '/isoBot-transparente.png'} alt="" aria-hidden="true" />
+                <div>
+                  <strong>{form.nombre || 'Tu negocio'}</strong>
+                  <span>Vista previa del encabezado</span>
+                </div>
+              </div>
+          </div>
+            </section>
+
+          {/* Apariencia — solo en modo edición */}
           {isEdit && (
-            <div style={{
+            <div className="business-config__appearance-card" style={{
               padding: '16px',
               borderRadius: 12,
               border: `1px solid ${isDark ? '#DCE3EC' : '#31435C'}`,
@@ -718,7 +813,7 @@ export function BusinessConfigPage() {
 
           {/* Enlace público — solo en modo edición */}
           {isEdit && (
-            <div style={{
+            <div className="business-config__link-card" style={{
               borderRadius: 'var(--radius-md)',
               background: 'var(--color-demo-bg)',
               border: '1px solid var(--color-demo-border)',
@@ -808,22 +903,434 @@ export function BusinessConfigPage() {
               </p>
             </div>
           )}
+          </div>
 
           {error && (
             <p style={{ fontSize: '13px', color: 'var(--color-error)' }}>{error}</p>
           )}
-
-          <Button
-            type="submit"
-            fullWidth
-            size="lg"
-            loading={loading}
-            style={{ background: brand.primaryGradient, borderRadius: 'var(--radius-md)', border: 'none' }}
-          >
-            {isEdit ? 'GUARDAR CAMBIOS' : 'CREAR NEGOCIO'}
-          </Button>
         </form>
       </div>
+
+      {isEdit && (
+        <button
+          type="button"
+          className="business-config__public-chat-bot"
+          disabled={!business?.slug}
+          aria-label="Abrir el chat público de tu negocio"
+          onClick={() => business?.slug && navigate(`/${business.slug}`)}
+        >
+          <span className="business-config__public-chat-label">
+            <i aria-hidden="true" />
+            Probá tu chat
+          </span>
+          <span className="business-config__public-chat-avatar" aria-hidden="true">
+            <img src="/isoBot-transparente.png" alt="" />
+          </span>
+        </button>
+      )}
+
+      <style>{`
+        .business-config-page {
+          position: fixed;
+          inset: 0;
+          z-index: 10;
+          overflow-y: auto;
+          background:
+            radial-gradient(circle at 8% 12%, rgba(19, 168, 162, .08), transparent 26%),
+            var(--color-bg) !important;
+        }
+
+        .business-config-page__header {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+          min-height: 64px;
+          padding: 10px clamp(20px, 4vw, 44px) !important;
+          border-bottom: 1px solid var(--color-border);
+          background: color-mix(in srgb, var(--color-bg) 92%, transparent) !important;
+          backdrop-filter: blur(14px);
+        }
+
+        .business-config-page__content {
+          width: min(100%, 1280px);
+          margin: 0 auto;
+          padding: 32px clamp(20px, 4vw, 40px) 56px !important;
+          overflow: visible !important;
+        }
+
+        .business-config-page__content > h1 {
+          font-size: clamp(28px, 4vw, 34px) !important;
+          letter-spacing: -.7px;
+        }
+
+        .business-config__form {
+          display: grid !important;
+          grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
+          align-items: stretch;
+          gap: 24px !important;
+        }
+
+        .business-config__form input,
+        .business-config__form textarea,
+        .business-config__form select {
+          border-radius: 12px !important;
+        }
+
+        .business-config__form input:focus,
+        .business-config__form textarea:focus,
+        .business-config__form select:focus {
+          border-color: #13A8A2 !important;
+          box-shadow: 0 0 0 3px rgba(19, 168, 162, .14);
+        }
+
+        .business-config__data-card,
+        .business-config__personalization-card,
+        .business-config__appearance-card,
+        .business-config__link-card {
+          padding: clamp(20px, 3vw, 28px) !important;
+          border: 1px solid var(--color-border);
+          border-radius: 18px !important;
+          background: var(--color-bg) !important;
+          box-shadow: 0 8px 22px rgba(15, 23, 42, .08) !important;
+        }
+
+        .business-config__data-card,
+        .business-config__right-column {
+          min-width: 0;
+        }
+
+        .business-config__data-card,
+        .business-config__right-column {
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+        }
+
+        .business-config__right-column {
+          gap: 24px;
+        }
+
+        .business-config__personalization-card {
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+        }
+
+        .business-config__appearance-card {
+          color: var(--color-text-primary) !important;
+        }
+
+        .business-config__appearance-card p,
+        .business-config__appearance-card span {
+          color: var(--color-text-primary) !important;
+        }
+
+        .business-config__appearance-card p + p {
+          color: var(--color-text-secondary) !important;
+        }
+
+        .business-config__appearance-card > div:first-child > div {
+          color: #FFFFFF !important;
+        }
+
+        .business-config__link-card {
+          flex: 1;
+          background: var(--color-bg) !important;
+        }
+
+        .business-config__form > [role='alert'],
+        .business-config__form > p,
+        .business-config__form > button {
+          grid-column: 1 / -1;
+        }
+
+        .business-config__section-heading {
+          margin-bottom: 18px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .business-config__section-heading h2 {
+          margin: 0 0 3px;
+          font-size: 17px;
+        }
+
+        .business-config__section-heading p {
+          margin: 0;
+          color: var(--color-text-secondary);
+          font-size: 12px;
+        }
+
+        .business-config__section-icon {
+          width: 40px;
+          height: 40px;
+          flex: 0 0 auto;
+          display: grid;
+          place-items: center;
+          color: #FFFFFF;
+          border-radius: 12px;
+          background: linear-gradient(135deg, #13A8A2, #1372A8);
+        }
+
+        .business-config__logo-field {
+          display: flex;
+          flex-direction: column;
+          gap: 9px;
+        }
+
+        .business-config__logo-upload {
+          width: 100%;
+          min-height: 184px;
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          color: var(--color-text-primary);
+          border: 2px dashed var(--color-border);
+          border-radius: 16px;
+          background: color-mix(in srgb, var(--color-bg) 94%, #13A8A2 6%);
+          cursor: pointer;
+          transition: border-color .2s ease, background-color .2s ease, transform .2s ease;
+        }
+
+        .business-config__logo-upload:hover {
+          border-color: #13A8A2;
+          background: color-mix(in srgb, var(--color-bg) 88%, #13A8A2 12%);
+          transform: translateY(-1px);
+        }
+
+        .business-config__logo-placeholder {
+          width: 56px;
+          height: 56px;
+          margin-bottom: 2px;
+          display: grid;
+          place-items: center;
+          color: var(--color-text-secondary);
+          border-radius: 14px;
+          background: var(--color-surface-muted);
+        }
+
+        .business-config__logo-upload strong {
+          font-size: 14px;
+        }
+
+        .business-config__logo-upload small {
+          color: var(--color-text-secondary);
+          font-size: 12px;
+        }
+
+        .business-config__logo-upload--filled {
+          min-height: 220px;
+        }
+
+        .business-config__logo-upload--filled img {
+          width: min(180px, 70%);
+          height: 140px;
+          object-fit: contain;
+          border-radius: 12px;
+          background: #FFFFFF;
+        }
+
+        .business-config__logo-upload--filled span {
+          color: #13A8A2;
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        .business-config__logo-remove {
+          align-self: flex-end;
+          padding: 2px 0;
+          color: var(--color-error);
+          border: 0;
+          background: transparent;
+          font-family: var(--font-family);
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .business-config__public-chat-bot {
+          position: fixed;
+          right: 22px;
+          bottom: 22px;
+          z-index: 25;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 8px;
+          color: var(--color-text-primary);
+        }
+
+        .business-config__public-chat-bot:disabled {
+          opacity: .48;
+          cursor: not-allowed;
+        }
+
+        .business-config__public-chat-label {
+          min-height: 38px;
+          padding: 8px 14px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          border: 1px solid var(--color-border);
+          border-radius: 999px;
+          background: var(--color-bg);
+          box-shadow: 0 8px 20px rgba(15, 23, 42, .16);
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .business-config__public-chat-label i {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #65E6A5;
+        }
+
+        .business-config__public-chat-avatar {
+          width: 66px;
+          height: 66px;
+          display: grid;
+          place-items: center;
+          overflow: hidden;
+          border: 2px solid #13A8A2;
+          border-radius: 50%;
+          background: var(--color-bg);
+          box-shadow: 0 8px 20px rgba(15, 23, 42, .16);
+        }
+
+        .business-config__public-chat-avatar img {
+          width: 54px;
+          height: 54px;
+          object-fit: contain;
+        }
+
+        .business-config__color-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 18px;
+        }
+
+        .business-config__color-fields {
+          padding-top: 2px;
+        }
+
+        .business-config__color-field > label {
+          display: block;
+          margin-bottom: 8px;
+          color: var(--color-text-primary);
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        .business-config__color-field > div {
+          display: flex;
+          gap: 10px;
+        }
+
+        .business-config__color-field input[type='color'] {
+          width: 52px;
+          height: 52px;
+          flex: 0 0 auto;
+          padding: 3px;
+          border: 1px solid var(--color-border);
+          background: var(--color-bg);
+          cursor: pointer;
+        }
+
+        .business-config__color-field input[type='text'] {
+          width: 100%;
+          min-width: 0;
+          height: 52px;
+          padding: 0 14px;
+          color: var(--color-text-primary);
+          border: 1px solid var(--color-border);
+          background: var(--color-bg);
+          font-family: var(--font-family);
+          font-size: 15px;
+        }
+
+        .business-config__color-field small {
+          display: block;
+          margin-top: 5px;
+          color: var(--color-text-secondary);
+          font-size: 10px;
+        }
+
+        .business-config__chat-preview {
+          min-height: 66px;
+          margin-top: 18px;
+          padding: 10px 14px;
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          color: #FFFFFF;
+          border-radius: 14px;
+          box-shadow: 0 10px 22px rgba(15, 23, 42, .14);
+        }
+
+        .business-config__chat-preview img {
+          width: 42px;
+          height: 42px;
+          object-fit: cover;
+          border: 2px solid rgba(255, 255, 255, .7);
+          border-radius: 50%;
+          background: #FFFFFF;
+        }
+
+        .business-config__chat-preview strong,
+        .business-config__chat-preview span {
+          display: block;
+        }
+
+        .business-config__chat-preview strong {
+          font-size: 14px;
+        }
+
+        .business-config__chat-preview span {
+          margin-top: 2px;
+          color: rgba(255, 255, 255, .8);
+          font-size: 11px;
+        }
+
+        @media (max-width: 620px) {
+          .business-config-page__content {
+            padding-top: 22px !important;
+          }
+
+          .business-config__color-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .business-config__public-chat-bot {
+            right: 14px;
+            bottom: 14px;
+          }
+        }
+
+        @media (min-width: 1000px) {
+          .business-config-page--editing {
+            padding-left: 280px;
+          }
+
+          .business-config-page__header button[aria-label='Abrir navegación'] {
+            display: none !important;
+          }
+
+          .business-config-page--editing .app-drawer__business {
+            display: none;
+          }
+        }
+
+        @media (max-width: 900px) {
+          .business-config__form {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </div>
   )
 }
