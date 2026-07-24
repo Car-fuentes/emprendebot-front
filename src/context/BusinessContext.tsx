@@ -15,6 +15,7 @@ import {
   saveStoredBusinesses,
 } from '../services/businessStorage'
 import { apiRequest } from '../services/apiClient'
+import { DEFAULT_CHAT_APPEARANCE } from '../services/chatAppearance'
 import { useAuth } from './AuthContext'
 
 interface BotConfigResponse {
@@ -35,6 +36,8 @@ interface BotConfigResponse {
       nombre: string
     } | null
     slug?: string | null
+    colorPrimario?: string | null
+    colorSecundario?: string | null
   }
 }
 
@@ -99,6 +102,8 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         faq: stored?.faq ?? [],
         faqCategories: stored?.faqCategories ?? [],
         slug: configuracion.slug ?? stored?.slug ?? '',
+        colorPrimario: configuracion.colorPrimario ?? stored?.colorPrimario ?? DEFAULT_CHAT_APPEARANCE.primary,
+        colorSecundario: configuracion.colorSecundario ?? stored?.colorSecundario ?? DEFAULT_CHAT_APPEARANCE.secondary,
       })
       const updatedBusinesses = stored
         ? storedBusinesses.map(item => item.userId === userId ? synced : item)
@@ -139,6 +144,8 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       mensajeBienvenida: data.mensajeBienvenida ?? '¡Hola! ¿En qué te puedo ayudar?',
       respuestaDerivacion: data.respuestaDerivacion ?? 'Te voy a conectar con un asesor en breve.',
       slug: data.slug ?? '',
+      colorPrimario: data.colorPrimario ?? DEFAULT_CHAT_APPEARANCE.primary,
+      colorSecundario: data.colorSecundario ?? DEFAULT_CHAT_APPEARANCE.secondary,
     }
     const updated = existing
       ? all.map(item => item.userId === data.userId ? newBusiness : item)

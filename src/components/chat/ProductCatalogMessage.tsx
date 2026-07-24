@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import type { Product } from '../../types'
 import type { OrderItem } from '../../hooks/useChat'
-import { brand } from '../../styles/brand'
 
 interface ProductCatalogMessageProps {
   products: Product[]
@@ -130,7 +129,7 @@ export function ProductCatalogMessage({ products, onConfirm, onBack }: ProductCa
                   style={{
                     width: 28, height: 28, borderRadius: '50%',
                     border: 'none',
-                    background: brand.primaryGradient,
+                    background: 'var(--chat-gradient, linear-gradient(90deg, #13A8A2, #1372A8))',
                     cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: '#fff', fontSize: 18, lineHeight: 1, padding: 0,
@@ -179,7 +178,7 @@ export function ProductCatalogMessage({ products, onConfirm, onBack }: ProductCa
           height: 44,
           borderRadius: 'var(--radius-md)',
           border: 'none',
-          background: totalItems > 0 ? brand.primaryGradient : 'var(--color-surface-muted)',
+          background: totalItems > 0 ? 'var(--chat-gradient, linear-gradient(90deg, #13A8A2, #1372A8))' : 'var(--color-surface-muted)',
           color: totalItems > 0 ? '#fff' : 'var(--color-text-secondary)',
           fontSize: 14,
           fontWeight: 700,

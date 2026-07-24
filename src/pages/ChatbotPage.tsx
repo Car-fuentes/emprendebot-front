@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ChatHeader } from '../components/chat/ChatHeader'
 import { ChatInput } from '../components/chat/ChatInput'
@@ -11,6 +11,7 @@ import { useChat } from '../hooks/useChat'
 import type { Business, FAQ } from '../types'
 import { useAuth } from '../context/AuthContext'
 import { getPublicFaqsApi } from '../services/publicApi'
+import { resolveChatAppearance } from '../services/chatAppearance'
 
 // Página pública: www.emprendebot/[slug]
 export function ChatbotPage() {
@@ -71,6 +72,7 @@ export function ChatbotPage() {
 
 function PublicChat({ business, onBackToDashboard }: { business: Business; onBackToDashboard?: () => void }) {
   const { messages, isTyping, sendMessage, submitOrder, reset } = useChat(business)
+  const appearance = resolveChatAppearance(business)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const isInitialScrollRef = useRef(true)
@@ -116,7 +118,17 @@ function PublicChat({ business, onBackToDashboard }: { business: Business; onBac
   const activeQuickReplies = isTyping ? [] : (lastBotWithReplies?.quickReplies ?? [])
 
   return (
-    <div className="public-chat">
+    <div
+      className="public-chat"
+      style={{
+        '--chat-primary': appearance.primary,
+        '--chat-secondary': appearance.secondary,
+        '--chat-gradient': `linear-gradient(90deg, ${appearance.primary}, ${appearance.secondary})`,
+        '--color-primary': appearance.primary,
+        '--color-secondary': appearance.secondary,
+        '--color-bg-answer': appearance.primary,
+      } as CSSProperties}
+    >
       <ChatHeader business={business} onRefresh={reset} onBackToDashboard={onBackToDashboard} />
 
       <div ref={messagesContainerRef} className="public-chat__messages">
