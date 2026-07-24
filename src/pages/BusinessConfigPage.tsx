@@ -116,7 +116,8 @@ export function BusinessConfigPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { isDark, setTheme } = useTheme()
 
-  const isEdit = !!business
+  const [businessExists, setBusinessExists] = useState<boolean | null>(business ? true : null)
+  const isEdit = !!business || businessExists === true
 
   const [form, setForm] = useState<FormData>(
     business
@@ -148,6 +149,21 @@ export function BusinessConfigPage() {
   const [persistedLogo, setPersistedLogo] = useState(business?.logo ?? '')
 
   const publicUrl = form.slug ? `${window.location.origin}/${form.slug}` : ''
+
+  // Resolver el modo antes de renderizar para evitar mostrar fugazmente
+  // la creación de negocio mientras se carga una configuración existente.
+  useEffect(() => {
+    if (!user) return
+
+    let active = true
+    void loadBusiness(user.id).then(loadedBusiness => {
+      if (active) setBusinessExists(loadedBusiness !== null)
+    })
+
+    return () => {
+      active = false
+    }
+  }, [user, loadBusiness])
 
   // Cargar rubros desde el backend (no requiere auth)
   useEffect(() => {
@@ -371,6 +387,28 @@ export function BusinessConfigPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (businessExists === null) {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 10,
+          display: 'grid',
+          placeItems: 'center',
+          color: 'var(--color-text-secondary)',
+          background: 'var(--color-bg)',
+          fontFamily: 'var(--font-family)',
+          fontSize: '14px',
+        }}
+      >
+        Cargando configuración…
+      </div>
+    )
   }
 
   return (
@@ -1346,9 +1384,6 @@ export function BusinessConfigPage() {
             display: none !important;
           }
 
-          .business-config-page--editing .app-drawer__business {
-            display: none;
-          }
         }
 
         @media (max-width: 900px) {
