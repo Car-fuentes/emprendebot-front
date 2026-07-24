@@ -3,15 +3,19 @@ import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
 interface GoogleAuthButtonProps {
   onSuccess: (response: CredentialResponse) => void
   onError: () => void
+  disabled?: boolean
 }
 
-export function GoogleAuthButton({ onSuccess, onError }: GoogleAuthButtonProps) {
+export function GoogleAuthButton({ onSuccess, onError, disabled = false }: GoogleAuthButtonProps) {
   if (!import.meta.env.VITE_GOOGLE_CLIENT_ID) {
     return <p role="alert" className="google-auth-button__error">Falta configurar VITE_GOOGLE_CLIENT_ID.</p>
   }
 
   return (
-    <div className="google-auth-button">
+    <div
+      className={`google-auth-button${disabled ? ' google-auth-button--disabled' : ''}`}
+      aria-disabled={disabled}
+    >
       <div className="google-auth-button__visual" aria-hidden="true">
         <svg viewBox="0 0 24 24">
           <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.06H12v3.9h5.38a4.6 4.6 0 0 1-2 3.02v2.53h3.24c1.9-1.75 2.98-4.33 2.98-7.39Z" />
@@ -41,6 +45,11 @@ export function GoogleAuthButton({ onSuccess, onError }: GoogleAuthButtonProps) 
           background: var(--eb-muted, var(--color-surface-muted));
         }
         .google-auth-button:active { transform: scale(.985); }
+        .google-auth-button--disabled {
+          opacity: .5;
+          pointer-events: none;
+          cursor: not-allowed;
+        }
         .google-auth-button__visual {
           position: absolute;
           inset: 0;
