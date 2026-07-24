@@ -8,73 +8,27 @@ import { Avatar } from '../components/ui/Avatar'
 import { AppIcon } from '../components/ui/AppIcon'
 import { brand } from '../styles/brand'
 
-const rubroLabels: Record<string, string> = {
-  gastronomia: 'Gastronomia',
-  peluqueria: 'Peluqueria',
-  indumentaria: 'Indumentaria',
-  tecnologia: 'Tecnologia',
-  servicios: 'Servicios',
-  salud: 'Salud',
-  educacion: 'Educacion',
-  otro: 'Negocio',
-}
-
-function IconWrapper({ children, color = brand.primary }: { children: ReactNode; color?: string }) {
-  return (
-    <span style={{
-      color,
-      lineHeight: 1,
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}>
-      {children}
-    </span>
-  )
+function IconWrapper({ children }: { children: ReactNode }) {
+  return <span className="dashboard-icon-wrapper">{children}</span>
 }
 
 function QuickAccessCard({
   label,
   icon,
+  tone,
   onClick,
 }: {
   label: string
   icon: ReactNode
+  tone: string
   onClick: () => void
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        minHeight: 118,
-        padding: '18px 10px',
-        borderRadius: '12px',
-        border: `1px solid ${brand.border}`,
-        background: brand.surface,
-        boxShadow: brand.shadowCard,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '12px',
-        color: brand.text,
-        fontWeight: 700,
-        fontSize: '12px',
-      }}
-    >
-      <span style={{
-        width: 42,
-        height: 42,
-        borderRadius: '11px',
-        background: 'var(--color-surface-muted)',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
+    <button type="button" className="dashboard-quick-card" onClick={onClick}>
+      <span className="dashboard-quick-card__icon" style={{ color: tone }}>
         {icon}
       </span>
-      {label}
+      <span>{label}</span>
     </button>
   )
 }
@@ -86,7 +40,7 @@ export function DashboardPage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   useEffect(() => {
-    if (user) loadBusiness(user.id)
+    if (user) void loadBusiness(user.id)
   }, [user, loadBusiness])
 
   if (!user) {
@@ -95,9 +49,6 @@ export function DashboardPage() {
   }
 
   const firstName = user.nombre.split(' ')[0]
-  const businessName = business?.nombre ?? 'Tu negocio'
-  const selectedRubro = business?.rubroNombre || business?.rubro || user.rubro
-  const businessType = selectedRubro ? rubroLabels[selectedRubro] ?? selectedRubro : 'Rubro no configurado'
 
   const metrics = [
     {
@@ -105,7 +56,7 @@ export function DashboardPage() {
       value: stats.consultasPendientes,
       description: 'Requieren seguimiento',
       color: brand.primary,
-      icon: <IconWrapper color="#FFFFFF"><AppIcon name="chat" size={21} /></IconWrapper>,
+      icon: <IconWrapper><AppIcon name="chat" size={22} /></IconWrapper>,
       tone: 'primary' as const,
     },
     {
@@ -113,241 +64,474 @@ export function DashboardPage() {
       value: stats.presupuestosPendientes,
       description: 'Pedidos comerciales activos',
       color: '#7C3AED',
-      icon: <IconWrapper color="#FFFFFF"><AppIcon name="budget" size={21} /></IconWrapper>,
+      icon: <IconWrapper><AppIcon name="budget" size={22} /></IconWrapper>,
       tone: 'secondary' as const,
     },
     {
-      label: 'Automatizacion',
+      label: 'Automatización',
       value: `${stats.porcentajeAutomatizacion}%`,
       description: 'Respuestas gestionadas por el bot',
       color: '#16C784',
-      icon: <IconWrapper color="#FFFFFF"><AppIcon name="automation" size={21} /></IconWrapper>,
+      icon: <IconWrapper><AppIcon name="automation" size={22} /></IconWrapper>,
       tone: 'success' as const,
     },
     {
-      label: 'Conversaciones abandonadas',
-      value: 0,
-      description: 'Sin respuesta final',
-      color: '#FF4B1F',
-      icon: <IconWrapper color="#FFFFFF"><AppIcon name="alert" size={21} /></IconWrapper>,
-      tone: 'danger' as const,
+      label: 'Consultas resueltas',
+      value: stats.consultasResueltas,
+      description: 'Conversaciones completadas',
+      color: '#F97316',
+      icon: <IconWrapper><AppIcon name="check" size={22} /></IconWrapper>,
+      tone: 'warning' as const,
     },
   ]
 
   return (
-    <>
+    <div className="dashboard-page">
       <Drawer
         business={business}
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         activeItem="dashboard"
+        desktopPersistent
       />
 
-      <div style={{
-        flex: 1,
-        minHeight: '100svh',
-        background: brand.surface,
-        display: 'flex',
-        flexDirection: 'column',
-      }}>
-        <header style={{
-          height: 56,
-          padding: '12px 20px 4px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: brand.surface,
-        }}>
-          <button
-            type="button"
-            aria-label="Abrir navegacion"
-            onClick={() => setDrawerOpen(true)}
-            style={{
-              width: 32,
-              height: 32,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: brand.text,
-              background: 'transparent',
-            }}
-          >
-            <AppIcon name="menu" size={21} strokeWidth={2.2} />
-          </button>
+      <div className="dashboard-page__content">
+        <header className="dashboard-header">
+          <div className="dashboard-header__title">
+            <button
+              type="button"
+              aria-label="Abrir navegación"
+              className="dashboard-header__menu"
+              onClick={() => setDrawerOpen(true)}
+            >
+              <AppIcon name="menu" size={22} strokeWidth={2.2} />
+            </button>
+            <div>
+              <strong>Dashboard</strong>
+              <span>Panel de control de tu negocio</span>
+            </div>
+          </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <span aria-hidden="true" style={{ color: brand.text, lineHeight: 1, display: 'inline-flex' }}>
+          <div className="dashboard-header__profile">
+            <span aria-hidden="true" className="dashboard-header__bell">
               <AppIcon name="bell" size={21} />
             </span>
-            <Avatar name={user.nombre} size={32} bgColor={brand.primaryGradient} />
+            <Avatar name={user.nombre} size={38} bgColor={brand.primaryGradient} />
           </div>
         </header>
 
-        <main style={{
-          flex: 1,
-          padding: '18px 20px calc(142px + env(safe-area-inset-bottom, 0px))',
-          overflowY: 'auto',
-        }}>
-          <section style={{ marginBottom: '18px' }}>
-            <h1 style={{
-              color: brand.text,
-              fontSize: '22px',
-              lineHeight: 1.15,
-              fontWeight: 800,
-              marginBottom: '10px',
-            }}>
-              Hola, {firstName}
-            </h1>
-            <p style={{ color: brand.text, fontSize: '13px', fontWeight: 700, marginBottom: '2px' }}>
-              {businessName}
-            </p>
-            <p style={{ color: brand.text, fontSize: '11px', lineHeight: 1.2 }}>
-              {businessType}{' '}
-              <span style={{ color: brand.muted, display: 'inline-flex', verticalAlign: '-3px' }}>
-                <AppIcon name="business" size={13} strokeWidth={1.8} />
-              </span>
-            </p>
+        <main className="dashboard-main">
+          <section className="dashboard-welcome">
+            <div>
+              <p className="dashboard-welcome__eyebrow">Resumen general</p>
+              <h1>Hola, {firstName}</h1>
+              <p>Esto es lo que está pasando hoy en tu negocio.</p>
+            </div>
           </section>
 
-          <section style={{ display: 'grid', gap: '12px', marginBottom: '22px' }}>
-            {metrics.map(metric => (
-              <StatCard key={metric.label} {...metric} />
-            ))}
+          <section aria-labelledby="dashboard-summary-title">
+            <h2 id="dashboard-summary-title" className="dashboard-section-title">Resumen</h2>
+            <div className="dashboard-metrics">
+              {metrics.map(metric => <StatCard key={metric.label} {...metric} />)}
+            </div>
           </section>
 
-          <section style={{ marginBottom: '20px' }}>
-            <h2 style={{ color: brand.text, fontSize: '15px', fontWeight: 800, marginBottom: '10px' }}>
-              Accesos rapidos
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px' }}>
+          <section aria-labelledby="dashboard-quick-title">
+            <h2 id="dashboard-quick-title" className="dashboard-section-title">Accesos rápidos</h2>
+            <div className="dashboard-quick-grid">
               <QuickAccessCard
-                label="Catalogo"
-                icon={<IconWrapper color={brand.primary}><AppIcon name="catalog" /></IconWrapper>}
+                label="Catálogo"
+                tone={brand.primary}
+                icon={<AppIcon name="catalog" size={28} />}
                 onClick={() => navigate('/catalogo')}
               />
               <QuickAccessCard
                 label="FAQ"
-                icon={<IconWrapper color={brand.secondary}><AppIcon name="faq" /></IconWrapper>}
+                tone={brand.secondary}
+                icon={<AppIcon name="faq" size={28} />}
                 onClick={() => navigate('/faq')}
               />
               <QuickAccessCard
                 label="Consultas"
-                icon={<IconWrapper color={brand.primary}><AppIcon name="chat" /></IconWrapper>}
+                tone="#7C3AED"
+                icon={<AppIcon name="chat" size={28} />}
                 onClick={() => navigate('/consultas')}
               />
               <QuickAccessCard
-                label="Configuracion"
-                icon={<IconWrapper color={brand.orange}><AppIcon name="settings" /></IconWrapper>}
+                label="Configuración"
+                tone={brand.orange}
+                icon={<AppIcon name="settings" size={28} />}
                 onClick={() => navigate('/configurar')}
               />
             </div>
           </section>
 
-          <section>
-            <h2 style={{ color: brand.text, fontSize: '15px', fontWeight: 800, marginBottom: '10px' }}>
-              Actividad reciente
-            </h2>
-            <div style={{
-              minHeight: 158,
-              padding: '24px 18px',
-              borderRadius: '12px',
-              border: `1px solid ${brand.border}`,
-              background: brand.surface,
-              boxShadow: brand.shadowCard,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textAlign: 'center',
-            }}>
-              <span style={{
-                width: 48,
-                height: 48,
-                borderRadius: '12px',
-                background: 'rgba(19, 168, 162, 0.10)',
-                color: brand.primary,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: '16px',
-              }}>
-                <AppIcon name="chat" size={25} />
-              </span>
-              <p style={{ color: brand.muted, fontSize: '13px', lineHeight: 1.45, maxWidth: 250 }}>
-                Las actividades de tus clientes apareceran aqui cuando comiencen a usar el chatbot.
-              </p>
+          <section aria-labelledby="dashboard-activity-title">
+            <h2 id="dashboard-activity-title" className="dashboard-section-title">Actividad reciente</h2>
+            <div className="dashboard-empty-activity">
+              <span><AppIcon name="chat" size={28} /></span>
+              <strong>Tu actividad aparecerá aquí</strong>
+              <p>Las actividades reales de tus clientes se mostrarán cuando comiencen a usar el chatbot.</p>
             </div>
           </section>
         </main>
 
         <button
           type="button"
+          className="dashboard-bot"
+          disabled={!business?.slug}
           aria-label="Abrir asistente: Probá tu Bot"
-          onClick={() => business && navigate(`/${business.slug}`)}
-          style={{
-            position: 'fixed',
-            right: 'calc(16px + env(safe-area-inset-right, 0px))',
-            bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
-            maxWidth: 'calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))',
-            border: 0,
-            background: 'transparent',
-            display: 'inline-flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 8,
-            padding: 0,
-            color: brand.text,
-            zIndex: 20,
-          }}
+          onClick={() => business?.slug && navigate(`/${business.slug}`)}
         >
-          <span style={{
-            minHeight: 37,
-            maxWidth: '100%',
-            padding: '8px 14px',
-            borderRadius: 999,
-            border: `1px solid ${brand.border}`,
-            background: brand.surface,
-            boxShadow: '0 6px 13px rgba(17, 24, 39, 0.18)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            fontSize: 12,
-            fontWeight: 700,
-            lineHeight: 1.2,
-            whiteSpace: 'nowrap',
-          }}>
-            <span aria-hidden="true" style={{
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              background: '#65E6A5',
-              flexShrink: 0,
-            }} />
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              Probá tu Bot
-            </span>
+          <span className="dashboard-bot__label">
+            <i aria-hidden="true" />
+            Probá tu Bot
           </span>
-          <span aria-hidden="true" style={{
-            width: 62,
-            height: 62,
-            borderRadius: '50%',
-            border: `2px solid ${brand.primary}`,
-            background: brand.surface,
-            boxShadow: '0 6px 13px rgba(17, 24, 39, 0.18)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            alignSelf: 'flex-end',
-            marginRight: 2,
-            padding: 6,
-            flexShrink: 0,
-            overflow: 'hidden',
-          }}>
-            <img src="/isoBot-transparente.png" alt="" style={{ width: 50, height: 50, objectFit: 'contain' }} />
+          <span className="dashboard-bot__avatar" aria-hidden="true">
+            <img src="/isoBot-transparente.png" alt="" />
           </span>
         </button>
       </div>
-    </>
+
+      <style>{`
+        .dashboard-page {
+          --dashboard-bg: #F8FAFB;
+          --dashboard-card: #FFFFFF;
+          --dashboard-text: #1A202C;
+          --dashboard-muted: #6C738E;
+          --dashboard-border: #E2E8F0;
+          position: fixed;
+          inset: 0;
+          z-index: 10;
+          overflow: auto;
+          color: var(--dashboard-text);
+          background: var(--dashboard-bg);
+        }
+
+        :root[data-theme='dark'] .dashboard-page {
+          --dashboard-bg: #0F172A;
+          --dashboard-card: #1E293B;
+          --dashboard-text: #F8FAFC;
+          --dashboard-muted: #94A3B8;
+          --dashboard-border: #334155;
+        }
+
+        .dashboard-page__content {
+          min-height: 100svh;
+          transition: margin-left .25s ease;
+        }
+
+        .dashboard-header {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+          min-height: 72px;
+          padding: 12px clamp(18px, 3vw, 34px);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-bottom: 1px solid var(--dashboard-border);
+          background: color-mix(in srgb, var(--dashboard-bg) 92%, transparent);
+          backdrop-filter: blur(14px);
+        }
+
+        .dashboard-header__title,
+        .dashboard-header__profile {
+          display: flex;
+          align-items: center;
+        }
+
+        .dashboard-header__title {
+          gap: 13px;
+        }
+
+        .dashboard-header__title strong,
+        .dashboard-header__title span {
+          display: block;
+        }
+
+        .dashboard-header__title strong {
+          font-size: 18px;
+          line-height: 1.2;
+        }
+
+        .dashboard-header__title span {
+          margin-top: 2px;
+          color: var(--dashboard-muted);
+          font-size: 11px;
+        }
+
+        .dashboard-header__menu,
+        .dashboard-header__bell {
+          width: 40px;
+          height: 40px;
+          display: grid;
+          place-items: center;
+          color: var(--dashboard-text);
+          border: 1px solid var(--dashboard-border);
+          border-radius: 11px;
+          background: var(--dashboard-card);
+        }
+
+        .dashboard-header__profile {
+          gap: 12px;
+        }
+
+        .dashboard-main {
+          width: min(100%, 1380px);
+          margin: 0 auto;
+          padding: clamp(24px, 4vw, 48px) clamp(18px, 3vw, 36px) 150px;
+        }
+
+        .dashboard-welcome {
+          margin-bottom: 24px;
+          display: flex;
+          align-items: end;
+          justify-content: space-between;
+        }
+
+        .dashboard-welcome__eyebrow {
+          margin: 0 0 7px;
+          color: #13A8A2;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 1.1px;
+          text-transform: uppercase;
+        }
+
+        .dashboard-welcome h1 {
+          margin: 0 0 7px;
+          font-size: clamp(28px, 3vw, 38px);
+          line-height: 1.1;
+          letter-spacing: -1px;
+        }
+
+        .dashboard-welcome > div > p:last-child {
+          margin: 0;
+          color: var(--dashboard-muted);
+          font-size: 14px;
+        }
+
+        .dashboard-section-title {
+          margin: 0 0 14px;
+          font-size: 18px;
+        }
+
+        .dashboard-metrics {
+          margin-bottom: 30px;
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 16px;
+        }
+
+        .dashboard-icon-wrapper {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: #FFFFFF;
+        }
+
+        .dashboard-quick-grid {
+          margin-bottom: 30px;
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 16px;
+        }
+
+        .dashboard-quick-card {
+          min-height: 132px;
+          padding: 20px 14px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          color: var(--dashboard-text);
+          border: 1px solid var(--dashboard-border);
+          border-radius: 16px;
+          background: var(--dashboard-card);
+          box-shadow: 0 7px 20px rgba(15, 23, 42, .07);
+          font-size: 13px;
+          font-weight: 700;
+          transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition);
+        }
+
+        .dashboard-quick-card:hover {
+          border-color: #13A8A2;
+          box-shadow: 0 14px 30px rgba(15, 23, 42, .11);
+          transform: translateY(-3px);
+        }
+
+        .dashboard-quick-card:focus-visible,
+        .dashboard-header button:focus-visible,
+        .dashboard-bot:focus-visible {
+          outline: 3px solid rgba(19, 168, 162, .3);
+          outline-offset: 3px;
+        }
+
+        .dashboard-quick-card__icon {
+          width: 58px;
+          height: 58px;
+          display: grid;
+          place-items: center;
+          border-radius: 16px;
+          background: color-mix(in srgb, currentColor 11%, transparent);
+        }
+
+        .dashboard-empty-activity {
+          min-height: 190px;
+          padding: 28px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          border: 1px solid var(--dashboard-border);
+          border-radius: 18px;
+          background: var(--dashboard-card);
+          box-shadow: 0 7px 20px rgba(15, 23, 42, .06);
+        }
+
+        .dashboard-empty-activity > span {
+          width: 58px;
+          height: 58px;
+          margin-bottom: 12px;
+          display: grid;
+          place-items: center;
+          color: #13A8A2;
+          border-radius: 16px;
+          background: rgba(19, 168, 162, .11);
+        }
+
+        .dashboard-empty-activity strong {
+          margin-bottom: 5px;
+          font-size: 14px;
+        }
+
+        .dashboard-empty-activity p {
+          max-width: 460px;
+          margin: 0;
+          color: var(--dashboard-muted);
+          font-size: 12px;
+          line-height: 1.5;
+        }
+
+        .dashboard-bot {
+          position: fixed;
+          right: 22px;
+          bottom: 22px;
+          z-index: 25;
+          display: flex;
+          flex-direction: column;
+          align-items: end;
+          gap: 8px;
+          color: var(--dashboard-text);
+        }
+
+        .dashboard-bot:disabled {
+          opacity: .48;
+          cursor: not-allowed;
+        }
+
+        .dashboard-bot__label {
+          min-height: 38px;
+          padding: 8px 14px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          border: 1px solid var(--dashboard-border);
+          border-radius: 999px;
+          background: var(--dashboard-card);
+          box-shadow: 0 8px 20px rgba(15, 23, 42, .16);
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .dashboard-bot__label i {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #65E6A5;
+        }
+
+        .dashboard-bot__avatar {
+          width: 66px;
+          height: 66px;
+          display: grid;
+          place-items: center;
+          overflow: hidden;
+          border: 2px solid #13A8A2;
+          border-radius: 50%;
+          background: var(--dashboard-card);
+          box-shadow: 0 8px 20px rgba(15, 23, 42, .16);
+        }
+
+        .dashboard-bot__avatar img {
+          width: 54px;
+          height: 54px;
+          object-fit: contain;
+        }
+
+        @media (min-width: 1000px) {
+          .dashboard-page__content {
+            margin-left: 280px;
+          }
+
+          .dashboard-header__menu {
+            display: none;
+          }
+        }
+
+        @media (max-width: 1120px) {
+          .dashboard-metrics,
+          .dashboard-quick-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+        }
+
+        @media (max-width: 620px) {
+          .dashboard-header {
+            min-height: 64px;
+          }
+
+          .dashboard-header__title span,
+          .dashboard-header__bell {
+            display: none;
+          }
+
+          .dashboard-main {
+            padding-top: 24px;
+          }
+
+          .dashboard-metrics {
+            grid-template-columns: 1fr;
+          }
+
+          .dashboard-quick-grid {
+            gap: 10px;
+          }
+
+          .dashboard-quick-card {
+            min-height: 118px;
+          }
+
+          .dashboard-bot {
+            right: 16px;
+            bottom: 16px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .dashboard-page *,
+          .dashboard-page *::before,
+          .dashboard-page *::after {
+            scroll-behavior: auto !important;
+            transition-duration: .01ms !important;
+            animation-duration: .01ms !important;
+          }
+        }
+      `}</style>
+    </div>
   )
 }
-

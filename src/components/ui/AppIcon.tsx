@@ -2,7 +2,9 @@ import type { ReactNode } from 'react'
 
 export type AppIconName =
   | 'menu'
+  | 'close'
   | 'bell'
+  | 'dashboard'
   | 'business'
   | 'chat'
   | 'budget'
@@ -17,6 +19,8 @@ export type AppIconName =
   | 'plus'
   | 'time'
   | 'agent'
+  | 'metrics'
+  | 'logout'
 
 export function AppIcon({ name, size = 22, strokeWidth = 2 }: { name: AppIconName; size?: number; strokeWidth?: number }) {
   const common = {
@@ -35,10 +39,24 @@ export function AppIcon({ name, size = 22, strokeWidth = 2 }: { name: AppIconNam
         <path {...common} d="M4 17h16" />
       </>
     ),
+    close: (
+      <>
+        <path {...common} d="m6 6 12 12" />
+        <path {...common} d="M18 6 6 18" />
+      </>
+    ),
     bell: (
       <>
         <path {...common} d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
         <path {...common} d="M10 21h4" />
+      </>
+    ),
+    dashboard: (
+      <>
+        <rect {...common} x="3" y="3" width="7" height="7" rx="1" />
+        <rect {...common} x="14" y="3" width="7" height="7" rx="1" />
+        <rect {...common} x="3" y="14" width="7" height="7" rx="1" />
+        <rect {...common} x="14" y="14" width="7" height="7" rx="1" />
       </>
     ),
     business: (
@@ -139,6 +157,21 @@ export function AppIcon({ name, size = 22, strokeWidth = 2 }: { name: AppIconNam
         <path {...common} d="M5 20a7 7 0 0 1 14 0" />
         <path {...common} d="M15 13a4 4 0 0 1 4 4" />
         <path {...common} d="M9 13a4 4 0 0 0-4 4" />
+      </>
+    ),
+    metrics: (
+      <>
+        <path {...common} d="M4 20V10" />
+        <path {...common} d="M10 20V4" />
+        <path {...common} d="M16 20v-7" />
+        <path {...common} d="M22 20H2" />
+      </>
+    ),
+    logout: (
+      <>
+        <path {...common} d="M10 17l5-5-5-5" />
+        <path {...common} d="M15 12H3" />
+        <path {...common} d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
       </>
     ),
   }
