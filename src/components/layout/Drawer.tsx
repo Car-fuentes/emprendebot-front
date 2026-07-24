@@ -34,7 +34,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'faq', label: 'FAQ', icon: 'faq', path: '/faq' },
   { id: 'consultas', label: 'Consultas', icon: 'chat', path: '/consultas' },
   { id: 'presupuestos', label: 'Presupuestos', icon: 'budget', comingSoon: true },
-  { id: 'metricas', label: 'Métricas', icon: 'metrics', comingSoon: true },
+  { id: 'metricas', label: 'Métricas', icon: 'metrics', path: '/metricas' },
   { id: 'configuracion', label: 'Configuración', icon: 'settings', path: '/configurar' },
 ]
 

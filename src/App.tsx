@@ -12,6 +12,7 @@ import { FaqPage } from './pages/FaqPage'
 import { ConsultasPage } from './pages/ConsultasPage'
 import { CatalogPage } from './pages/CatalogPage'
 import { ProductFormPage } from './pages/ProductFormPage'
+import { MetricsPage } from './pages/MetricsPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth()
@@ -41,6 +42,9 @@ function App() {
       } />
       <Route path="/faq" element={
         <ProtectedRoute><FaqPage /></ProtectedRoute>
+      } />
+      <Route path="/metricas" element={
+        <ProtectedRoute><MetricsPage /></ProtectedRoute>
       } />
 
       <Route path="/catalogo" element={
