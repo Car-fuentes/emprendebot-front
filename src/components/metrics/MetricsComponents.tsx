@@ -269,7 +269,7 @@ const LEAD_STATUS_CLASS: Record<LeadStatus, string> = {
 
 export function TodayLeadsList({ leads }: { leads: LeadItem[] }) {
   return (
-    <MetricsCard title="Leads de hoy" subtitle="Personas con oportunidades comerciales activas">
+    <MetricsCard title="Clientes interesados" subtitle="Clientes que solicitaron ser contactados hoy">
       {leads.length ? (
         <ul className="metrics-leads">
           {leads.map(lead => (
@@ -291,7 +291,7 @@ export function TodayLeadsList({ leads }: { leads: LeadItem[] }) {
       ) : (
         <div className="metrics-section-empty">
           <AppIcon name="agent" size={32} />
-          <p>Todavía no hay leads registrados hoy.</p>
+          <p>Todavía no hay clientes interesados registrados hoy.</p>
         </div>
       )}
     </MetricsCard>

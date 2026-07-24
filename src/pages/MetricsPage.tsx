@@ -28,7 +28,7 @@ type MetricsTab = 'summary' | 'abandonment' | 'leads'
 const METRICS_TABS: Array<{ id: MetricsTab; label: string; icon: 'dashboard' | 'automation' | 'agent' }> = [
   { id: 'summary', label: 'Resumen', icon: 'dashboard' },
   { id: 'abandonment', label: 'Abandono', icon: 'automation' },
-  { id: 'leads', label: 'Leads', icon: 'agent' },
+  { id: 'leads', label: 'Clientes interesados', icon: 'agent' },
 ]
 
 function isSummaryEmpty(data: MetricsData) {
@@ -211,7 +211,7 @@ export function MetricsPage() {
                   {isLeadsEmpty(data) ? (
                     <div className="metrics-panel__empty">
                       <MetricsEmptyState
-                        title="Todavía no hay leads registrados hoy"
+                        title="Todavía no hay clientes interesados registrados hoy"
                         message="Las oportunidades comerciales captadas durante el día aparecerán en esta sección."
                       />
                     </div>
