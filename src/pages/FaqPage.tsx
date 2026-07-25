@@ -6,6 +6,7 @@ import { FaqForm } from '../components/faq/FaqForm'
 import { Avatar } from '../components/ui/Avatar'
 import { Button } from '../components/ui/Button'
 import { AppIcon } from '../components/ui/AppIcon'
+import { PageBackButton } from '../components/navigation/PageBackButton'
 import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { useFaqs, type FAQSortOption, type FAQStatusFilter } from '../hooks/useFaqs'
@@ -231,6 +232,7 @@ export function FaqPage() {
         </header>
 
         <main className="faq-main">
+          <PageBackButton onClick={() => navigate('/dashboard')} />
           <section className="faq-heading">
             <div>
               <span className="faq-eyebrow">RESPUESTAS</span>

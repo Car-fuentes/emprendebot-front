@@ -5,6 +5,7 @@ import { useBusiness } from '../context/BusinessContext'
 import { Drawer } from '../components/layout/Drawer'
 import { Avatar } from '../components/ui/Avatar'
 import { AppIcon } from '../components/ui/AppIcon'
+import { PageBackButton } from '../components/navigation/PageBackButton'
 import type { ProductApi } from '../types'
 import { deleteProductApi, getProductsApi } from '../services/productApi'
 import '../styles/catalog.css'
@@ -117,6 +118,7 @@ export function CatalogPage() {
         </header>
 
         <main className="catalog-main">
+          <PageBackButton onClick={() => navigate('/dashboard')} />
           <section className="catalog-heading">
             <div>
               <span className="catalog-eyebrow">Productos</span>
