@@ -93,6 +93,7 @@ export function DashboardPage() {
         onClose={() => setDrawerOpen(false)}
         activeItem="dashboard"
         desktopPersistent
+        showBusinessAvatar
       />
 
       <div className="dashboard-page__content">
@@ -113,10 +114,12 @@ export function DashboardPage() {
           </div>
 
           <div className="dashboard-header__profile">
-            <span aria-hidden="true" className="dashboard-header__bell">
-              <AppIcon name="bell" size={21} />
-            </span>
-            <Avatar name={user.nombre} size={38} bgColor={brand.primaryGradient} />
+            <Avatar
+              name={user.nombre}
+              src={business?.logo}
+              size={38}
+              bgColor={brand.primaryGradient}
+            />
           </div>
         </header>
 
@@ -261,8 +264,7 @@ export function DashboardPage() {
           font-size: 11px;
         }
 
-        .dashboard-header__menu,
-        .dashboard-header__bell {
+        .dashboard-header__menu {
           width: 40px;
           height: 40px;
           display: grid;
@@ -480,6 +482,10 @@ export function DashboardPage() {
           .dashboard-header__menu {
             display: none;
           }
+
+          .dashboard-header__profile {
+            display: none;
+          }
         }
 
         @media (max-width: 1120px) {
@@ -495,8 +501,7 @@ export function DashboardPage() {
             min-height: 64px;
           }
 
-          .dashboard-header__title span,
-          .dashboard-header__bell {
+          .dashboard-header__title span {
             display: none;
           }
 
