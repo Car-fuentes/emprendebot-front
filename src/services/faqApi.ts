@@ -19,9 +19,17 @@ interface FAQMutationResponse {
 }
 
 export async function getFaqsApi(): Promise<FAQApi[]> {
-  // Backend limita a máx. 100 por página; para la mayoría de los negocios alcanza
-  const response = await apiRequest<FAQListResponse>('/faqs?page=1&limit=100')
-  return response.faqs.faqs
+  const faqs: FAQApi[] = []
+  let page = 1
+
+  while (true) {
+    const response = await apiRequest<FAQListResponse>(`/faqs?page=${page}&limit=100`)
+    faqs.push(...response.faqs.faqs)
+    if (page >= response.faqs.totalPaginas) break
+    page += 1
+  }
+
+  return faqs
 }
 
 export async function createFaqApi(payload: CreateFAQPayload): Promise<FAQApi> {

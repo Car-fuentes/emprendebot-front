@@ -1,15 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
-import type { Business, DashboardStats, FAQ, FAQCategory } from '../types'
-import {
-  createFaq as createStoredFaq,
-  deleteFaq as deleteStoredFaq,
-  migrateBusinessFaqs,
-  moveFaq as moveStoredFaq,
-  toggleFaq as toggleStoredFaq,
-  updateFaq as updateStoredFaq,
-  type FAQFormData,
-  type FAQMoveDirection,
-} from '../services/faqStorage'
+import type { Business, DashboardStats } from '../types'
 import {
   getStoredBusinesses,
   saveStoredBusinesses,
@@ -43,18 +33,12 @@ interface BotConfigResponse {
 
 interface BusinessContextType {
   business: Business | null
-  faqCategories: FAQCategory[]
   isBusinessLoading: boolean
   stats: DashboardStats
   loadBusiness: (userId: string) => Promise<Business | null>
   loadBusinessBySlug: (slug: string) => Business | null
   saveBusiness: (data: Partial<Business> & { userId: string }) => Business
   updateBusiness: (data: Partial<Business>) => void
-  createFaq: (data: FAQFormData) => Promise<FAQ>
-  updateFaq: (faqId: string, data: FAQFormData) => Promise<FAQ>
-  deleteFaq: (faqId: string) => Promise<void>
-  toggleFaq: (faqId: string) => Promise<FAQ>
-  moveFaq: (faqId: string, direction: FAQMoveDirection) => Promise<void>
 }
 
 const DEFAULT_STATS: DashboardStats = {
@@ -66,11 +50,16 @@ const DEFAULT_STATS: DashboardStats = {
 
 const BusinessContext = createContext<BusinessContextType | null>(null)
 
+const withoutStoredFaqs = (business: Business): Business => ({
+  ...business,
+  faq: [],
+  faqCategories: [],
+})
+
 export function BusinessProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const [business, setBusiness] = useState<Business | null>(null)
   const [isBusinessLoading, setIsBusinessLoading] = useState(true)
-  const faqCategories = business?.faqCategories ?? []
 
   useEffect(() => {
     if (!user || (business && business.userId !== user.id)) {
@@ -85,7 +74,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       const storedBusinesses = getStoredBusinesses()
       const stored = storedBusinesses.find(item => item.userId === userId)
       const { configuracion } = await apiRequest<BotConfigResponse>('/bot')
-      const synced = migrateBusinessFaqs({
+      const synced: Business = {
         id: configuracion.id,
         userId: configuracion.usuarioId || userId,
         nombre: configuracion.nombreNegocio ?? stored?.nombre ?? '',
@@ -99,12 +88,12 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         rubroId: configuracion.rubroId ?? undefined,
         rubroNombre: configuracion.rubro?.nombre ?? undefined,
         productos: stored?.productos ?? [],
-        faq: stored?.faq ?? [],
-        faqCategories: stored?.faqCategories ?? [],
+        faq: [],
+        faqCategories: [],
         slug: configuracion.slug ?? stored?.slug ?? '',
         colorPrimario: configuracion.colorPrimario ?? DEFAULT_CHAT_APPEARANCE.primary,
         colorSecundario: configuracion.colorSecundario ?? DEFAULT_CHAT_APPEARANCE.secondary,
-      })
+      }
       const updatedBusinesses = stored
         ? storedBusinesses.map(item => item.userId === userId ? synced : item)
         : [...storedBusinesses, synced]
@@ -115,7 +104,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       const stored = getStoredBusinesses().find(item => item.userId === userId) ?? null
       const fallback = stored
         ? {
-            ...migrateBusinessFaqs(stored),
+            ...withoutStoredFaqs(stored),
             colorPrimario: DEFAULT_CHAT_APPEARANCE.primary,
             colorSecundario: DEFAULT_CHAT_APPEARANCE.secondary,
           }
@@ -129,7 +118,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
 
   const loadBusinessBySlug = useCallback((slug: string): Business | null => {
     const found = getStoredBusinesses().find(item => item.slug === slug) ?? null
-    return found ? migrateBusinessFaqs(found) : null
+    return found ? withoutStoredFaqs(found) : null
   }, [])
 
   const saveBusiness = useCallback((data: Partial<Business> & { userId: string }): Business => {
@@ -138,8 +127,6 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     const newBusiness: Business = {
       id: existing?.id ?? crypto.randomUUID(),
       productos: existing?.productos ?? [],
-      faq: existing?.faq ?? [],
-      faqCategories: existing?.faqCategories ?? [],
       rubro: existing?.rubro ?? '',
       ...existing,
       ...data,
@@ -152,6 +139,8 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       slug: data.slug ?? '',
       colorPrimario: data.colorPrimario ?? DEFAULT_CHAT_APPEARANCE.primary,
       colorSecundario: data.colorSecundario ?? DEFAULT_CHAT_APPEARANCE.secondary,
+      faq: [],
+      faqCategories: [],
     }
     const updated = existing
       ? all.map(item => item.userId === data.userId ? newBusiness : item)
@@ -164,61 +153,24 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
   const updateBusiness = useCallback((data: Partial<Business>) => {
     setBusiness(current => {
       if (!current) return current
-      const updated = { ...current, ...data }
-      const all = getStoredBusinesses().map(item => item.id === updated.id ? updated : item)
+      const updated = withoutStoredFaqs({ ...current, ...data })
+      const all = getStoredBusinesses().map(item =>
+        item.id === updated.id ? updated : withoutStoredFaqs(item),
+      )
       saveStoredBusinesses(all)
       return updated
     })
   }, [])
 
-  const createFaq = useCallback(async (data: FAQFormData): Promise<FAQ> => {
-    if (!business) throw new Error('Primero tenés que configurar tu negocio.')
-    const result = await createStoredFaq(business.id, data)
-    setBusiness(current => current ? { ...current, faq: result.faqs, faqCategories: result.categories } : current)
-    return result.faq
-  }, [business])
-
-  const updateFaq = useCallback(async (faqId: string, data: FAQFormData): Promise<FAQ> => {
-    if (!business) throw new Error('Primero tenés que configurar tu negocio.')
-    const result = await updateStoredFaq(business.id, faqId, data)
-    setBusiness(current => current ? { ...current, faq: result.faqs, faqCategories: result.categories } : current)
-    return result.faq
-  }, [business])
-
-  const deleteFaq = useCallback(async (faqId: string): Promise<void> => {
-    if (!business) throw new Error('Primero tenés que configurar tu negocio.')
-    const faqs = await deleteStoredFaq(business.id, faqId)
-    setBusiness(current => current ? { ...current, faq: faqs } : current)
-  }, [business])
-
-  const toggleFaq = useCallback(async (faqId: string): Promise<FAQ> => {
-    if (!business) throw new Error('Primero tenés que configurar tu negocio.')
-    const result = await toggleStoredFaq(business.id, faqId)
-    setBusiness(current => current ? { ...current, faq: result.faqs } : current)
-    return result.faq
-  }, [business])
-
-  const moveFaq = useCallback(async (faqId: string, direction: FAQMoveDirection): Promise<void> => {
-    if (!business) throw new Error('Primero tenés que configurar tu negocio.')
-    const faqs = await moveStoredFaq(business.id, faqId, direction)
-    setBusiness(current => current ? { ...current, faq: faqs } : current)
-  }, [business])
-
   return (
     <BusinessContext.Provider value={{
       business,
-      faqCategories,
       isBusinessLoading,
       stats: DEFAULT_STATS,
       loadBusiness,
       loadBusinessBySlug,
       saveBusiness,
       updateBusiness,
-      createFaq,
-      updateFaq,
-      deleteFaq,
-      toggleFaq,
-      moveFaq,
     }}>
       {children}
     </BusinessContext.Provider>

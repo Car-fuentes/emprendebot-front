@@ -12,7 +12,9 @@ import { useFaqs, type FAQSortOption, type FAQStatusFilter } from '../hooks/useF
 import type { FAQ, FAQFormData } from '../types'
 import { brand } from '../styles/brand'
 import { DUPLICATE_FAQ_MESSAGE, normalizeFaqQuestion } from '../utils/normalizeFaqQuestion'
-import { type FAQSuggestion } from '../services/faqSuggestions'
+type FAQSuggestion = Pick<FAQ, 'id' | 'pregunta' | 'respuesta' | 'activa'> & {
+  categoria: string
+}
 
 const FAQ_PRIMARY = brand.primary
 const FAQ_TEXT = brand.text
@@ -28,7 +30,6 @@ export function FaqPage() {
     business,
     isBusinessLoading,
     loadBusiness,
-    updateBusiness,
   } = useBusiness()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [showForm, setShowForm] = useState(false)
@@ -54,19 +55,13 @@ export function FaqPage() {
     updateFaq,
     deleteFaq,
     toggleFaq,
+    reload,
   } = useFaqs({ status: statusFilter, category: categoryFilter, sort: sortOption })
   const availableSuggestions = suggestions
 
   useEffect(() => {
     if (user) loadBusiness(user.id)
   }, [loadBusiness, user])
-
-  // Sincroniza las FAQs del backend al BusinessContext (localStorage)
-  // para que el chatbot público pueda leerlas en este mismo browser.
-  useEffect(() => {
-    if (isFaqLoading) return
-    updateBusiness({ faq: allFaqs })
-  }, [allFaqs, isFaqLoading, updateBusiness])
 
   useEffect(() => {
     if (!location.state?.resetFaqView) return
@@ -499,7 +494,23 @@ export function FaqPage() {
                     fontSize: '13px',
                   }}
                 >
-                  {error || faqLoadError}
+                  <span>{error || faqLoadError}</span>
+                  {faqLoadError && (
+                    <button
+                      type="button"
+                      onClick={() => void reload()}
+                      style={{
+                        display: 'block',
+                        marginTop: '8px',
+                        color: 'var(--color-error)',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        textDecoration: 'underline',
+                      }}
+                    >
+                      Reintentar
+                    </button>
+                  )}
                 </div>
               )}
 
