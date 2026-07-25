@@ -10,7 +10,7 @@ import { useBusiness } from '../context/BusinessContext'
 import { useChat } from '../hooks/useChat'
 import type { Business, FAQ } from '../types'
 import { useAuth } from '../context/AuthContext'
-import { getPublicFaqsApi } from '../services/publicApi'
+import { getPublicBusinessApi, getPublicFaqsApi } from '../services/publicApi'
 import { resolveChatAppearance } from '../services/chatAppearance'
 
 // Página pública: www.emprendebot/[slug]
@@ -19,9 +19,25 @@ export function ChatbotPage() {
   const navigate = useNavigate()
   const { loadBusinessBySlug } = useBusiness()
   const { user } = useAuth()
-  const business = slug ? loadBusinessBySlug(slug) : null
-
+  const [business, setBusiness] = useState<Business | null>(() => slug ? loadBusinessBySlug(slug) : null)
+  const [isBusinessLoading, setIsBusinessLoading] = useState(Boolean(slug))
   const [publicFaqs, setPublicFaqs] = useState<FAQ[] | null>(null)
+
+  useEffect(() => {
+    if (!slug) return
+    const localBusiness = loadBusinessBySlug(slug)
+
+    getPublicBusinessApi(slug)
+      .then(remoteBusiness => {
+        setBusiness({
+          ...remoteBusiness,
+          colorPrimario: localBusiness?.colorPrimario,
+          colorSecundario: localBusiness?.colorSecundario,
+        })
+      })
+      .catch(() => setBusiness(localBusiness))
+      .finally(() => setIsBusinessLoading(false))
+  }, [loadBusinessBySlug, slug])
 
   useEffect(() => {
     if (!slug) return
@@ -29,6 +45,17 @@ export function ChatbotPage() {
       .then(faqs => setPublicFaqs(faqs))
       .catch(() => setPublicFaqs([]))
   }, [slug])
+
+  if (isBusinessLoading && !business) {
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'grid', placeItems: 'center',
+        color: 'var(--color-text-secondary)', fontSize: '14px',
+      }}>
+        Cargando chatbot...
+      </div>
+    )
+  }
 
   if (!business) {
     return (
