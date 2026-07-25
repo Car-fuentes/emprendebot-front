@@ -21,6 +21,8 @@ export type AppIconName =
   | 'agent'
   | 'metrics'
   | 'logout'
+  | 'search'
+  | 'chevronDown'
 
 export function AppIcon({ name, size = 22, strokeWidth = 2 }: { name: AppIconName; size?: number; strokeWidth?: number }) {
   const common = {
@@ -173,6 +175,15 @@ export function AppIcon({ name, size = 22, strokeWidth = 2 }: { name: AppIconNam
         <path {...common} d="M15 12H3" />
         <path {...common} d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
       </>
+    ),
+    search: (
+      <>
+        <circle {...common} cx="11" cy="11" r="7" />
+        <path {...common} d="m20 20-4-4" />
+      </>
+    ),
+    chevronDown: (
+      <path {...common} d="m6 9 6 6 6-6" />
     ),
   }
 
