@@ -40,7 +40,6 @@ export function FaqForm({ faq, categories, loading = false, onSubmit, onCancel, 
     categoria: faq?.categoria ?? '',
     nuevaCategoriaNombre: '',
     activa: faq?.activa ?? true,
-    sourceSuggestionId: faq?.sourceSuggestionId,
   })
   const [errors, setErrors] = useState<{ pregunta?: string; respuesta?: string; categoria?: string }>({})
   const initialSnapshot = useMemo(() => JSON.stringify({

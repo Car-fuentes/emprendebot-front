@@ -57,9 +57,7 @@ function isFaqMenuCommand(message: string): boolean {
 }
 
 function getActiveFaqs(business: Business): FAQ[] {
-  return business.faq
-    .filter(faq => faq.activa)
-    .sort((left, right) => (left.orden ?? 0) - (right.orden ?? 0))
+  return business.faq.filter(faq => faq.activa)
 }
 
 function createFaqMenuResponse(business: Business): BotResponse {

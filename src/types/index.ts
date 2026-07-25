@@ -90,8 +90,6 @@ export interface FAQ {
   respuesta: string
   categoria?: string
   activa: boolean
-  orden?: number
-  sourceSuggestionId?: string
   createdAt: string
   updatedAt: string
 }
@@ -103,7 +101,6 @@ export interface FAQFormData {
   categoria?: string
   nuevaCategoriaNombre?: string
   activa: boolean
-  sourceSuggestionId?: string
 }
 
 export interface FAQCategory {
