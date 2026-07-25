@@ -30,6 +30,56 @@ export interface Product {
   descripcion?: string
   imagen?: string
   disponible: boolean
+  stock?: number
+}
+
+export interface ProductApi {
+  id: string
+  botId: string
+  nombre: string
+  descripcion: string | null
+  precio: number | string
+  stock: number
+  urlImagen: string | null
+  activo: boolean
+  requiereCotizacion: boolean
+  fechaCreacion: string
+  fechaActualizacion: string
+}
+
+export interface ProductFilters {
+  page?: number
+  limit?: number
+  buscar?: string
+  activo?: boolean
+}
+
+export interface ProductPage {
+  productos: ProductApi[]
+  total: number
+  page: number
+  limit: number
+  totalPaginas: number
+}
+
+export interface CreateProductPayload {
+  nombre: string
+  descripcion?: string
+  precio?: number
+  stock: number
+  activo: boolean
+  requiereCotizacion: boolean
+  imagen?: File
+}
+
+export interface UpdateProductPayload {
+  nombre?: string
+  descripcion?: string | null
+  precio?: number
+  stock?: number
+  activo?: boolean
+  urlImagen?: string | null
+  imagen?: File
 }
 
 export interface FAQ {
