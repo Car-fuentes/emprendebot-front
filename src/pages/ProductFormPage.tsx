@@ -6,6 +6,8 @@ import {
   getProductByIdApi,
   updateProductApi,
 } from '../services/productApi'
+import { AppIcon } from '../components/ui/AppIcon'
+import '../styles/catalog.css'
 
 interface ProductForm {
   nombre: string
@@ -154,89 +156,106 @@ export function ProductFormPage() {
     }
   }
 
-  const inputStyle: React.CSSProperties = {
-    height: 48,
-    padding: '0 14px',
-    border: '1px solid var(--color-border)',
-    borderRadius: 8,
-    fontSize: 15,
-    color: 'var(--color-text-primary)',
-    background: 'var(--color-bg)',
-    width: '100%',
-    boxSizing: 'border-box',
-  }
-  const labelStyle: React.CSSProperties = { fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)' }
   const displayedImage = imagePreview || (!removeImage ? form.imagenActual : '')
 
   if (isLoading) {
-    return <div role="status" style={{ minHeight: '100svh', display: 'grid', placeItems: 'center', background: 'var(--color-bg)' }}>Cargando producto…</div>
+    return <div className="product-form-page"><div className="product-form-loading" role="status"><i /><span /><span /><span /></div></div>
   }
 
   if (loadError) {
     return (
-      <div role="alert" style={{ minHeight: '100svh', display: 'grid', placeItems: 'center', padding: 24, background: 'var(--color-bg)' }}>
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ color: '#DC2626' }}>{loadError}</p>
-          <button onClick={() => navigate('/catalogo')} style={{ padding: '10px 18px', borderRadius: 8, color: '#fff', background: brand.primaryGradient }}>VOLVER AL CATÁLOGO</button>
+      <div className="product-form-page" role="alert">
+        <div className="catalog-state-card product-form-error">
+          <span className="catalog-state-card__icon catalog-state-card__icon--error"><AppIcon name="alert" size={34} /></span>
+          <h2>No pudimos cargar el producto</h2>
+          <p>{loadError}</p>
+          <button type="button" onClick={() => navigate('/catalogo')} className="catalog-primary-button">Volver al catálogo</button>
         </div>
       </div>
     )
   }
 
   return (
-    <div style={{ minHeight: '100svh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
-      <header style={{ padding: '20px', borderBottom: '1px solid var(--color-border)', position: 'sticky', top: 0, background: 'var(--color-bg)', zIndex: 10 }}>
-        <h1 style={{ margin: 0, fontSize: 18, color: 'var(--color-text-primary)' }}>{isEditing ? 'Editar producto' : 'Agregar al catálogo'}</h1>
-      </header>
+    <div className="product-form-page">
+      <form onSubmit={handleSave} className="product-form-card">
+        <header className="product-form-modal-header">
+          <h1>{isEditing ? 'Editar producto' : 'Nuevo producto'}</h1>
+          <button type="button" onClick={() => navigate('/catalogo')} aria-label="Cerrar">
+            <AppIcon name="close" size={23} />
+          </button>
+        </header>
 
-      <form onSubmit={handleSave} style={{ width: '100%', maxWidth: 680, margin: '0 auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20, flex: 1 }}>
-        <button type="button" onClick={() => navigate('/catalogo')} style={{ alignSelf: 'flex-start', color: 'var(--color-text-primary)', fontSize: 12, fontWeight: 700 }}>‹ Volver</button>
+        <section className="product-form-section">
+          <div className={`product-price-mode${form.precioConsultar ? ' product-price-mode--quote' : ''}`}>
+            <span>
+              {form.precioConsultar ? (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5Z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <path d="M9.1 13a3 3 0 1 1 5.83 1c0 2-3 3-3 3" />
+                  <path d="M12 21h.01" />
+                </svg>
+              ) : (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
+                  <path d="M7 7h.01" />
+                </svg>
+              )}
+              {form.precioConsultar ? 'Requiere cotización' : 'Precio fijo'}
+            </span>
+            {!isEditing && (
+              <button type="button" onClick={() => setForm(current => ({ ...current, precioConsultar: !current.precioConsultar, precio: '' }))}>Cambiar</button>
+            )}
+          </div>
 
-        <div style={{ minHeight: 34, padding: '7px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(19,168,162,.22)', borderRadius: 99, background: 'rgba(19,168,162,.08)', color: 'var(--color-primary)' }}>
-          <span style={{ fontSize: 12, fontWeight: 600 }}>{form.precioConsultar ? 'Precio a convenir' : 'Precio fijo'}</span>
-          {!isEditing && (
-            <button type="button" onClick={() => setForm(current => ({ ...current, precioConsultar: !current.precioConsultar, precio: '' }))} style={{ color: 'var(--color-primary)', fontSize: 11, textDecoration: 'underline' }}>Cambiar</button>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <label style={labelStyle}>Imagen (opcional)</label>
-          <button type="button" onClick={() => fileInputRef.current?.click()} style={{ border: '1.5px dashed var(--color-border)', borderRadius: 12, height: 160, display: 'grid', placeItems: 'center', background: 'var(--color-bg-subtle)', overflow: 'hidden' }}>
-            {displayedImage ? <img src={displayedImage} alt="Vista previa del producto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: 'var(--color-text-secondary)' }}>Subir JPG, PNG o WEBP · Máx. 5 MB</span>}
+          <div className="product-form-field">
+            <label>Imagen del producto</label>
+            <button type="button" className={`product-image-upload${displayedImage ? ' product-image-upload--filled' : ''}`} onClick={() => fileInputRef.current?.click()}>
+              {displayedImage ? <img src={displayedImage} alt="Vista previa del producto" /> : <><AppIcon name="catalog" size={38} /><strong>Hacé clic para subir una imagen</strong><span>JPG, PNG o WEBP · Máx. 5 MB (Opcional)</span></>}
           </button>
           <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onChange={handleImageChange} style={{ display: 'none' }} />
-          {displayedImage && <button type="button" onClick={() => { setImageFile(null); setImagePreview(''); setRemoveImage(true); if (fileInputRef.current) fileInputRef.current.value = '' }} style={{ alignSelf: 'flex-start', color: '#DC2626', fontSize: 12 }}>Quitar imagen</button>}
-        </div>
+            {displayedImage && <div className="product-image-actions"><button type="button" onClick={() => fileInputRef.current?.click()}>Cambiar</button><button type="button" onClick={() => { setImageFile(null); setImagePreview(''); setRemoveImage(true); if (fileInputRef.current) fileInputRef.current.value = '' }}>Quitar</button></div>}
+          </div>
 
-        <label style={labelStyle}>Nombre del producto
-          <input value={form.nombre} onChange={updateField('nombre')} maxLength={200} required style={{ ...inputStyle, marginTop: 6 }} />
-        </label>
+          <div className="product-form-field">
+            <label htmlFor="product-name">Nombre del producto</label>
+            <input id="product-name" value={form.nombre} onChange={updateField('nombre')} maxLength={200} required placeholder="Ej: Corte de cabello" />
+          </div>
 
-        <label style={labelStyle}>Descripción
-          <textarea value={form.descripcion} onChange={updateField('descripcion')} maxLength={2000} rows={4} style={{ ...inputStyle, height: 'auto', paddingTop: 12, marginTop: 6, resize: 'vertical' }} />
-        </label>
+          <div className="product-form-field">
+            <label htmlFor="product-description">Descripción</label>
+            <textarea id="product-description" value={form.descripcion} onChange={updateField('descripcion')} maxLength={2000} rows={4} placeholder="Describí tu producto" />
+          </div>
 
-        {!form.precioConsultar && (
-          <label style={labelStyle}>Precio
-            <input value={form.precio} onChange={updateField('precio')} type="number" min="0.01" step="0.01" required style={{ ...inputStyle, marginTop: 6 }} />
+          <div className="product-form-row">
+            {!form.precioConsultar ? (
+              <div className="product-form-field">
+                <label htmlFor="product-price">Precio</label>
+                <div className="product-input-prefix"><span>$</span><input id="product-price" value={form.precio} onChange={updateField('precio')} type="number" min="0.01" step="0.01" required /></div>
+              </div>
+            ) : (
+              <div className="product-quote-help"><AppIcon name="chat" size={20} /><span>En el chatbot se mostrará como <strong>Precio a convenir</strong>.</span></div>
+            )}
+
+            <div className="product-form-field">
+              <label htmlFor="product-stock">Stock</label>
+              <input id="product-stock" value={form.stock} onChange={updateField('stock')} type="number" min="0" step="1" required />
+            </div>
+          </div>
+
+          <label className="product-active-toggle">
+            <span><strong>Producto activo</strong><small>Los clientes podrán verlo en el catálogo.</small></span>
+            <input type="checkbox" checked={form.activo} onChange={event => setForm(current => ({ ...current, activo: event.target.checked }))} />
+            <i aria-hidden="true" />
           </label>
-        )}
 
-        <label style={labelStyle}>Stock
-          <input value={form.stock} onChange={updateField('stock')} type="number" min="0" step="1" required style={{ ...inputStyle, marginTop: 6 }} />
-        </label>
+          {formError && <div className="catalog-alert catalog-alert--error" role="alert"><AppIcon name="alert" size={18} />{formError}</div>}
+        </section>
 
-        <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <input type="checkbox" checked={form.activo} onChange={event => setForm(current => ({ ...current, activo: event.target.checked }))} />
-          Producto activo
-        </label>
-
-        {formError && <p role="alert" style={{ margin: 0, padding: 12, borderRadius: 8, color: '#B91C1C', background: '#FEE2E2' }}>{formError}</p>}
-
-        <div style={{ display: 'flex', gap: 12, marginTop: 'auto' }}>
-          <button type="button" disabled={isSubmitting} onClick={() => navigate('/catalogo')} style={{ flex: 1, height: 48, border: '1.5px solid #13A8A2', borderRadius: 8, color: 'var(--color-primary)' }}>CANCELAR</button>
-          <button type="submit" disabled={!canSave} style={{ flex: 1, height: 48, borderRadius: 8, color: '#fff', fontWeight: 700, background: canSave ? brand.primaryGradient : '#AAB2BD', cursor: canSave ? 'pointer' : 'not-allowed' }}>{isSubmitting ? 'GUARDANDO…' : 'GUARDAR'}</button>
-        </div>
+        <footer className="product-form-actions">
+          <button type="button" className="catalog-secondary-button" disabled={isSubmitting} onClick={() => navigate('/catalogo')}>Cancelar</button>
+          <button type="submit" className="catalog-primary-button" disabled={!canSave} style={{ background: canSave ? brand.primaryGradient : undefined }}>{isSubmitting ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Guardar producto'}</button>
+        </footer>
       </form>
     </div>
   )
