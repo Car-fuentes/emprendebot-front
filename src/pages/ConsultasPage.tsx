@@ -5,6 +5,7 @@ import { ConsultaDetail } from '../components/consultas/ConsultaDetail'
 import { Drawer } from '../components/layout/Drawer'
 import { AppIcon } from '../components/ui/AppIcon'
 import { Avatar } from '../components/ui/Avatar'
+import { PageBackButton } from '../components/navigation/PageBackButton'
 import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { brand } from '../styles/brand'
@@ -146,38 +147,7 @@ export function ConsultasPage() {
           overflowY: 'auto',
           background: showingDemoIntro ? 'var(--color-bg-subtle)' : 'var(--color-bg)',
         }}>
-          <button
-            type="button"
-            onClick={handleBack}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              marginBottom: showingDetail ? 22 : 12,
-              padding: 0,
-              color: 'var(--color-text-primary)',
-              fontSize: 12,
-              fontWeight: 700,
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                width: 20,
-                height: 20,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '50%',
-                background: 'var(--color-surface-muted)',
-                fontSize: 14,
-                lineHeight: 1,
-              }}
-            >
-              {'<'}
-            </span>
-            Volver
-          </button>
+          <PageBackButton onClick={handleBack} spacious={showingDetail} />
 
           {!showingDetail && (
             <div style={{ marginBottom: 14 }}>
