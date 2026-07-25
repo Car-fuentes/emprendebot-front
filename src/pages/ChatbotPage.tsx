@@ -6,7 +6,6 @@ import { MessageBubble, TypingIndicator } from '../components/chat/MessageBubble
 import { FaqListMessage } from '../components/chat/FaqListMessage'
 import { ProductCatalogMessage } from '../components/chat/ProductCatalogMessage'
 import { QuickReplies } from '../components/chat/QuickReplies'
-import { useBusiness } from '../context/BusinessContext'
 import { useChat } from '../hooks/useChat'
 import type { Business, FAQ } from '../types'
 import { useAuth } from '../context/AuthContext'
@@ -17,27 +16,18 @@ import { resolveChatAppearance } from '../services/chatAppearance'
 export function ChatbotPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
-  const { loadBusinessBySlug } = useBusiness()
   const { user } = useAuth()
-  const [business, setBusiness] = useState<Business | null>(() => slug ? loadBusinessBySlug(slug) : null)
+  const [business, setBusiness] = useState<Business | null>(null)
   const [isBusinessLoading, setIsBusinessLoading] = useState(Boolean(slug))
   const [publicFaqs, setPublicFaqs] = useState<FAQ[] | null>(null)
 
   useEffect(() => {
     if (!slug) return
-    const localBusiness = loadBusinessBySlug(slug)
-
     getPublicBusinessApi(slug)
-      .then(remoteBusiness => {
-        setBusiness({
-          ...remoteBusiness,
-          colorPrimario: localBusiness?.colorPrimario,
-          colorSecundario: localBusiness?.colorSecundario,
-        })
-      })
-      .catch(() => setBusiness(localBusiness))
+      .then(setBusiness)
+      .catch(() => setBusiness(null))
       .finally(() => setIsBusinessLoading(false))
-  }, [loadBusinessBySlug, slug])
+  }, [slug])
 
   useEffect(() => {
     if (!slug) return

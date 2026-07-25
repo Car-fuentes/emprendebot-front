@@ -102,8 +102,8 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         faq: stored?.faq ?? [],
         faqCategories: stored?.faqCategories ?? [],
         slug: configuracion.slug ?? stored?.slug ?? '',
-        colorPrimario: configuracion.colorPrimario ?? stored?.colorPrimario ?? DEFAULT_CHAT_APPEARANCE.primary,
-        colorSecundario: configuracion.colorSecundario ?? stored?.colorSecundario ?? DEFAULT_CHAT_APPEARANCE.secondary,
+        colorPrimario: configuracion.colorPrimario ?? DEFAULT_CHAT_APPEARANCE.primary,
+        colorSecundario: configuracion.colorSecundario ?? DEFAULT_CHAT_APPEARANCE.secondary,
       })
       const updatedBusinesses = stored
         ? storedBusinesses.map(item => item.userId === userId ? synced : item)
@@ -113,7 +113,13 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       return synced
     } catch {
       const stored = getStoredBusinesses().find(item => item.userId === userId) ?? null
-      const fallback = stored ? migrateBusinessFaqs(stored) : null
+      const fallback = stored
+        ? {
+            ...migrateBusinessFaqs(stored),
+            colorPrimario: DEFAULT_CHAT_APPEARANCE.primary,
+            colorSecundario: DEFAULT_CHAT_APPEARANCE.secondary,
+          }
+        : null
       setBusiness(fallback)
       return fallback
     } finally {

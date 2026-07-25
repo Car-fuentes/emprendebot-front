@@ -112,7 +112,7 @@ const selectStyle: React.CSSProperties = {
 export function BusinessConfigPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { saveBusiness, updateBusiness, business, loadBusiness } = useBusiness()
+  const { business, loadBusiness, updateBusiness } = useBusiness()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { isDark, setTheme } = useTheme()
 
@@ -317,7 +317,7 @@ export function BusinessConfigPage() {
     setLoading(true)
 
     try {
-      await apiRequest<{ success: boolean; configuracion: { slug?: string } }>('/bot', {
+      await apiRequest<BotConfigResponse>('/bot', {
         method: 'PUT',
         body: JSON.stringify({
           activo: true,
@@ -329,6 +329,8 @@ export function BusinessConfigPage() {
           telefono: form.telefono || undefined,
           respuestaDerivacion: form.respuestaDerivacion || undefined,
           logoUrl: selectedLogo ? undefined : form.logo,
+          colorPrimario: form.colorPrimario.toUpperCase(),
+          colorSecundario: form.colorSecundario.toUpperCase(),
         }),
       })
 
@@ -356,7 +358,9 @@ export function BusinessConfigPage() {
           })
         } catch (uploadError) {
           if (controller.signal.aborted) {
-            throw new Error('La carga de la imagen tardó demasiado. Intentá nuevamente.')
+            throw new Error('La carga de la imagen tardó demasiado. Intentá nuevamente.', {
+              cause: uploadError,
+            })
           }
           throw uploadError
         } finally {
@@ -364,19 +368,29 @@ export function BusinessConfigPage() {
         }
       }
 
+      const confirmedResponse = await apiRequest<BotConfigResponse>('/bot')
+      const confirmedConfig = confirmedResponse.configuracion
       const syncedBusiness = await loadBusiness(user.id)
       if (!syncedBusiness) {
-        saveBusiness({ ...form, userId: user.id, rubro: user.rubro ?? '' })
-      } else {
-        updateBusiness({
-          colorPrimario: form.colorPrimario.toUpperCase(),
-          colorSecundario: form.colorSecundario.toUpperCase(),
-        })
-        const savedLogo = syncedBusiness.logo ?? ''
-        setPersistedLogo(savedLogo)
-        setForm(prev => ({ ...prev, logo: savedLogo, slug: syncedBusiness.slug }))
-        setSlugOriginal(syncedBusiness.slug)
+        throw new Error('La configuración se guardó, pero no pudo volver a cargarse desde el servidor.')
       }
+      const confirmedPrimary = confirmedConfig.colorPrimario ?? DEFAULT_CHAT_APPEARANCE.primary
+      const confirmedSecondary = confirmedConfig.colorSecundario ?? DEFAULT_CHAT_APPEARANCE.secondary
+      updateBusiness({
+        colorPrimario: confirmedPrimary,
+        colorSecundario: confirmedSecondary,
+      })
+      const savedLogo = confirmedConfig.logoUrl ?? ''
+      const savedSlug = confirmedConfig.slug ?? syncedBusiness.slug
+      setPersistedLogo(savedLogo)
+      setForm(prev => ({
+        ...prev,
+        logo: savedLogo,
+        slug: savedSlug,
+        colorPrimario: confirmedPrimary,
+        colorSecundario: confirmedSecondary,
+      }))
+      setSlugOriginal(savedSlug)
 
       setSelectedLogo(null)
       setLogoValidationError('')

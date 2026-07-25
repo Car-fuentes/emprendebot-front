@@ -26,6 +26,8 @@ interface PublicBotData {
   logo?: string | null
   mensajeBienvenida?: string | null
   respuestaDerivacion?: string | null
+  colorPrimario?: string | null
+  colorSecundario?: string | null
   rubroId?: string | null
   rubroNombre?: string | null
   slug?: string | null
@@ -39,6 +41,8 @@ interface PublicChatInitResponse {
     botId?: string
     nombre?: string
     mensajeBienvenida?: string
+    colorPrimario?: string
+    colorSecundario?: string
   }
 }
 
@@ -87,6 +91,8 @@ export async function getPublicBusinessApi(slug: string): Promise<Business> {
     })),
     faq: [],
     slug: bot?.slug ?? slug,
+    colorPrimario: bot?.colorPrimario ?? data.colorPrimario,
+    colorSecundario: bot?.colorSecundario ?? data.colorSecundario,
   }
 }
 
