@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import type { Business } from '../../types'
 import { AppIcon, type AppIconName } from '../ui/AppIcon'
+import { Avatar } from '../ui/Avatar'
 
 interface DrawerProps {
   business: Business | null
@@ -9,6 +10,7 @@ interface DrawerProps {
   onClose: () => void
   activeItem?: string
   desktopPersistent?: boolean
+  showBusinessAvatar?: boolean
 }
 
 interface AvailableNavItem {
@@ -44,9 +46,10 @@ export function Drawer({
   onClose,
   activeItem = 'dashboard',
   desktopPersistent = false,
+  showBusinessAvatar = false,
 }: DrawerProps) {
   const navigate = useNavigate()
-  const { logout } = useAuth()
+  const { logout, user } = useAuth()
 
   const handleNav = (item: AvailableNavItem) => {
     const options = item.id === 'faq' ? { state: { resetFaqView: true } } : undefined
@@ -77,11 +80,18 @@ export function Drawer({
           </button>
         </div>
 
-        <div className="app-drawer__business">
-          <span>Tu negocio</span>
-          <strong title={business?.nombre ?? 'Negocio sin configurar'}>
-            {business?.nombre ?? 'Negocio sin configurar'}
-          </strong>
+        <div className={`app-drawer__business${showBusinessAvatar ? ' app-drawer__business--with-avatar' : ''}`}>
+          {showBusinessAvatar && user && (
+            <div className="app-drawer__business-avatar">
+              <Avatar name={user.nombre} src={business?.logo} size={58} />
+            </div>
+          )}
+          <div className="app-drawer__business-copy">
+            <span>Tu negocio</span>
+            <strong title={business?.nombre ?? 'Negocio sin configurar'}>
+              {business?.nombre ?? 'Negocio sin configurar'}
+            </strong>
+          </div>
         </div>
 
         <nav className="app-drawer__nav" aria-label="Navegación principal">
@@ -204,7 +214,16 @@ export function Drawer({
           background: color-mix(in srgb, var(--drawer-bg) 88%, #13A8A2 12%);
         }
 
-        .app-drawer__business span {
+        .app-drawer__business-avatar {
+          display: none;
+          flex: 0 0 auto;
+        }
+
+        .app-drawer__business-copy {
+          min-width: 0;
+        }
+
+        .app-drawer__business-copy span {
           display: block;
           margin-bottom: 3px;
           color: var(--drawer-muted);
@@ -214,7 +233,7 @@ export function Drawer({
           letter-spacing: .7px;
         }
 
-        .app-drawer__business strong {
+        .app-drawer__business-copy strong {
           display: block;
           overflow: hidden;
           font-size: 14px;
@@ -293,6 +312,17 @@ export function Drawer({
             width: 280px;
             box-shadow: none;
             transform: translateX(0);
+          }
+
+          .app-drawer--persistent .app-drawer__business--with-avatar {
+            min-height: 88px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          }
+
+          .app-drawer--persistent .app-drawer__business-avatar {
+            display: block;
           }
 
           .app-drawer--persistent .app-drawer__close {
