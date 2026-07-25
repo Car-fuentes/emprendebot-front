@@ -5,6 +5,7 @@ import { useBusiness } from '../context/BusinessContext'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
 import { Drawer } from '../components/layout/Drawer'
+import { PageBackButton } from '../components/navigation/PageBackButton'
 import { Avatar } from '../components/ui/Avatar'
 import { AppIcon } from '../components/ui/AppIcon'
 import { apiRequest } from '../services/apiClient'
@@ -518,6 +519,7 @@ export function BusinessConfigPage() {
       )}
 
       <div className="business-config-page__content" style={{ flex: 1, padding: '0 24px 40px', overflowY: 'auto' }}>
+        {isEdit && <PageBackButton onClick={() => navigate('/dashboard')} />}
 
         {/* Título y subtítulo según modo */}
         <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '6px' }}>

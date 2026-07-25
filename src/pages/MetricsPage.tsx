@@ -16,6 +16,7 @@ import {
 } from '../components/metrics/MetricsComponents'
 import { Avatar } from '../components/ui/Avatar'
 import { AppIcon } from '../components/ui/AppIcon'
+import { PageBackButton } from '../components/navigation/PageBackButton'
 import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { useMetrics } from '../hooks/useMetrics'
@@ -112,6 +113,7 @@ export function MetricsPage() {
         </header>
 
         <main className="metrics-main">
+          <PageBackButton onClick={() => navigate('/dashboard')} />
           <div className="metrics-heading">
             <div>
               <h1>Métricas</h1>

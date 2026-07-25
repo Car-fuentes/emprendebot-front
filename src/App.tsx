@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation, type Location } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 
 import { SplashPage } from './pages/SplashPage'
@@ -22,44 +22,73 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  const location = useLocation()
+  const routeState = location.state as { backgroundLocation?: Location } | null
+  const isCatalogModalRoute = location.pathname === '/catalogo/agregar'
+    || location.pathname.startsWith('/catalogo/editar/')
+  const backgroundLocation = routeState?.backgroundLocation
+    ?? (isCatalogModalRoute
+      ? {
+          ...location,
+          pathname: '/catalogo',
+          search: '',
+          hash: '',
+          state: null,
+          key: 'catalog-modal-background',
+        }
+      : undefined)
+
   return (
-    <Routes>
-      {/* Splash + onboarding */}
-      <Route path="/" element={<SplashPage />} />
-      <Route path="/presentacion" element={<PresentationPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/registro" element={<RegisterPage />} />
+    <>
+      <Routes location={backgroundLocation ?? location}>
+        {/* Splash + onboarding */}
+        <Route path="/" element={<SplashPage />} />
+        <Route path="/presentacion" element={<PresentationPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/registro" element={<RegisterPage />} />
 
-      {/* Panel del emprendedor (protegido) */}
-      <Route path="/configurar" element={
-        <ProtectedRoute><BusinessConfigPage /></ProtectedRoute>
-      } />
-      <Route path="/dashboard" element={
-        <ProtectedRoute><DashboardPage /></ProtectedRoute>
-      } />
-      <Route path="/consultas" element={
-        <ProtectedRoute><ConsultasPage /></ProtectedRoute>
-      } />
-      <Route path="/faq" element={
-        <ProtectedRoute><FaqPage /></ProtectedRoute>
-      } />
-      <Route path="/metricas" element={
-        <ProtectedRoute><MetricsPage /></ProtectedRoute>
-      } />
+        {/* Panel del emprendedor (protegido) */}
+        <Route path="/configurar" element={
+          <ProtectedRoute><BusinessConfigPage /></ProtectedRoute>
+        } />
+        <Route path="/dashboard" element={
+          <ProtectedRoute><DashboardPage /></ProtectedRoute>
+        } />
+        <Route path="/consultas" element={
+          <ProtectedRoute><ConsultasPage /></ProtectedRoute>
+        } />
+        <Route path="/faq" element={
+          <ProtectedRoute><FaqPage /></ProtectedRoute>
+        } />
+        <Route path="/metricas" element={
+          <ProtectedRoute><MetricsPage /></ProtectedRoute>
+        } />
 
-      <Route path="/catalogo" element={
-        <ProtectedRoute><CatalogPage /></ProtectedRoute>
-      } />
-      <Route path="/catalogo/agregar" element={
-        <ProtectedRoute><ProductFormPage /></ProtectedRoute>
-      } />
-      <Route path="/catalogo/editar/:id" element={
-        <ProtectedRoute><ProductFormPage /></ProtectedRoute>
-      } />
+        <Route path="/catalogo" element={
+          <ProtectedRoute><CatalogPage /></ProtectedRoute>
+        } />
+        <Route path="/catalogo/agregar" element={
+          <ProtectedRoute><ProductFormPage /></ProtectedRoute>
+        } />
+        <Route path="/catalogo/editar/:id" element={
+          <ProtectedRoute><ProductFormPage /></ProtectedRoute>
+        } />
 
-      {/* Chatbot público por slug: www.emprendebot/minegocio */}
-      <Route path="/:slug" element={<ChatbotPage />} />
-    </Routes>
+        {/* Chatbot público por slug: www.emprendebot/minegocio */}
+        <Route path="/:slug" element={<ChatbotPage />} />
+      </Routes>
+
+      {backgroundLocation && (
+        <Routes>
+          <Route path="/catalogo/agregar" element={
+            <ProtectedRoute><ProductFormPage /></ProtectedRoute>
+          } />
+          <Route path="/catalogo/editar/:id" element={
+            <ProtectedRoute><ProductFormPage /></ProtectedRoute>
+          } />
+        </Routes>
+      )}
+    </>
   )
 }
 
