@@ -58,7 +58,7 @@ export function CatalogPage() {
   useEffect(() => {
     const request = window.setTimeout(() => void loadProducts(), 0)
     return () => window.clearTimeout(request)
-  }, [loadProducts, successMessage])
+  }, [loadProducts, location.key])
 
   useEffect(() => {
     if (!successMessage) return
@@ -68,7 +68,7 @@ export function CatalogPage() {
       window.clearTimeout(showMessage)
       window.clearTimeout(hideMessage)
     }
-  }, [successMessage])
+  }, [successMessage, location.key])
 
   const handlePricingChoice = (precioConsultar: boolean) => {
     setShowPricingModal(false)
