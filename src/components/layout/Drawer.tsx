@@ -35,7 +35,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'catalogo', label: 'Catálogo', icon: 'catalog', path: '/catalogo' },
   { id: 'faq', label: 'FAQ', icon: 'faq', path: '/faq' },
   { id: 'consultas', label: 'Consultas', icon: 'chat', path: '/consultas' },
-  { id: 'presupuestos', label: 'Presupuestos', icon: 'budget', comingSoon: true },
+  { id: 'presupuestos', label: 'Presupuestos', icon: 'budget', path: '/presupuestos' },
   { id: 'metricas', label: 'Métricas', icon: 'metrics', path: '/metricas' },
   { id: 'configuracion', label: 'Configuración', icon: 'settings', path: '/configurar' },
 ]
