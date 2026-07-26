@@ -74,15 +74,8 @@ export async function getProductsApi(filters: ProductFilters = {}): Promise<Prod
 }
 
 export async function getProductByIdApi(id: string): Promise<ProductApi | null> {
-  let page = 1
-
-  while (true) {
-    const result = await getProductsApi({ page, limit: 100 })
-    const product = result.productos.find(item => item.id === id)
-    if (product) return product
-    if (page >= result.totalPaginas) return null
-    page += 1
-  }
+  const response = await apiRequest<ProductMutationResponse>(`/products/${encodeURIComponent(id)}`)
+  return response.producto
 }
 
 export async function createProductApi(payload: CreateProductPayload): Promise<ProductApi> {
