@@ -519,6 +519,7 @@ export function BusinessConfigPage() {
             >
               <AppIcon name="menu" size={21} strokeWidth={2.2} />
             </button>
+            <strong className="business-config-page__header-title">Configuración</strong>
             {user && <Avatar name={user.nombre} src={business?.logo} size={38} />}
           </header>
         </>
@@ -532,6 +533,7 @@ export function BusinessConfigPage() {
         {isEdit && <PageBackButton onClick={() => navigate('/dashboard')} />}
 
         {/* Título y subtítulo según modo */}
+        {isEdit && <span className="business-config__eyebrow">PERSONALIZACIÓN</span>}
         <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '6px' }}>
           {isEdit ? 'Configuración' : 'Configura tu negocio'}
         </h1>
@@ -995,13 +997,18 @@ export function BusinessConfigPage() {
 
       <style>{`
         .business-config-page {
+          --business-config-canvas: #F7F9FB;
           position: fixed;
           inset: 0;
           z-index: 10;
           overflow-y: auto;
           background:
             radial-gradient(circle at 8% 12%, rgba(19, 168, 162, .08), transparent 26%),
-            var(--color-bg) !important;
+            var(--business-config-canvas) !important;
+        }
+
+        :root[data-theme='dark'] .business-config-page {
+          --business-config-canvas: #0F172A;
         }
 
         .business-config-page__header {
@@ -1015,6 +1022,10 @@ export function BusinessConfigPage() {
           backdrop-filter: blur(14px);
         }
 
+        .business-config-page__header-title {
+          font-size: 14px;
+        }
+
         .business-config-page__content {
           width: min(100%, 1280px);
           margin: 0 auto;
@@ -1025,6 +1036,15 @@ export function BusinessConfigPage() {
         .business-config-page__content > h1 {
           font-size: clamp(28px, 4vw, 34px) !important;
           letter-spacing: -.7px;
+        }
+
+        .business-config__eyebrow {
+          display: block;
+          margin-bottom: 7px;
+          color: #13A8A2;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 1.1px;
         }
 
         .business-config__form {
@@ -1392,8 +1412,12 @@ export function BusinessConfigPage() {
             padding-left: 280px;
           }
 
-          .business-config-page__header button[aria-label='Abrir navegación'] {
+          .business-config-page--editing .business-config-page__header {
             display: none !important;
+          }
+
+          .business-config-page--editing .business-config-page__content {
+            padding-top: 40px !important;
           }
 
         }

@@ -15,11 +15,11 @@
 }
 
 :root[data-theme='dark'] .consultas-page {
-  --consultas-bg: var(--color-bg);
-  --consultas-card: var(--color-bg-subtle);
-  --consultas-text: var(--color-text-primary);
-  --consultas-muted: var(--color-text-secondary);
-  --consultas-border: var(--color-border);
+  --consultas-bg: #0f172a;
+  --consultas-card: #1e293b;
+  --consultas-text: #f8fafc;
+  --consultas-muted: #94a3b8;
+  --consultas-border: #334155;
 }
 
 .consultas-shell { min-width: 0; min-height: 100svh; position: relative; }
@@ -165,7 +165,7 @@
 @media (min-width: 1000px) {
   .consultas-shell { margin-left: 280px; }
   .consultas-mobile-header { display: none; }
-  .consultas-main { padding: 38px 40px 110px; }
+  .consultas-main { padding: 40px 40px 110px; }
 }
 
 @media (max-width: 999px) {

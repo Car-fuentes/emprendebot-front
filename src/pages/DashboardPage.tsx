@@ -98,29 +98,16 @@ export function DashboardPage() {
 
       <div className="dashboard-page__content">
         <header className="dashboard-header">
-          <div className="dashboard-header__title">
-            <button
-              type="button"
-              aria-label="Abrir navegación"
-              className="dashboard-header__menu"
-              onClick={() => setDrawerOpen(true)}
-            >
-              <AppIcon name="menu" size={22} strokeWidth={2.2} />
-            </button>
-            <div>
-              <strong>Dashboard</strong>
-              <span>Panel de control de tu negocio</span>
-            </div>
-          </div>
-
-          <div className="dashboard-header__profile">
-            <Avatar
-              name={user.nombre}
-              src={business?.logo}
-              size={38}
-              bgColor={brand.primaryGradient}
-            />
-          </div>
+          <button
+            type="button"
+            aria-label="Abrir navegación"
+            className="dashboard-header__menu"
+            onClick={() => setDrawerOpen(true)}
+          >
+            <AppIcon name="menu" size={22} strokeWidth={2.2} />
+          </button>
+          <strong>Dashboard</strong>
+          <Avatar name={user.nombre} src={business?.logo} size={38} bgColor={brand.primaryGradient} />
         </header>
 
         <main className="dashboard-main">
@@ -228,7 +215,7 @@ export function DashboardPage() {
           position: sticky;
           top: 0;
           z-index: 20;
-          min-height: 72px;
+          min-height: 64px;
           padding: 12px clamp(18px, 3vw, 34px);
           display: flex;
           align-items: center;
@@ -238,31 +225,7 @@ export function DashboardPage() {
           backdrop-filter: blur(14px);
         }
 
-        .dashboard-header__title,
-        .dashboard-header__profile {
-          display: flex;
-          align-items: center;
-        }
-
-        .dashboard-header__title {
-          gap: 13px;
-        }
-
-        .dashboard-header__title strong,
-        .dashboard-header__title span {
-          display: block;
-        }
-
-        .dashboard-header__title strong {
-          font-size: 18px;
-          line-height: 1.2;
-        }
-
-        .dashboard-header__title span {
-          margin-top: 2px;
-          color: var(--dashboard-muted);
-          font-size: 11px;
-        }
+        .dashboard-header > strong { font-size: 14px; }
 
         .dashboard-header__menu {
           width: 40px;
@@ -479,13 +442,8 @@ export function DashboardPage() {
             margin-left: 280px;
           }
 
-          .dashboard-header__menu {
-            display: none;
-          }
-
-          .dashboard-header__profile {
-            display: none;
-          }
+          .dashboard-header { display: none; }
+          .dashboard-main { padding-top: 40px; }
         }
 
         @media (max-width: 1120px) {
@@ -499,10 +457,6 @@ export function DashboardPage() {
         @media (max-width: 620px) {
           .dashboard-header {
             min-height: 64px;
-          }
-
-          .dashboard-header__title span {
-            display: none;
           }
 
           .dashboard-main {

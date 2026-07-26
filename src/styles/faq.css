@@ -470,6 +470,7 @@
 
 @media (min-width: 1000px) {
   .faq-shell { margin-left: 280px; }
+  .faq-main { padding-top: 40px; }
   .faq-mobile-header { display: none; }
 }
 @media (max-width: 999px) {
