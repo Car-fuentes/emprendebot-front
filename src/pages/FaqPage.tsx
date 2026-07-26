@@ -289,7 +289,8 @@ export function FaqPage() {
     }
   }
 
-  const handleDelete = async (faqId: string) => {
+  const handleDelete = async (faq: FAQ) => {
+    const faqId = faq.id
     setBusyFaqId(faqId)
     setError('')
     try {

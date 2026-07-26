@@ -28,13 +28,13 @@ const TONE_GRADIENTS: Record<NonNullable<StatCardProps['tone']>, string> = {
 
 export function StatCard({ label, value, description, color, icon, tone = 'primary' }: StatCardProps) {
   return (
-    <div style={{
+    <div className="dashboard-stat-card" style={{
       position: 'relative',
       minHeight: 148,
-      padding: '18px',
-      background: 'var(--color-bg)',
-      borderRadius: 'var(--radius-md)',
-      border: '1px solid var(--color-border)',
+      padding: '20px',
+      background: 'var(--dashboard-card, var(--color-bg))',
+      borderRadius: '16px',
+      border: '1px solid var(--dashboard-border, var(--color-border))',
       boxShadow: brand.shadowCard,
       overflow: 'hidden',
     }}>
@@ -68,19 +68,29 @@ export function StatCard({ label, value, description, color, icon, tone = 'prima
         <p style={{
           fontSize: '28px',
           fontWeight: 700,
-          color: 'var(--color-text-primary)',
+          color: 'var(--dashboard-text, var(--color-text-primary))',
           lineHeight: 1.05,
           marginBottom: '5px',
         }}>
           {value}
         </p>
-        <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-secondary)', lineHeight: 1.35 }}>
+        <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--dashboard-muted, var(--color-text-secondary))', lineHeight: 1.35 }}>
           {label}
         </p>
-        <p style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '3px', lineHeight: 1.35 }}>
+        <p style={{ fontSize: '11px', color: 'var(--dashboard-muted, var(--color-text-secondary))', marginTop: '3px', lineHeight: 1.35 }}>
           {description}
         </p>
       </div>
+      <style>{`
+        .dashboard-stat-card {
+          transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition);
+        }
+        .dashboard-stat-card:hover {
+          border-color: color-mix(in srgb, ${color} 52%, var(--dashboard-border, var(--color-border)));
+          box-shadow: 0 14px 30px rgba(15, 23, 42, .11) !important;
+          transform: translateY(-3px);
+        }
+      `}</style>
     </div>
   )
 }

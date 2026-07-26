@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ChatHeader } from '../components/chat/ChatHeader'
 import { ChatInput } from '../components/chat/ChatInput'
@@ -8,9 +8,10 @@ import { ProductCatalogMessage } from '../components/chat/ProductCatalogMessage'
 import { QuickReplies } from '../components/chat/QuickReplies'
 import { useBusiness } from '../context/BusinessContext'
 import { useChat } from '../hooks/useChat'
-import type { Business, FAQ } from '../types'
+import type { Business, FAQ, Product } from '../types'
 import { useAuth } from '../context/AuthContext'
-import { getPublicFaqsApi } from '../services/publicApi'
+import { getPublicFaqsApi, getPublicProductsApi } from '../services/publicApi'
+import { resolveChatAppearance } from '../services/chatAppearance'
 
 // Página pública: www.emprendebot/[slug]
 export function ChatbotPage() {
@@ -21,12 +22,16 @@ export function ChatbotPage() {
   const business = slug ? loadBusinessBySlug(slug) : null
 
   const [publicFaqs, setPublicFaqs] = useState<FAQ[] | null>(null)
+  const [publicProducts, setPublicProducts] = useState<Product[] | null>(null)
 
   useEffect(() => {
     if (!slug) return
     getPublicFaqsApi(slug)
       .then(faqs => setPublicFaqs(faqs))
       .catch(() => setPublicFaqs([]))
+    getPublicProductsApi(slug)
+      .then(products => setPublicProducts(products))
+      .catch(() => setPublicProducts([]))
   }, [slug])
 
   if (!business) {
@@ -55,10 +60,12 @@ export function ChatbotPage() {
     )
   }
 
-  // Merge API FAQs into business (overrides localStorage FAQs when available)
-  const businessWithFaqs: Business = publicFaqs !== null
-    ? { ...business, faq: publicFaqs }
-    : business
+  // Merge API FAQs and products into business (overrides localStorage data when available)
+  const businessWithFaqs: Business = {
+    ...business,
+    ...(publicFaqs !== null ? { faq: publicFaqs } : {}),
+    ...(publicProducts !== null ? { productos: publicProducts } : {}),
+  }
 
   return (
     <PublicChat
@@ -71,6 +78,7 @@ export function ChatbotPage() {
 
 function PublicChat({ business, onBackToDashboard }: { business: Business; onBackToDashboard?: () => void }) {
   const { messages, isTyping, sendMessage, submitOrder, reset } = useChat(business)
+  const appearance = resolveChatAppearance(business)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const isInitialScrollRef = useRef(true)
@@ -116,7 +124,17 @@ function PublicChat({ business, onBackToDashboard }: { business: Business; onBac
   const activeQuickReplies = isTyping ? [] : (lastBotWithReplies?.quickReplies ?? [])
 
   return (
-    <div className="public-chat">
+    <div
+      className="public-chat"
+      style={{
+        '--chat-primary': appearance.primary,
+        '--chat-secondary': appearance.secondary,
+        '--chat-gradient': `linear-gradient(90deg, ${appearance.primary}, ${appearance.secondary})`,
+        '--color-primary': appearance.primary,
+        '--color-secondary': appearance.secondary,
+        '--color-bg-answer': appearance.primary,
+      } as CSSProperties}
+    >
       <ChatHeader business={business} onRefresh={reset} onBackToDashboard={onBackToDashboard} />
 
       <div ref={messagesContainerRef} className="public-chat__messages">

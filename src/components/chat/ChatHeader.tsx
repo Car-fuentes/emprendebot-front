@@ -1,5 +1,4 @@
 import { Avatar } from '../ui/Avatar'
-import { brand } from '../../styles/brand'
 import type { Business } from '../../types'
 
 interface ChatHeaderProps {
@@ -15,7 +14,7 @@ export function ChatHeader({ business, onRefresh, onBackToDashboard }: ChatHeade
       alignItems: 'center',
       gap: '12px',
       padding: '14px 16px',
-      background: brand.primaryGradient,
+      background: 'var(--chat-gradient, linear-gradient(90deg, #13A8A2, #1372A8))',
       borderRadius: 0,
       flexShrink: 0,
       position: 'sticky',
