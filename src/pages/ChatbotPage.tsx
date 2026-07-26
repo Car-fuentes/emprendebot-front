@@ -7,9 +7,9 @@ import { FaqListMessage } from '../components/chat/FaqListMessage'
 import { ProductCatalogMessage } from '../components/chat/ProductCatalogMessage'
 import { QuickReplies } from '../components/chat/QuickReplies'
 import { useChat } from '../hooks/useChat'
-import type { Business, FAQ } from '../types'
+import type { Business, FAQ, Product } from '../types'
 import { useAuth } from '../context/AuthContext'
-import { getPublicBusinessApi, getPublicFaqsApi } from '../services/publicApi'
+import { getPublicBusinessApi, getPublicFaqsApi, getPublicProductsApi } from '../services/publicApi'
 import { resolveChatAppearance } from '../services/chatAppearance'
 
 // Página pública: www.emprendebot/[slug]
@@ -20,6 +20,7 @@ export function ChatbotPage() {
   const [business, setBusiness] = useState<Business | null>(null)
   const [isBusinessLoading, setIsBusinessLoading] = useState(Boolean(slug))
   const [publicFaqs, setPublicFaqs] = useState<FAQ[] | null>(null)
+  const [publicProducts, setPublicProducts] = useState<Product[] | null>(null)
 
   useEffect(() => {
     if (!slug) return
@@ -34,6 +35,12 @@ export function ChatbotPage() {
     getPublicFaqsApi(slug)
       .then(faqs => setPublicFaqs(faqs))
       .catch(() => setPublicFaqs([]))
+
+    getPublicProductsApi(slug)
+      .then(products => setPublicProducts(products))
+      // Compatibilidad: si el endpoint todavía no existe, se conservan
+      // los productos incluidos por /init.
+      .catch(() => setPublicProducts(null))
   }, [slug])
 
   if (isBusinessLoading && !business) {
@@ -73,15 +80,16 @@ export function ChatbotPage() {
     )
   }
 
-  // Merge API FAQs into business (overrides localStorage FAQs when available)
-  const businessWithFaqs: Business = publicFaqs !== null
-    ? { ...business, faq: publicFaqs }
-    : business
+  const publicBusiness: Business = {
+    ...business,
+    ...(publicFaqs !== null ? { faq: publicFaqs } : {}),
+    ...(publicProducts !== null ? { productos: publicProducts } : {}),
+  }
 
   return (
     <PublicChat
       key={business.id}
-      business={businessWithFaqs}
+      business={publicBusiness}
       onBackToDashboard={user ? () => navigate('/dashboard') : undefined}
     />
   )

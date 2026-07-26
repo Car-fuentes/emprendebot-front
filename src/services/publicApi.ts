@@ -1,10 +1,16 @@
 import { apiRequest } from './apiClient'
 import { mapFaqApiToUi } from './faqMappers'
-import type { Business, FAQ, FAQApi, Rubro } from '../types'
+import { mapProductApi } from './productApi'
+import type { Business, FAQ, FAQApi, Product, ProductApi, Rubro } from '../types'
 
 interface PublicFaqsResponse {
   success: boolean
   faqs: FAQApi[]
+}
+
+interface PublicProductsResponse {
+  success: boolean
+  productos: ProductApi[]
 }
 
 interface PublicProductApi {
@@ -102,4 +108,12 @@ export async function getPublicFaqsApi(slug: string): Promise<FAQ[]> {
     { auth: false },
   )
   return response.faqs.map(mapFaqApiToUi)
+}
+
+export async function getPublicProductsApi(slug: string): Promise<Product[]> {
+  const response = await apiRequest<PublicProductsResponse>(
+    `/public/chatbot/${encodeURIComponent(slug)}/products`,
+    { auth: false },
+  )
+  return response.productos.map(mapProductApi)
 }
