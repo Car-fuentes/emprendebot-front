@@ -7,6 +7,7 @@ import { StatCard } from '../components/dashboard/StatCard'
 import { Avatar } from '../components/ui/Avatar'
 import { AppIcon } from '../components/ui/AppIcon'
 import { brand } from '../styles/brand'
+import { useDashboardStats } from '../hooks/useDashboardStats'
 
 function IconWrapper({ children }: { children: ReactNode }) {
   return <span className="dashboard-icon-wrapper">{children}</span>
@@ -36,8 +37,9 @@ function QuickAccessCard({
 export function DashboardPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { business, stats, loadBusiness } = useBusiness()
+  const { business, isBusinessLoading, loadBusiness } = useBusiness()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const { stats, refetch } = useDashboardStats(business ? user?.id : undefined)
 
   useEffect(() => {
     if (user) void loadBusiness(user.id)
@@ -49,39 +51,55 @@ export function DashboardPage() {
   }
 
   const firstName = user.nombre.split(' ')[0]
+  const businessUnavailable = !isBusinessLoading && !business
+  const hasStatsError = !businessUnavailable && [
+    stats.consultasPendientes,
+    stats.presupuestosPendientes,
+    stats.consultasResueltas,
+  ].some(metric => metric.status === 'error')
 
   const metrics = [
     {
-      label: 'Consultas recibidas',
-      value: stats.consultasPendientes,
+      label: 'Consultas que esperan respuesta',
+      value: stats.consultasPendientes.value,
       description: 'Requieren seguimiento',
       color: brand.primary,
       icon: <IconWrapper><AppIcon name="chat" size={22} /></IconWrapper>,
       tone: 'primary' as const,
+      loading: isBusinessLoading || (!businessUnavailable && stats.consultasPendientes.status === 'loading'),
+      error: !businessUnavailable && stats.consultasPendientes.status === 'error',
+      unavailable: businessUnavailable,
     },
     {
-      label: 'Presupuestos generados',
-      value: stats.presupuestosPendientes,
-      description: 'Pedidos comerciales activos',
+      label: 'Presupuestos pendientes',
+      value: stats.presupuestosPendientes.value,
+      description: 'Requieren preparaciÃ³n o seguimiento',
       color: '#7C3AED',
       icon: <IconWrapper><AppIcon name="budget" size={22} /></IconWrapper>,
       tone: 'secondary' as const,
+      loading: isBusinessLoading || (!businessUnavailable && stats.presupuestosPendientes.status === 'loading'),
+      error: !businessUnavailable && stats.presupuestosPendientes.status === 'error',
+      unavailable: businessUnavailable,
     },
     {
       label: 'Automatización',
-      value: `${stats.porcentajeAutomatizacion}%`,
+      value: stats.porcentajeAutomatizacion.value,
       description: 'Respuestas gestionadas por el bot',
       color: '#16C784',
       icon: <IconWrapper><AppIcon name="automation" size={22} /></IconWrapper>,
       tone: 'success' as const,
+      unavailable: stats.porcentajeAutomatizacion.status === 'unavailable',
     },
     {
       label: 'Consultas resueltas',
-      value: stats.consultasResueltas,
+      value: stats.consultasResueltas.value,
       description: 'Conversaciones completadas',
       color: '#F97316',
       icon: <IconWrapper><AppIcon name="check" size={22} /></IconWrapper>,
       tone: 'warning' as const,
+      loading: isBusinessLoading || (!businessUnavailable && stats.consultasResueltas.status === 'loading'),
+      error: !businessUnavailable && stats.consultasResueltas.status === 'error',
+      unavailable: businessUnavailable,
     },
   ]
 
@@ -121,6 +139,12 @@ export function DashboardPage() {
 
           <section aria-labelledby="dashboard-summary-title">
             <h2 id="dashboard-summary-title" className="dashboard-section-title">Resumen</h2>
+            {hasStatsError && (
+              <div className="dashboard-stats-notice" role="status">
+                <span>Algunos datos no pudieron cargarse.</span>
+                <button type="button" onClick={() => void refetch()}>Reintentar</button>
+              </div>
+            )}
             <div className="dashboard-metrics">
               {metrics.map(metric => <StatCard key={metric.label} {...metric} />)}
             </div>
@@ -287,6 +311,26 @@ export function DashboardPage() {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 16px;
+        }
+
+        .dashboard-stats-notice {
+          margin: -4px 0 14px;
+          padding: 10px 12px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          color: var(--dashboard-muted);
+          border: 1px solid var(--dashboard-border);
+          border-radius: 11px;
+          background: var(--dashboard-card);
+          font-size: 12px;
+        }
+
+        .dashboard-stats-notice button {
+          color: #13A8A2;
+          font-size: 12px;
+          font-weight: 700;
         }
 
         .dashboard-icon-wrapper {
