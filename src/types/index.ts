@@ -78,6 +78,7 @@ export interface UpdateProductPayload {
   precio?: number
   stock?: number
   activo?: boolean
+  requiereCotizacion?: boolean
   urlImagen?: string | null
   imagen?: File
 }

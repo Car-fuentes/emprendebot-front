@@ -42,6 +42,7 @@ function buildUpdateFormData(payload: UpdateProductPayload): FormData {
   if (payload.precio !== undefined) appendFormValue(formData, 'precio', payload.precio)
   if (payload.stock !== undefined) appendFormValue(formData, 'stock', payload.stock)
   if (payload.activo !== undefined) appendFormValue(formData, 'activo', payload.activo)
+  if (payload.requiereCotizacion !== undefined) appendFormValue(formData, 'requiereCotizacion', payload.requiereCotizacion)
   if (payload.urlImagen !== undefined) appendFormValue(formData, 'urlImagen', payload.urlImagen ?? '')
   if (payload.imagen) formData.append('imagen', payload.imagen)
   return formData
