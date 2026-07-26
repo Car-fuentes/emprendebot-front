@@ -500,6 +500,7 @@ export function BusinessConfigPage() {
             onClose={() => setDrawerOpen(false)}
             activeItem="configuracion"
             desktopPersistent
+            showBusinessAvatar
           />
           <header className="business-config-page__header" style={{
             height: 56, padding: '12px 20px 4px',
@@ -518,12 +519,7 @@ export function BusinessConfigPage() {
             >
               <AppIcon name="menu" size={21} strokeWidth={2.2} />
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <span aria-hidden="true" style={{ color: brand.text, lineHeight: 1, display: 'inline-flex' }}>
-                <AppIcon name="bell" size={21} />
-              </span>
-              {user && <Avatar name={user.nombre} size={32} bgColor={brand.primaryGradient} />}
-            </div>
+            {user && <Avatar name={user.nombre} src={business?.logo} size={38} />}
           </header>
         </>
       ) : (

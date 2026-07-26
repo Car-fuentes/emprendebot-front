@@ -109,6 +109,7 @@ export function ConsultasPage() {
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         activeItem="consultas"
+        showBusinessAvatar
       />
 
       <div style={{
@@ -135,10 +136,9 @@ export function ConsultasPage() {
           >
             <AppIcon name="menu" size={20} />
           </button>
-          <span aria-hidden="true" style={{ marginLeft: 'auto', marginRight: 14 }}>
-            <AppIcon name="bell" size={19} strokeWidth={1.8} />
+          <span style={{ marginLeft: 'auto' }}>
+            <Avatar name={user.nombre} src={business?.logo} size={38} />
           </span>
-          <Avatar name={user.nombre} size={30} />
         </header>
 
         <main style={{

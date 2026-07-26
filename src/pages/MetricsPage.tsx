@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from 'react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Drawer } from '../components/layout/Drawer'
 import {
@@ -21,7 +21,6 @@ import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { useMetrics } from '../hooks/useMetrics'
 import { METRICS_PERIOD_OPTIONS } from '../mocks/metricsMockData'
-import { brand } from '../styles/brand'
 import type { MetricsData, MetricsPeriod } from '../types/metrics'
 
 type MetricsTab = 'summary' | 'abandonment' | 'leads'
@@ -53,7 +52,7 @@ function isLeadsEmpty(data: MetricsData) {
 export function MetricsPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { business } = useBusiness()
+  const { business, loadBusiness } = useBusiness()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<MetricsTab>('summary')
   const [period, setPeriod] = useState<MetricsPeriod>('last7Days')
@@ -61,6 +60,10 @@ export function MetricsPage() {
     businessId: business?.id,
     period,
   })
+
+  useEffect(() => {
+    if (user) void loadBusiness(user.id)
+  }, [loadBusiness, user])
 
   if (!user) return null
 
@@ -88,6 +91,7 @@ export function MetricsPage() {
         onClose={() => setDrawerOpen(false)}
         activeItem="metricas"
         desktopPersistent
+        showBusinessAvatar
       />
 
       <div className="metrics-page__content">
@@ -107,8 +111,7 @@ export function MetricsPage() {
             </div>
           </div>
           <div className="metrics-header__profile">
-            <span aria-hidden="true" className="metrics-header__bell"><AppIcon name="bell" size={21} /></span>
-            <Avatar name={user.nombre} size={38} bgColor={brand.primaryGradient} />
+            <Avatar name={user.nombre} src={business?.logo} size={38} />
           </div>
         </header>
 
@@ -305,8 +308,7 @@ export function MetricsPage() {
           font-size: 11px;
         }
 
-        .metrics-header__menu,
-        .metrics-header__bell {
+        .metrics-header__menu {
           width: 40px;
           height: 40px;
           display: grid;
@@ -951,8 +953,7 @@ export function MetricsPage() {
         @media (max-width: 620px) {
           .metrics-header { min-height: 64px; }
 
-          .metrics-header__title span,
-          .metrics-header__bell { display: none; }
+          .metrics-header__title span { display: none; }
 
           .metrics-main {
             padding-top: 24px;
