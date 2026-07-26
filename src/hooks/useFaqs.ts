@@ -132,8 +132,8 @@ function ensureCategory(categories: FAQCategory[], faq: FAQ): FAQCategory[] {
 }
 
 function mapFaqsWithCategories(faqs: Awaited<ReturnType<typeof getFaqsApi>>, categories: FAQCategory[]): FAQ[] {
-  return faqs.map((faq, index) => {
-    const mapped = mapFaqApiToUi(faq, index)
+  return faqs.map((faq) => {
+    const mapped = mapFaqApiToUi(faq)
     const category = categories.find(item => item.id === mapped.categoriaId)
     return {
       ...mapped,
