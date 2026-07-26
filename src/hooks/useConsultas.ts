@@ -16,6 +16,9 @@ interface UseConsultasResult {
   sortOption: ConsultaSortOption
   searchQuery: string
   isLoading: boolean
+  error: string
+  updateError: string
+  updatingConsultaId: string | null
   isShowingDemo: boolean
   setEstadoFilter: (filter: ConsultaEstadoFilter) => void
   setCanalFilter: (filter: ConsultaCanalFilter) => void
@@ -59,15 +62,21 @@ export function useConsultas(userId?: string): UseConsultasResult {
   const [sortOption, setSortOption] = useState<ConsultaSortOption>('recentes')
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [updateError, setUpdateError] = useState('')
+  const [updatingConsultaId, setUpdatingConsultaId] = useState<string | null>(null)
 
   const reloadConsultas = useCallback(async () => {
     setIsLoading(true)
+    setError('')
     try {
       const data = await getConsultas(userId)
       setConsultas(data)
       setSelectedConsultaId(current => (
         current && data.some(consulta => consulta.id === current) ? current : null
       ))
+    } catch {
+      setError('No pudimos cargar las consultas.')
     } finally {
       setIsLoading(false)
     }
@@ -108,14 +117,22 @@ export function useConsultas(userId?: string): UseConsultasResult {
   }, [])
 
   const updateConsultaStatus = useCallback(async (consultaId: string, estado: ConsultaEstado) => {
-    const updated = await updateConsultaEstado(consultaId, estado, userId)
-    if (!updated) return
-
-    setConsultas(current => current.map(consulta => (
-      consulta.id === consultaId ? updated : consulta
-    )))
-    setSelectedConsultaId(consultaId)
-  }, [userId])
+    if (updatingConsultaId) return
+    setUpdatingConsultaId(consultaId)
+    setUpdateError('')
+    try {
+      const updated = await updateConsultaEstado(consultaId, estado, userId)
+      if (!updated) return
+      setConsultas(current => current.map(consulta => (
+        consulta.id === consultaId ? updated : consulta
+      )))
+      setSelectedConsultaId(consultaId)
+    } catch {
+      setUpdateError('No pudimos actualizar el estado. Intentá nuevamente.')
+    } finally {
+      setUpdatingConsultaId(null)
+    }
+  }, [updatingConsultaId, userId])
 
   return {
     consultas,
@@ -127,6 +144,9 @@ export function useConsultas(userId?: string): UseConsultasResult {
     sortOption,
     searchQuery,
     isLoading,
+    error,
+    updateError,
+    updatingConsultaId,
     isShowingDemo,
     setEstadoFilter,
     setCanalFilter,

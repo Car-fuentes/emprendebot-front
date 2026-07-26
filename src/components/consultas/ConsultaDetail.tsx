@@ -7,6 +7,8 @@ interface ConsultaDetailProps {
   consulta: Consulta | null
   onUpdateStatus: (consultaId: string, estado: ConsultaEstado) => Promise<void>
   onBack?: () => void
+  isUpdating?: boolean
+  updateError?: string
 }
 
 const ESTADO_STYLES: Record<ConsultaEstado, { label: string; color: string; background: string }> = {
@@ -50,7 +52,7 @@ function openWhatsApp(phone: string) {
   window.open(`https://wa.me/${digits}`, '_blank', 'noopener,noreferrer')
 }
 
-export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDetailProps) {
+export function ConsultaDetail({ consulta, onUpdateStatus, onBack, isUpdating = false, updateError = '' }: ConsultaDetailProps) {
   if (!consulta) return null
 
   const estadoStyle = ESTADO_STYLES[consulta.estado]
@@ -74,10 +76,11 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDet
   ]
 
   return (
-    <section>
+    <section className="consulta-detail">
       {onBack && (
         <button
           type="button"
+          className="consulta-detail__back"
           onClick={onBack}
           style={{
             display: 'inline-flex',
@@ -95,7 +98,7 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDet
         </button>
       )}
 
-      <div style={{ marginBottom: '14px' }}>
+      <div className="consulta-detail__heading" style={{ marginBottom: '14px' }}>
         <h2 style={{ fontSize: '19px', lineHeight: 1.2, marginBottom: '7px' }}>
           {consulta.clienteNombre || 'Cliente sin identificar'}
         </h2>
@@ -104,7 +107,7 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDet
         </p>
       </div>
 
-      <div style={{
+      <div className="consulta-detail__meta" style={{
         padding: '14px',
         marginBottom: '18px',
         border: '1px solid var(--color-border)',
@@ -112,7 +115,19 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDet
         background: 'var(--color-bg)',
         boxShadow: 'var(--shadow-md)',
       }}>
-        <div style={{
+        {updateError && (
+          <p role="alert" style={{
+            marginBottom: 12,
+            padding: '10px 12px',
+            color: 'var(--color-danger)',
+            border: '1px solid currentColor',
+            borderRadius: 10,
+            fontSize: 12,
+          }}>
+            {updateError}
+          </p>
+        )}
+        <div className="consulta-detail__meta-grid" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
           gap: '12px 8px',
@@ -152,7 +167,7 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDet
           ))}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '7px' }}>
+        <div className="consulta-detail__actions" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '7px' }}>
           {consulta.clienteTelefono && (
             <Button
               type="button"
@@ -179,6 +194,7 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDet
           <Button
             type="button"
             size="md"
+            disabled={isUpdating}
             onClick={() => onUpdateStatus(consulta.id, statusAction.nextEstado)}
             style={{
               height: 37,
@@ -202,7 +218,7 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDet
             }}>
               <AppIcon name="check" size={11} strokeWidth={2.2} />
             </span>
-            {statusAction.label}
+            {isUpdating ? 'Actualizando...' : statusAction.label}
           </Button>
         </div>
       </div>
