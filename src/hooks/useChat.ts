@@ -241,9 +241,11 @@ export function useChat(business: Business) {
     if (!consultationPromiseRef.current) {
       const storageKey = `emprendebot:consulta:${business.slug}`
       const storedId = sessionStorage.getItem(storageKey)
-      consultationPromiseRef.current = storedId
-        ? Promise.resolve(storedId)
-        : createPublicConsultation(business.slug, crypto.randomUUID())
+      const existingConsultationId = storedId ?? business.chatConsultationId
+      if (existingConsultationId) sessionStorage.setItem(storageKey, existingConsultationId)
+      consultationPromiseRef.current = existingConsultationId
+        ? Promise.resolve(existingConsultationId)
+        : createPublicConsultation(business.slug, business.chatSessionId ?? crypto.randomUUID())
             .then(async consultationId => {
               sessionStorage.setItem(storageKey, consultationId)
               await savePublicMessage(business.slug, consultationId, 'bot', createInitialMessage(business).text)

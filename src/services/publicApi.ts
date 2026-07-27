@@ -43,6 +43,9 @@ interface PublicBotData {
 interface PublicChatInitResponse {
   success: boolean
   data: {
+    sessionId?: string
+    hasHistory?: boolean
+    consultationId?: string | null
     botData?: PublicBotData
     botId?: string
     nombre?: string
@@ -62,11 +65,17 @@ const toRubro = (value?: string | null): Rubro | '' => {
 }
 
 export async function getPublicBusinessApi(slug: string): Promise<Business> {
+  const sessionStorageKey = `emprendebot:session:${slug}`
+  const storedSessionId = localStorage.getItem(sessionStorageKey)
+  const sessionQuery = storedSessionId
+    ? `?sessionId=${encodeURIComponent(storedSessionId)}&hasHistory=true`
+    : ''
   const response = await apiRequest<PublicChatInitResponse>(
-    `/public/chatbot/${encodeURIComponent(slug)}/init`,
+    `/public/chatbot/${encodeURIComponent(slug)}/init${sessionQuery}`,
     { auth: false },
   )
   const data = response.data
+  if (data.sessionId) localStorage.setItem(sessionStorageKey, data.sessionId)
   const bot = data.botData
   const botId = bot?.botId ?? data.botId
   if (!botId) throw new Error('La respuesta pública del chatbot no contiene un identificador.')
@@ -99,6 +108,9 @@ export async function getPublicBusinessApi(slug: string): Promise<Business> {
     slug: bot?.slug ?? slug,
     colorPrimario: bot?.colorPrimario ?? data.colorPrimario,
     colorSecundario: bot?.colorSecundario ?? data.colorSecundario,
+    chatSessionId: data.sessionId,
+    chatConsultationId: data.consultationId ?? undefined,
+    chatHasHistory: data.hasHistory ?? false,
   }
 }
 

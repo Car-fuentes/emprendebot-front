@@ -165,6 +165,9 @@ export interface Business {
   slug: string
   colorPrimario?: string
   colorSecundario?: string
+  chatSessionId?: string
+  chatConsultationId?: string
+  chatHasHistory?: boolean
 }
 
 // ===== CHAT =====
