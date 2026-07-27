@@ -78,6 +78,7 @@ export interface UpdateProductPayload {
   precio?: number
   stock?: number
   activo?: boolean
+  requiereCotizacion?: boolean
   urlImagen?: string | null
   imagen?: File
 }
@@ -90,8 +91,6 @@ export interface FAQ {
   respuesta: string
   categoria?: string
   activa: boolean
-  orden?: number
-  sourceSuggestionId?: string
   createdAt: string
   updatedAt: string
 }
@@ -103,7 +102,6 @@ export interface FAQFormData {
   categoria?: string
   nuevaCategoriaNombre?: string
   activa: boolean
-  sourceSuggestionId?: string
 }
 
 export interface FAQCategory {
@@ -167,11 +165,51 @@ export interface Business {
   slug: string
   colorPrimario?: string
   colorSecundario?: string
+  chatSessionId?: string
+  chatConsultationId?: string
+  chatHasHistory?: boolean
 }
 
 // ===== CHAT =====
 export type MessageRole = 'bot' | 'user'
-export type AwaitingInput = 'budget' | 'faq-selection' | 'contact-name' | 'contact-phone'
+export type AwaitingInput =
+  | 'budget'
+  | 'faq-selection'
+  | 'contact-name'
+  | 'contact-phone'
+  | 'quote-contact-name'
+  | 'quote-contact-phone'
+
+export interface QuoteSummaryItem {
+  productId: string
+  name: string
+  quantity: number
+  requiresQuote: boolean
+  unitPrice?: number
+  subtotal?: number
+}
+
+export interface QuoteSummaryMessageData {
+  items: QuoteSummaryItem[]
+  subtotal: number
+}
+
+export interface GeneratedQuoteMessageData {
+  requestRegistered: true
+  sourceSummaryMessageId: string
+  pdfUrl?: string
+  quoteId?: string
+  number?: string
+  status?: import('./presupuesto').PresupuestoEstado
+  issuedAt?: string
+  expiresAt?: string
+  customer?: {
+    name?: string
+    phone?: string
+  }
+  items?: QuoteSummaryItem[]
+  total?: number
+}
 
 export interface Message {
   id: string
@@ -181,6 +219,8 @@ export interface Message {
   quickReplies?: string[]
   products?: Product[]
   faqs?: FAQ[]
+  quoteSummary?: QuoteSummaryMessageData
+  generatedQuote?: GeneratedQuoteMessageData
 }
 
 export interface ChatSession {
@@ -190,7 +230,7 @@ export interface ChatSession {
 }
 
 // ===== CONSULTAS =====
-export type ConsultaEstado = 'nueva' | 'en_proceso' | 'cerrada'
+export type ConsultaEstado = 'nueva' | 'en_proceso' | 'resuelta' | 'cerrada'
 export type ConsultaCerradaPor = 'bot' | 'emprendedor'
 export type CanalConsulta = 'web' | 'whatsapp'
 export type TipoConsulta = 'general' | 'catalogo' | 'presupuesto' | 'soporte' | 'derivacion'

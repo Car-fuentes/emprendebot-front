@@ -113,14 +113,13 @@ Desde la carpeta del frontend:
 npm install
 ```
 
-Crear un archivo `.env` en la raíz del proyecto:
+El repositorio incluye archivos separados por modo:
 
-```env
-VITE_API_URL=http://localhost:3000/api
-VITE_GOOGLE_CLIENT_ID=tu-client-id.apps.googleusercontent.com
-```
+- `.env.development`: backend local utilizado por `npm run dev`.
+- `.env.production`: backend desplegado utilizado por `npm run build`.
 
-No se deben subir archivos `.env` ni credenciales al repositorio.
+Para valores personales se puede crear `.env.local`. No deben subirse secretos al repositorio.
+Las variables `VITE_*` son públicas y se incorporan al bundle del navegador.
 
 ## Variables de entorno
 
@@ -132,16 +131,13 @@ URL base de la API, incluyendo el prefijo `/api`.
 VITE_API_URL=http://localhost:3000/api
 ```
 
-Si no se define, el cliente utiliza:
+La variable es obligatoria. Si falta o no contiene una URL HTTP/HTTPS válida, la aplicación
+detiene el inicio con un error de configuración en lugar de conectarse a un fallback.
 
-```text
-http://localhost:3000/api
-```
-
-Ejemplo de producción:
+Producción:
 
 ```env
-VITE_API_URL=https://api.ejemplo.com/api
+VITE_API_URL=https://chatbot-innova-backend-6388.onrender.com/api
 ```
 
 ### `VITE_GOOGLE_CLIENT_ID`
@@ -427,7 +423,8 @@ En otros proveedores debe configurarse una regla equivalente para enviar las rut
 
 ### Variables en producción
 
-Configurar en el proveedor de despliegue:
+El archivo `.env.production` contiene los valores públicos del despliegue. El proveedor puede
+sobrescribirlos con variables propias durante el build:
 
 ```env
 VITE_API_URL=https://url-publica-del-backend/api

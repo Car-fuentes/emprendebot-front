@@ -42,6 +42,7 @@ function buildUpdateFormData(payload: UpdateProductPayload): FormData {
   if (payload.precio !== undefined) appendFormValue(formData, 'precio', payload.precio)
   if (payload.stock !== undefined) appendFormValue(formData, 'stock', payload.stock)
   if (payload.activo !== undefined) appendFormValue(formData, 'activo', payload.activo)
+  if (payload.requiereCotizacion !== undefined) appendFormValue(formData, 'requiereCotizacion', payload.requiereCotizacion)
   if (payload.urlImagen !== undefined) appendFormValue(formData, 'urlImagen', payload.urlImagen ?? '')
   if (payload.imagen) formData.append('imagen', payload.imagen)
   return formData
@@ -73,15 +74,8 @@ export async function getProductsApi(filters: ProductFilters = {}): Promise<Prod
 }
 
 export async function getProductByIdApi(id: string): Promise<ProductApi | null> {
-  let page = 1
-
-  while (true) {
-    const result = await getProductsApi({ page, limit: 100 })
-    const product = result.productos.find(item => item.id === id)
-    if (product) return product
-    if (page >= result.totalPaginas) return null
-    page += 1
-  }
+  const response = await apiRequest<ProductMutationResponse>(`/products/${encodeURIComponent(id)}`)
+  return response.producto
 }
 
 export async function createProductApi(payload: CreateProductPayload): Promise<ProductApi> {

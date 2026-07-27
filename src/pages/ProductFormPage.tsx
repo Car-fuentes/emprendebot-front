@@ -133,6 +133,7 @@ export function ProductFormPage() {
           ...(!form.precioConsultar ? { precio: price } : {}),
           stock,
           activo: form.activo,
+          requiereCotizacion: form.precioConsultar,
           ...(removeImage ? { urlImagen: null } : {}),
           ...(imageFile ? { imagen: imageFile } : {}),
         })

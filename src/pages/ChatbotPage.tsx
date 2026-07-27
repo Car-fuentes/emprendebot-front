@@ -6,33 +6,56 @@ import { MessageBubble, TypingIndicator } from '../components/chat/MessageBubble
 import { FaqListMessage } from '../components/chat/FaqListMessage'
 import { ProductCatalogMessage } from '../components/chat/ProductCatalogMessage'
 import { QuickReplies } from '../components/chat/QuickReplies'
-import { useBusiness } from '../context/BusinessContext'
+import { QuoteSummaryCard } from '../components/chat/QuoteSummaryCard'
+import { GeneratedQuoteCard } from '../components/chat/GeneratedQuoteCard'
+import '../components/chat/quoteCards.css'
 import { useChat } from '../hooks/useChat'
 import type { Business, FAQ, Product } from '../types'
 import { useAuth } from '../context/AuthContext'
-import { getPublicFaqsApi, getPublicProductsApi } from '../services/publicApi'
+import { getPublicBusinessApi, getPublicFaqsApi, getPublicProductsApi } from '../services/publicApi'
 import { resolveChatAppearance } from '../services/chatAppearance'
 
 // Página pública: www.emprendebot/[slug]
 export function ChatbotPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
-  const { loadBusinessBySlug } = useBusiness()
   const { user } = useAuth()
-  const business = slug ? loadBusinessBySlug(slug) : null
-
+  const [business, setBusiness] = useState<Business | null>(null)
+  const [isBusinessLoading, setIsBusinessLoading] = useState(Boolean(slug))
   const [publicFaqs, setPublicFaqs] = useState<FAQ[] | null>(null)
   const [publicProducts, setPublicProducts] = useState<Product[] | null>(null)
+
+  useEffect(() => {
+    if (!slug) return
+    getPublicBusinessApi(slug)
+      .then(setBusiness)
+      .catch(() => setBusiness(null))
+      .finally(() => setIsBusinessLoading(false))
+  }, [slug])
 
   useEffect(() => {
     if (!slug) return
     getPublicFaqsApi(slug)
       .then(faqs => setPublicFaqs(faqs))
       .catch(() => setPublicFaqs([]))
+
     getPublicProductsApi(slug)
       .then(products => setPublicProducts(products))
-      .catch(() => setPublicProducts([]))
+      // Compatibilidad: si el endpoint todavía no existe, se conservan
+      // los productos incluidos por /init.
+      .catch(() => setPublicProducts(null))
   }, [slug])
+
+  if (isBusinessLoading && !business) {
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'grid', placeItems: 'center',
+        color: 'var(--color-text-secondary)', fontSize: '14px',
+      }}>
+        Cargando chatbot...
+      </div>
+    )
+  }
 
   if (!business) {
     return (
@@ -60,8 +83,7 @@ export function ChatbotPage() {
     )
   }
 
-  // Merge API FAQs and products into business (overrides localStorage data when available)
-  const businessWithFaqs: Business = {
+  const publicBusiness: Business = {
     ...business,
     ...(publicFaqs !== null ? { faq: publicFaqs } : {}),
     ...(publicProducts !== null ? { productos: publicProducts } : {}),
@@ -70,14 +92,22 @@ export function ChatbotPage() {
   return (
     <PublicChat
       key={business.id}
-      business={businessWithFaqs}
+      business={publicBusiness}
       onBackToDashboard={user ? () => navigate('/dashboard') : undefined}
     />
   )
 }
 
 function PublicChat({ business, onBackToDashboard }: { business: Business; onBackToDashboard?: () => void }) {
-  const { messages, isTyping, sendMessage, submitOrder, reset } = useChat(business)
+  const {
+    messages,
+    isTyping,
+    sendMessage,
+    submitOrder,
+    requestQuote,
+    submittingQuoteMessageId,
+    reset,
+  } = useChat(business)
   const appearance = resolveChatAppearance(business)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -141,6 +171,19 @@ function PublicChat({ business, onBackToDashboard }: { business: Business; onBac
         {messages.map(message => (
           <div key={message.id}>
             {message.text && <MessageBubble message={message} />}
+            {message.quoteSummary && (
+              <QuoteSummaryCard
+                data={message.quoteSummary}
+                isSubmitting={submittingQuoteMessageId === message.id}
+                isSubmitted={messages.some(
+                  candidate => candidate.generatedQuote?.sourceSummaryMessageId === message.id,
+                )}
+                onContinue={() => void requestQuote(message.id, message.quoteSummary!)}
+              />
+            )}
+            {message.generatedQuote && (
+              <GeneratedQuoteCard data={message.generatedQuote} businessName={business.nombre} />
+            )}
             {message.products && message.products.length > 0 && message.id === lastProductsMessageId && !isTyping && (
               <ProductCatalogMessage products={message.products} onConfirm={submitOrder} onBack={() => sendMessage('Volver al menú principal')} />
             )}

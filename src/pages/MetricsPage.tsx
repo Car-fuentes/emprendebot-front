@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from 'react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Drawer } from '../components/layout/Drawer'
 import {
@@ -21,7 +21,6 @@ import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { useMetrics } from '../hooks/useMetrics'
 import { METRICS_PERIOD_OPTIONS } from '../mocks/metricsMockData'
-import { brand } from '../styles/brand'
 import type { MetricsData, MetricsPeriod } from '../types/metrics'
 
 type MetricsTab = 'summary' | 'abandonment' | 'leads'
@@ -53,7 +52,7 @@ function isLeadsEmpty(data: MetricsData) {
 export function MetricsPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { business } = useBusiness()
+  const { business, loadBusiness } = useBusiness()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<MetricsTab>('summary')
   const [period, setPeriod] = useState<MetricsPeriod>('last7Days')
@@ -61,6 +60,10 @@ export function MetricsPage() {
     businessId: business?.id,
     period,
   })
+
+  useEffect(() => {
+    if (user) void loadBusiness(user.id)
+  }, [loadBusiness, user])
 
   if (!user) return null
 
@@ -88,34 +91,28 @@ export function MetricsPage() {
         onClose={() => setDrawerOpen(false)}
         activeItem="metricas"
         desktopPersistent
+        showBusinessAvatar
       />
 
       <div className="metrics-page__content">
         <header className="metrics-header">
-          <div className="metrics-header__title">
-            <button
-              type="button"
-              aria-label="Abrir navegación"
-              className="metrics-header__menu"
-              onClick={() => setDrawerOpen(true)}
-            >
-              <AppIcon name="menu" size={22} strokeWidth={2.2} />
-            </button>
-            <div>
-              <strong>Métricas</strong>
-              <span>Rendimiento de tu chatbot</span>
-            </div>
-          </div>
-          <div className="metrics-header__profile">
-            <span aria-hidden="true" className="metrics-header__bell"><AppIcon name="bell" size={21} /></span>
-            <Avatar name={user.nombre} size={38} bgColor={brand.primaryGradient} />
-          </div>
+          <button
+            type="button"
+            aria-label="Abrir navegación"
+            className="metrics-header__menu"
+            onClick={() => setDrawerOpen(true)}
+          >
+            <AppIcon name="menu" size={22} strokeWidth={2.2} />
+          </button>
+          <strong>Métricas</strong>
+          <Avatar name={user.nombre} src={business?.logo} size={38} />
         </header>
 
         <main className="metrics-main">
           <PageBackButton onClick={() => navigate('/dashboard')} />
           <div className="metrics-heading">
             <div>
+              <span className="metrics-eyebrow">ANÁLISIS</span>
               <h1>Métricas</h1>
               <p>Entendé cómo interactúan tus clientes y detectá oportunidades de venta.</p>
             </div>
@@ -272,7 +269,7 @@ export function MetricsPage() {
           position: sticky;
           top: 0;
           z-index: 20;
-          min-height: 72px;
+          min-height: 64px;
           padding: 12px clamp(18px, 3vw, 34px);
           display: flex;
           align-items: center;
@@ -282,31 +279,9 @@ export function MetricsPage() {
           backdrop-filter: blur(14px);
         }
 
-        .metrics-header__title,
-        .metrics-header__profile {
-          display: flex;
-          align-items: center;
-        }
+        .metrics-header > strong { font-size: 14px; }
 
-        .metrics-header__title { gap: 13px; }
-        .metrics-header__profile { gap: 12px; }
-
-        .metrics-header__title strong,
-        .metrics-header__title span { display: block; }
-
-        .metrics-header__title strong {
-          font-size: 18px;
-          line-height: 1.2;
-        }
-
-        .metrics-header__title span {
-          margin-top: 2px;
-          color: var(--metrics-muted);
-          font-size: 11px;
-        }
-
-        .metrics-header__menu,
-        .metrics-header__bell {
+        .metrics-header__menu {
           width: 40px;
           height: 40px;
           display: grid;
@@ -329,6 +304,15 @@ export function MetricsPage() {
           align-items: flex-end;
           justify-content: space-between;
           gap: 24px;
+        }
+
+        .metrics-eyebrow {
+          display: block;
+          margin-bottom: 7px;
+          color: #13A8A2;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 1.1px;
         }
 
         .metrics-heading h1 {
@@ -929,7 +913,8 @@ export function MetricsPage() {
 
         @media (min-width: 1000px) {
           .metrics-page__content { margin-left: 280px; }
-          .metrics-header__menu { display: none; }
+          .metrics-header { display: none; }
+          .metrics-main { padding-top: 40px; }
         }
 
         @media (max-width: 1120px) {
@@ -951,9 +936,6 @@ export function MetricsPage() {
         @media (max-width: 620px) {
           .metrics-header { min-height: 64px; }
 
-          .metrics-header__title span,
-          .metrics-header__bell { display: none; }
-
           .metrics-main {
             padding-top: 24px;
             padding-right: 14px;
@@ -964,7 +946,7 @@ export function MetricsPage() {
 
           .metrics-tabs {
             position: sticky;
-            top: 72px;
+            top: 64px;
             z-index: 8;
           }
 
