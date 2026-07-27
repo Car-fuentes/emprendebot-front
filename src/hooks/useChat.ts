@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { AwaitingInput, Business, FAQ, Message, Product } from '../types'
+import type {
+  AwaitingInput,
+  Business,
+  FAQ,
+  Message,
+  Product,
+  QuoteSummaryMessageData,
+} from '../types'
 
 export interface OrderItem {
   product: Product
@@ -236,6 +243,12 @@ export function useChat(business: Business) {
   const pendingResponseResolverRef = useRef<(() => void) | null>(null)
   const conversationVersionRef = useRef(0)
   const consultationPromiseRef = useRef<Promise<string | null> | null>(null)
+  const quoteSubmissionRef = useRef<Set<string>>(new Set(
+    messages.flatMap(message => (
+      message.generatedQuote ? [message.generatedQuote.sourceSummaryMessageId] : []
+    )),
+  ))
+  const [submittingQuoteMessageId, setSubmittingQuoteMessageId] = useState<string | null>(null)
 
   const ensureConsultation = useCallback((): Promise<string | null> => {
     if (!consultationPromiseRef.current) {
@@ -377,6 +390,7 @@ export function useChat(business: Business) {
   }, [awaitingInput, business, contactName, ensureConsultation, isTyping])
 
   const submitOrder = useCallback((items: OrderItem[]) => {
+    if (items.length === 0) return
     const summary = items.map(i => `${i.product.nombre} x${i.quantity}`).join(', ')
     const userMsg: Message = {
       id: crypto.randomUUID(),
@@ -385,31 +399,34 @@ export function useChat(business: Business) {
       timestamp: new Date(),
     }
 
-    const needsQuote = items.some(i => i.product.precioConsultar)
-    let botText: string
-
-    if (needsQuote) {
-      const detail = items.map(i => {
-        const priceStr = i.product.precioConsultar
-          ? '(precio a consultar)'
-          : `$${(i.product.precio! * i.quantity).toLocaleString('es-AR')}`
-        return `• ${i.product.nombre} x${i.quantity} — ${priceStr}`
-      }).join('\n')
-      botText = `Recibimos tu solicitud de cotización:\n\n${detail}\n\nEn breve nos contactamos con vos para darte los precios. 😊`
-    } else {
-      const total = items.reduce((sum, i) => sum + (i.product.precio! * i.quantity), 0)
-      const detail = items.map(i =>
-        `• ${i.product.nombre} x${i.quantity} — $${(i.product.precio! * i.quantity).toLocaleString('es-AR')}`
-      ).join('\n')
-      botText = `Tu presupuesto:\n\n${detail}\n\n💰 Total: $${total.toLocaleString('es-AR')}`
+    const quoteSummary: QuoteSummaryMessageData = {
+      items: items.map(({ product, quantity }) => {
+        const requiresQuote = product.precioConsultar === true
+        const unitPrice = product.precio
+        const hasConfirmedPrice = unitPrice != null && Number.isFinite(unitPrice)
+        return {
+          productId: product.id,
+          name: product.nombre,
+          quantity,
+          requiresQuote,
+          ...(!requiresQuote && hasConfirmedPrice
+            ? { unitPrice, subtotal: unitPrice * quantity }
+            : {}),
+        }
+      }),
+      subtotal: items.reduce((total, { product, quantity }) => (
+        product.precioConsultar !== true && product.precio != null && Number.isFinite(product.precio)
+          ? total + product.precio * quantity
+          : total
+      ), 0),
     }
 
     const botMsg: Message = {
       id: crypto.randomUUID(),
       role: 'bot',
-      text: botText,
+      text: '',
       timestamp: new Date(),
-      quickReplies: QUICK_REPLIES_INICIAL,
+      quoteSummary,
     }
 
     setMessages(prev => {
@@ -420,9 +437,71 @@ export function useChat(business: Business) {
     void ensureConsultation().then(async consultationId => {
       if (!consultationId) return
       await savePublicMessage(business.slug, consultationId, 'cliente', userMsg.text)
-      await savePublicMessage(business.slug, consultationId, 'bot', botMsg.text)
+      await savePublicMessage(business.slug, consultationId, 'bot', 'Resumen del pedido listo para confirmar.')
     }).catch(() => undefined)
   }, [business, ensureConsultation])
+
+  const requestQuote = useCallback(async (
+    sourceSummaryMessageId: string,
+    summary: QuoteSummaryMessageData,
+  ) => {
+    if (quoteSubmissionRef.current.has(sourceSummaryMessageId)) return
+    quoteSubmissionRef.current.add(sourceSummaryMessageId)
+    setSubmittingQuoteMessageId(sourceSummaryMessageId)
+
+    try {
+      const consultationId = await ensureConsultation()
+      if (!consultationId) throw new Error('No se pudo registrar la consulta.')
+
+      const userMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'user',
+        text: 'Solicitar presupuesto',
+        timestamp: new Date(),
+      }
+      await savePublicMessage(business.slug, consultationId, 'cliente', userMsg.text)
+      await savePublicMessage(
+        business.slug,
+        consultationId,
+        'bot',
+        'Tu solicitud de presupuesto fue registrada correctamente.',
+      )
+
+      const generatedMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'bot',
+        text: '',
+        timestamp: new Date(),
+        generatedQuote: {
+          requestRegistered: true,
+          sourceSummaryMessageId,
+          items: summary.items,
+        },
+        quickReplies: QUICK_REPLIES_INICIAL,
+      }
+
+      setMessages(previousMessages => {
+        const nextMessages = [...previousMessages, userMsg, generatedMsg]
+        saveChatHistory(business.id, nextMessages)
+        return nextMessages
+      })
+    } catch {
+      quoteSubmissionRef.current.delete(sourceSummaryMessageId)
+      const errorMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'bot',
+        text: 'No pudimos registrar la solicitud. Podés intentarlo nuevamente.',
+        timestamp: new Date(),
+      }
+      setMessages(previousMessages => {
+        const nextMessages = [...previousMessages, errorMessage]
+        saveChatHistory(business.id, nextMessages)
+        return nextMessages
+      })
+    } finally {
+      setSubmittingQuoteMessageId(null)
+    }
+  }, [business.id, business.slug, ensureConsultation])
 
   const reset = useCallback(() => {
     conversationVersionRef.current += 1
@@ -432,6 +511,7 @@ export function useChat(business: Business) {
     clearChatState(business.id)
     sessionStorage.removeItem(`emprendebot:consulta:${business.slug}`)
     consultationPromiseRef.current = null
+    quoteSubmissionRef.current.clear()
     const initialMessages = [createInitialMessage(business)]
     setMessages(initialMessages)
     setAwaitingInput(null)
@@ -440,5 +520,13 @@ export function useChat(business: Business) {
     setIsTyping(false)
   }, [business, cancelPendingResponse])
 
-  return { messages, isTyping, sendMessage, submitOrder, reset }
+  return {
+    messages,
+    isTyping,
+    sendMessage,
+    submitOrder,
+    requestQuote,
+    submittingQuoteMessageId,
+    reset,
+  }
 }

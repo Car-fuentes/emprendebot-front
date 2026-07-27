@@ -174,6 +174,37 @@ export interface Business {
 export type MessageRole = 'bot' | 'user'
 export type AwaitingInput = 'budget' | 'faq-selection' | 'contact-name' | 'contact-phone'
 
+export interface QuoteSummaryItem {
+  productId: string
+  name: string
+  quantity: number
+  requiresQuote: boolean
+  unitPrice?: number
+  subtotal?: number
+}
+
+export interface QuoteSummaryMessageData {
+  items: QuoteSummaryItem[]
+  subtotal: number
+}
+
+export interface GeneratedQuoteMessageData {
+  requestRegistered: true
+  sourceSummaryMessageId: string
+  pdfUrl?: string
+  quoteId?: string
+  number?: string
+  status?: import('./presupuesto').PresupuestoEstado
+  issuedAt?: string
+  expiresAt?: string
+  customer?: {
+    name?: string
+    phone?: string
+  }
+  items?: QuoteSummaryItem[]
+  total?: number
+}
+
 export interface Message {
   id: string
   role: MessageRole
@@ -182,6 +213,8 @@ export interface Message {
   quickReplies?: string[]
   products?: Product[]
   faqs?: FAQ[]
+  quoteSummary?: QuoteSummaryMessageData
+  generatedQuote?: GeneratedQuoteMessageData
 }
 
 export interface ChatSession {

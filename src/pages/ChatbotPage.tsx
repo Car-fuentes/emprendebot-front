@@ -6,6 +6,9 @@ import { MessageBubble, TypingIndicator } from '../components/chat/MessageBubble
 import { FaqListMessage } from '../components/chat/FaqListMessage'
 import { ProductCatalogMessage } from '../components/chat/ProductCatalogMessage'
 import { QuickReplies } from '../components/chat/QuickReplies'
+import { QuoteSummaryCard } from '../components/chat/QuoteSummaryCard'
+import { GeneratedQuoteCard } from '../components/chat/GeneratedQuoteCard'
+import '../components/chat/quoteCards.css'
 import { useChat } from '../hooks/useChat'
 import type { Business, FAQ, Product } from '../types'
 import { useAuth } from '../context/AuthContext'
@@ -96,7 +99,15 @@ export function ChatbotPage() {
 }
 
 function PublicChat({ business, onBackToDashboard }: { business: Business; onBackToDashboard?: () => void }) {
-  const { messages, isTyping, sendMessage, submitOrder, reset } = useChat(business)
+  const {
+    messages,
+    isTyping,
+    sendMessage,
+    submitOrder,
+    requestQuote,
+    submittingQuoteMessageId,
+    reset,
+  } = useChat(business)
   const appearance = resolveChatAppearance(business)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -160,6 +171,19 @@ function PublicChat({ business, onBackToDashboard }: { business: Business; onBac
         {messages.map(message => (
           <div key={message.id}>
             {message.text && <MessageBubble message={message} />}
+            {message.quoteSummary && (
+              <QuoteSummaryCard
+                data={message.quoteSummary}
+                isSubmitting={submittingQuoteMessageId === message.id}
+                isSubmitted={messages.some(
+                  candidate => candidate.generatedQuote?.sourceSummaryMessageId === message.id,
+                )}
+                onContinue={() => void requestQuote(message.id, message.quoteSummary!)}
+              />
+            )}
+            {message.generatedQuote && (
+              <GeneratedQuoteCard data={message.generatedQuote} businessName={business.nombre} />
+            )}
             {message.products && message.products.length > 0 && message.id === lastProductsMessageId && !isTyping && (
               <ProductCatalogMessage products={message.products} onConfirm={submitOrder} onBack={() => sendMessage('Volver al menú principal')} />
             )}
