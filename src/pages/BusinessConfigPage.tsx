@@ -110,6 +110,16 @@ const selectStyle: React.CSSProperties = {
   cursor: 'pointer',
 }
 
+const mensajeBienvenidaAutomatico = (nombre: string) =>
+  `¡Hola! Soy el asistente de ${nombre} ¿En qué te puedo ayudar? Elige una opción para continuar.`
+
+const esMensajeBienvenidaAutomatico = (mensaje: string, nombre: string) =>
+  !mensaje.trim()
+  || mensaje === mensajeBienvenidaAutomatico(nombre)
+  || mensaje === '¡Hola! ¿En qué te puedo ayudar?'
+  || mensaje === '¡Hola! ¿En qué te puedo ayudar hoy?'
+  || mensaje.includes('{nombreNegocio}')
+
 export function BusinessConfigPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -202,8 +212,24 @@ export function BusinessConfigPage() {
   }, [user])
 
   const set = (field: keyof FormData) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      setForm(prev => ({ ...prev, [field]: e.target.value }))
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = e.target.value
+      setForm(prev => {
+        if (field !== 'nombre') return { ...prev, [field]: value }
+
+        const actualizarMensaje = esMensajeBienvenidaAutomatico(
+          prev.mensajeBienvenida,
+          prev.nombre,
+        )
+        return {
+          ...prev,
+          nombre: value,
+          ...(actualizarMensaje
+            ? { mensajeBienvenida: mensajeBienvenidaAutomatico(value || 'tu negocio') }
+            : {}),
+        }
+      })
+    }
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -711,7 +737,7 @@ export function BusinessConfigPage() {
                 onClick={() =>
                   setForm(prev => ({
                     ...prev,
-                    mensajeBienvenida: `¡Hola! Soy el asistente de ${prev.nombre} ¿En qué te puedo ayudar? Elige una opción para continuar.`,
+                    mensajeBienvenida: mensajeBienvenidaAutomatico(prev.nombre),
                   }))
                 }
                 style={{
