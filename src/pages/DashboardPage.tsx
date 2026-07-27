@@ -71,9 +71,9 @@ export function DashboardPage() {
       unavailable: businessUnavailable,
     },
     {
-      label: 'Presupuestos pendientes',
+      label: 'Presupuestos registrados',
       value: stats.presupuestosPendientes.value,
-      description: 'Requieren preparaciÃ³n o seguimiento',
+      description: 'Solicitudes recibidas desde el chat',
       color: '#7C3AED',
       icon: <IconWrapper><AppIcon name="budget" size={22} /></IconWrapper>,
       tone: 'secondary' as const,

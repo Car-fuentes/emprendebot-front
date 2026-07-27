@@ -49,10 +49,7 @@ export const countDashboardConsultations = (consultas: DashboardConsulta[]) => {
 
 const loadDashboardStats = async (): Promise<DashboardStatsData> => {
   const consultationsPromise = apiRequest<ConsultationsResponse>('/consultations')
-  const budgetsPromise = Promise.all([
-    getPresupuestos({ estado: 'PENDIENTE', page: 1, limit: 1 }),
-    getPresupuestos({ estado: 'EN_PROCESO', page: 1, limit: 1 }),
-  ])
+  const budgetsPromise = getPresupuestos({ page: 1, limit: 1 })
 
   const [consultationsResult, budgetsResult] = await Promise.allSettled([
     consultationsPromise,
@@ -79,10 +76,7 @@ const loadDashboardStats = async (): Promise<DashboardStatsData> => {
 
   const presupuestosPendientes: DashboardMetric = budgetsResult.status === 'fulfilled'
     ? {
-        value: budgetsResult.value.reduce(
-          (total, response) => total + response.paginacion.total,
-          0,
-        ),
+        value: budgetsResult.value.paginacion.total,
         status: 'success',
       }
     : { value: '—', status: 'error' }
@@ -125,7 +119,7 @@ export function useDashboardStats(userId?: string) {
     if (!userId) return
     let active = true
     const timeoutId = window.setTimeout(() => {
-      void getCachedRequest(userId, false).then(result => {
+      void getCachedRequest(userId, true).then(result => {
         if (active) setStats(result)
       })
     }, 0)
