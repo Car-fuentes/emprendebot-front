@@ -1,8 +1,34 @@
 import { apiRequest } from './apiClient'
+import type { Presupuesto, PresupuestoEstado } from '../types/presupuesto'
 
 interface ConsultationResponse {
   success: boolean
   consulta: { id: string }
+}
+
+export interface PublicBudgetItemInput {
+  productoId: string
+  nombre: string
+  cantidad: number
+  precioUnitario?: number
+  requiereCotizacion: boolean
+}
+
+export interface CreatePublicBudgetPayload {
+  items: PublicBudgetItemInput[]
+  diasValidez?: number
+  idempotencyKey: string
+}
+
+interface PublicBudgetResponse {
+  success: boolean
+  duplicated?: boolean
+  presupuesto: Pick<
+    Presupuesto,
+    'id' | 'estado' | 'total' | 'fechaEmision' | 'fechaVencimiento' | 'linkPdf'
+  > & {
+    estado: PresupuestoEstado
+  }
 }
 
 export async function createPublicConsultation(slug: string, sessionAnonimaId: string): Promise<string> {
@@ -22,4 +48,20 @@ export async function updatePublicContact(slug: string, id: string, clienteNombr
   await apiRequest(`/public/chatbot/${encodeURIComponent(slug)}/consultations/${id}/contact`, {
     method: 'PATCH', auth: false, body: JSON.stringify({ clienteNombre, clienteTelefono }),
   })
+}
+
+export async function createPublicBudget(
+  slug: string,
+  consultationId: string,
+  payload: CreatePublicBudgetPayload,
+): Promise<PublicBudgetResponse['presupuesto']> {
+  const response = await apiRequest<PublicBudgetResponse>(
+    `/public/chatbot/${encodeURIComponent(slug)}/consultations/${encodeURIComponent(consultationId)}/budgets`,
+    {
+      method: 'POST',
+      auth: false,
+      body: JSON.stringify(payload),
+    },
+  )
+  return response.presupuesto
 }

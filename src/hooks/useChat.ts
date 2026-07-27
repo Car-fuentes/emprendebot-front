@@ -20,7 +20,12 @@ import {
   saveAwaitingInput,
   saveChatHistory,
 } from '../services/chatStorage'
-import { createPublicConsultation, savePublicMessage, updatePublicContact } from '../services/publicConsultationApi'
+import {
+  createPublicBudget,
+  createPublicConsultation,
+  savePublicMessage,
+  updatePublicContact,
+} from '../services/publicConsultationApi'
 
 const QUICK_REPLIES_INICIAL = [
   'Ver catálogo',
@@ -460,6 +465,19 @@ export function useChat(business: Business) {
         timestamp: new Date(),
       }
       await savePublicMessage(business.slug, consultationId, 'cliente', userMsg.text)
+
+      const presupuesto = await createPublicBudget(business.slug, consultationId, {
+        items: summary.items.map(item => ({
+          productoId: item.productId,
+          nombre: item.name,
+          cantidad: item.quantity,
+          ...(item.unitPrice != null ? { precioUnitario: item.unitPrice } : {}),
+          requiereCotizacion: item.requiresQuote,
+        })),
+        diasValidez: 7,
+        idempotencyKey: sourceSummaryMessageId,
+      })
+
       await savePublicMessage(
         business.slug,
         consultationId,
@@ -475,7 +493,13 @@ export function useChat(business: Business) {
         generatedQuote: {
           requestRegistered: true,
           sourceSummaryMessageId,
+          quoteId: String(presupuesto.id),
+          status: presupuesto.estado,
+          pdfUrl: presupuesto.linkPdf ?? undefined,
+          issuedAt: presupuesto.fechaEmision,
+          expiresAt: presupuesto.fechaVencimiento,
           items: summary.items,
+          total: presupuesto.total,
         },
         quickReplies: QUICK_REPLIES_INICIAL,
       }
