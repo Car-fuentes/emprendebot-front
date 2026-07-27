@@ -6,6 +6,16 @@ interface ConsultationResponse {
   consulta: { id: string }
 }
 
+interface PublicHistoryResponse {
+  estadoChat: 'BOT_ACTIVO' | 'HUMANO_ATENDIENDO'
+  mensajes: Array<{
+    id: string
+    emisor: 'CLIENTE' | 'BOT' | 'EMPRENDEDOR'
+    contenido: string
+    fechaCreacion: string
+  }>
+}
+
 export interface PublicBudgetItemInput {
   productoId: string
   nombre: string
@@ -64,4 +74,14 @@ export async function createPublicBudget(
     },
   )
   return response.presupuesto
+}
+
+export async function getPublicHistory(
+  slug: string,
+  sessionId: string,
+): Promise<PublicHistoryResponse> {
+  return apiRequest<PublicHistoryResponse>(
+    `/mensajes/${encodeURIComponent(slug)}/${encodeURIComponent(sessionId)}`,
+    { auth: false },
+  )
 }

@@ -23,6 +23,7 @@ import {
 import {
   createPublicBudget,
   createPublicConsultation,
+  getPublicHistory,
   savePublicMessage,
   updatePublicContact,
 } from '../services/publicConsultationApi'
@@ -282,6 +283,35 @@ export function useChat(business: Business) {
     pendingResponseResolverRef.current?.()
     pendingResponseResolverRef.current = null
   }, [])
+
+  useEffect(() => {
+    if (!business.chatHasHistory || !business.chatSessionId) return
+
+    const storedMessages = loadChatHistory(business.id)
+    if (storedMessages.length > 1) return
+
+    let active = true
+    void getPublicHistory(business.slug, business.chatSessionId)
+      .then(history => {
+        if (!active || history.mensajes.length === 0) return
+        const restoredMessages: Message[] = history.mensajes.map((message, index, all) => ({
+          id: message.id,
+          role: message.emisor === 'CLIENTE' ? 'user' : 'bot',
+          text: message.contenido,
+          timestamp: new Date(message.fechaCreacion),
+          ...(index === all.length - 1 && message.emisor !== 'CLIENTE'
+            ? { quickReplies: QUICK_REPLIES_INICIAL }
+            : {}),
+        }))
+        setMessages(restoredMessages)
+        saveChatHistory(business.id, restoredMessages)
+      })
+      .catch(() => undefined)
+
+    return () => {
+      active = false
+    }
+  }, [business.chatHasHistory, business.chatSessionId, business.id, business.slug])
 
   useEffect(() => {
     return () => {
