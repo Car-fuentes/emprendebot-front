@@ -239,6 +239,30 @@ function getInitialHistory(business: Business): Message[] {
 }
 
 const getTypingDelay = () => 800 + Math.floor(Math.random() * 701)
+const pendingQuoteStorageKey = (businessId: string) => `eb_pending_quote:${businessId}`
+
+interface PendingQuote {
+  sourceSummaryMessageId: string
+  summary: QuoteSummaryMessageData
+  customerName?: string
+}
+
+function loadPendingQuote(businessId: string): PendingQuote | null {
+  try {
+    const stored = sessionStorage.getItem(pendingQuoteStorageKey(businessId))
+    return stored ? JSON.parse(stored) as PendingQuote : null
+  } catch {
+    return null
+  }
+}
+
+function savePendingQuote(businessId: string, pendingQuote: PendingQuote | null): void {
+  if (pendingQuote) {
+    sessionStorage.setItem(pendingQuoteStorageKey(businessId), JSON.stringify(pendingQuote))
+  } else {
+    sessionStorage.removeItem(pendingQuoteStorageKey(businessId))
+  }
+}
 
 export function useChat(business: Business) {
   const [messages, setMessages] = useState<Message[]>(() => getInitialHistory(business))
@@ -254,7 +278,11 @@ export function useChat(business: Business) {
       message.generatedQuote ? [message.generatedQuote.sourceSummaryMessageId] : []
     )),
   ))
-  const [submittingQuoteMessageId, setSubmittingQuoteMessageId] = useState<string | null>(null)
+  const [initialPendingQuote] = useState<PendingQuote | null>(() => loadPendingQuote(business.id))
+  const pendingQuoteRef = useRef<PendingQuote | null>(initialPendingQuote)
+  const [submittingQuoteMessageId, setSubmittingQuoteMessageId] = useState<string | null>(
+    initialPendingQuote?.sourceSummaryMessageId ?? null,
+  )
 
   const ensureConsultation = useCallback((): Promise<string | null> => {
     if (!consultationPromiseRef.current) {
@@ -339,7 +367,7 @@ export function useChat(business: Business) {
 
     const consultationId = await ensureConsultation()
     if (consultationId) {
-      void savePublicMessage(business.slug, consultationId, 'cliente', text).catch(() => undefined)
+      await savePublicMessage(business.slug, consultationId, 'cliente', text).catch(() => undefined)
     }
 
     const conversationVersion = conversationVersionRef.current
@@ -353,6 +381,148 @@ export function useChat(business: Business) {
     })
 
     if (conversationVersion !== conversationVersionRef.current) return
+
+    if (awaitingInput === 'quote-contact-name') {
+      const name = text.trim()
+      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]{2,50}$/.test(name)) {
+        const botMsg: Message = {
+          id: crypto.randomUUID(),
+          role: 'bot',
+          text: 'Necesito un nombre válido usando solamente letras y espacios.',
+          timestamp: new Date(),
+        }
+        setMessages(prev => {
+          const next = [...prev, botMsg]
+          saveChatHistory(business.id, next)
+          return next
+        })
+        if (consultationId) await savePublicMessage(business.slug, consultationId, 'bot', botMsg.text).catch(() => undefined)
+        setIsTyping(false)
+        return
+      }
+
+      setContactName(name)
+      if (pendingQuoteRef.current) {
+        pendingQuoteRef.current = { ...pendingQuoteRef.current, customerName: name }
+        savePendingQuote(business.id, pendingQuoteRef.current)
+      }
+      const botMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'bot',
+        text: `Gracias ${name}. ¿Cuál es tu número de teléfono?`,
+        timestamp: new Date(),
+      }
+      setMessages(prev => {
+        const next = [...prev, botMsg]
+        saveChatHistory(business.id, next)
+        return next
+      })
+      if (consultationId) await savePublicMessage(business.slug, consultationId, 'bot', botMsg.text).catch(() => undefined)
+      setAwaitingInput('quote-contact-phone')
+      saveAwaitingInput(business.id, 'quote-contact-phone')
+      setIsTyping(false)
+      return
+    }
+
+    if (awaitingInput === 'quote-contact-phone') {
+      const phone = text.trim().replace(/[\s-]/g, '')
+      const pendingQuote = pendingQuoteRef.current
+      const customerName = contactName || pendingQuote?.customerName || ''
+
+      if (!/^\+?[0-9]{8,15}$/.test(phone)) {
+        const botMsg: Message = {
+          id: crypto.randomUUID(),
+          role: 'bot',
+          text: 'Ingresá un teléfono válido de entre 8 y 15 números.',
+          timestamp: new Date(),
+        }
+        setMessages(prev => {
+          const next = [...prev, botMsg]
+          saveChatHistory(business.id, next)
+          return next
+        })
+        if (consultationId) await savePublicMessage(business.slug, consultationId, 'bot', botMsg.text).catch(() => undefined)
+        setIsTyping(false)
+        return
+      }
+
+      try {
+        if (!consultationId || !pendingQuote) throw new Error('No hay una solicitud pendiente.')
+        await updatePublicContact(
+          business.slug,
+          consultationId,
+          customerName,
+          phone,
+          'presupuesto',
+        )
+        const presupuesto = await createPublicBudget(business.slug, consultationId, {
+          items: pendingQuote.summary.items.map(item => ({
+            productoId: item.productId,
+            nombre: item.name,
+            cantidad: item.quantity,
+            ...(item.unitPrice != null ? { precioUnitario: item.unitPrice } : {}),
+            requiereCotizacion: item.requiresQuote,
+          })),
+          diasValidez: 7,
+          idempotencyKey: pendingQuote.sourceSummaryMessageId,
+        })
+        const confirmationText = 'Tu solicitud de presupuesto fue registrada correctamente.'
+        await savePublicMessage(business.slug, consultationId, 'bot', confirmationText)
+
+        const generatedMsg: Message = {
+          id: crypto.randomUUID(),
+          role: 'bot',
+          text: '',
+          timestamp: new Date(),
+          generatedQuote: {
+            requestRegistered: true,
+            sourceSummaryMessageId: pendingQuote.sourceSummaryMessageId,
+            quoteId: String(presupuesto.id),
+            status: presupuesto.estado,
+            pdfUrl: presupuesto.linkPdf ?? undefined,
+            issuedAt: presupuesto.fechaEmision,
+            expiresAt: presupuesto.fechaVencimiento,
+            customer: { name: customerName, phone },
+            items: pendingQuote.summary.items,
+            total: presupuesto.total,
+          },
+          quickReplies: QUICK_REPLIES_INICIAL,
+        }
+        setMessages(prev => {
+          const next = [...prev, generatedMsg]
+          saveChatHistory(business.id, next)
+          return next
+        })
+        setAwaitingInput(null)
+        saveAwaitingInput(business.id, null)
+        pendingQuoteRef.current = null
+        savePendingQuote(business.id, null)
+        setContactName('')
+      } catch {
+        if (pendingQuote) {
+          quoteSubmissionRef.current.delete(pendingQuote.sourceSummaryMessageId)
+        }
+        pendingQuoteRef.current = null
+        savePendingQuote(business.id, null)
+        setAwaitingInput(null)
+        saveAwaitingInput(business.id, null)
+        const errorMsg: Message = {
+          id: crypto.randomUUID(),
+          role: 'bot',
+          text: 'No pudimos registrar el cliente y el presupuesto. Intentá nuevamente.',
+          timestamp: new Date(),
+        }
+        setMessages(prev => {
+          const next = [...prev, errorMsg]
+          saveChatHistory(business.id, next)
+          return next
+        })
+      } finally {
+        setSubmittingQuoteMessageId(null)
+        setIsTyping(false)
+      }
+      return
+    }
 
     // Flujo de captura de datos de contacto
     if (awaitingInput === 'contact-name') {
@@ -379,7 +549,13 @@ export function useChat(business: Business) {
     if (awaitingInput === 'contact-phone') {
       const phone = text.trim()
       if (consultationId) {
-        void updatePublicContact(business.slug, consultationId, contactName, phone).catch(() => undefined)
+        void updatePublicContact(
+          business.slug,
+          consultationId,
+          contactName,
+          phone,
+          'derivacion',
+        ).catch(() => undefined)
       }
       // TODO: POST /api/consultas cuando el backend esté listo
       console.log('Derivación a asesor:', { nombre: contactName, telefono: phone, businessId: business.id })
@@ -495,50 +671,24 @@ export function useChat(business: Business) {
         timestamp: new Date(),
       }
       await savePublicMessage(business.slug, consultationId, 'cliente', userMsg.text)
-
-      const presupuesto = await createPublicBudget(business.slug, consultationId, {
-        items: summary.items.map(item => ({
-          productoId: item.productId,
-          nombre: item.name,
-          cantidad: item.quantity,
-          ...(item.unitPrice != null ? { precioUnitario: item.unitPrice } : {}),
-          requiereCotizacion: item.requiresQuote,
-        })),
-        diasValidez: 7,
-        idempotencyKey: sourceSummaryMessageId,
-      })
-
-      await savePublicMessage(
-        business.slug,
-        consultationId,
-        'bot',
-        'Tu solicitud de presupuesto fue registrada correctamente.',
-      )
-
-      const generatedMsg: Message = {
+      const contactPrompt: Message = {
         id: crypto.randomUUID(),
         role: 'bot',
-        text: '',
+        text: 'Antes de preparar el presupuesto necesito registrar tus datos. ¿Cuál es tu nombre?',
         timestamp: new Date(),
-        generatedQuote: {
-          requestRegistered: true,
-          sourceSummaryMessageId,
-          quoteId: String(presupuesto.id),
-          status: presupuesto.estado,
-          pdfUrl: presupuesto.linkPdf ?? undefined,
-          issuedAt: presupuesto.fechaEmision,
-          expiresAt: presupuesto.fechaVencimiento,
-          items: summary.items,
-          total: presupuesto.total,
-        },
-        quickReplies: QUICK_REPLIES_INICIAL,
       }
+      await savePublicMessage(business.slug, consultationId, 'bot', contactPrompt.text)
 
       setMessages(previousMessages => {
-        const nextMessages = [...previousMessages, userMsg, generatedMsg]
+        const nextMessages = [...previousMessages, userMsg, contactPrompt]
         saveChatHistory(business.id, nextMessages)
         return nextMessages
       })
+      const pendingQuote = { sourceSummaryMessageId, summary }
+      pendingQuoteRef.current = pendingQuote
+      savePendingQuote(business.id, pendingQuote)
+      setAwaitingInput('quote-contact-name')
+      saveAwaitingInput(business.id, 'quote-contact-name')
     } catch {
       quoteSubmissionRef.current.delete(sourceSummaryMessageId)
       const errorMessage: Message = {
@@ -552,7 +702,6 @@ export function useChat(business: Business) {
         saveChatHistory(business.id, nextMessages)
         return nextMessages
       })
-    } finally {
       setSubmittingQuoteMessageId(null)
     }
   }, [business.id, business.slug, ensureConsultation])
@@ -566,6 +715,9 @@ export function useChat(business: Business) {
     sessionStorage.removeItem(`emprendebot:consulta:${business.slug}`)
     consultationPromiseRef.current = null
     quoteSubmissionRef.current.clear()
+    pendingQuoteRef.current = null
+    savePendingQuote(business.id, null)
+    setSubmittingQuoteMessageId(null)
     const initialMessages = [createInitialMessage(business)]
     setMessages(initialMessages)
     setAwaitingInput(null)

@@ -54,9 +54,17 @@ export async function savePublicMessage(slug: string, id: string, emisor: 'clien
   })
 }
 
-export async function updatePublicContact(slug: string, id: string, clienteNombre: string, clienteTelefono: string): Promise<void> {
+export async function updatePublicContact(
+  slug: string,
+  id: string,
+  clienteNombre: string,
+  clienteTelefono: string,
+  motivo: 'derivacion' | 'presupuesto',
+): Promise<void> {
   await apiRequest(`/public/chatbot/${encodeURIComponent(slug)}/consultations/${id}/contact`, {
-    method: 'PATCH', auth: false, body: JSON.stringify({ clienteNombre, clienteTelefono }),
+    method: 'PATCH',
+    auth: false,
+    body: JSON.stringify({ clienteNombre, clienteTelefono, motivo }),
   })
 }
 

@@ -172,7 +172,13 @@ export interface Business {
 
 // ===== CHAT =====
 export type MessageRole = 'bot' | 'user'
-export type AwaitingInput = 'budget' | 'faq-selection' | 'contact-name' | 'contact-phone'
+export type AwaitingInput =
+  | 'budget'
+  | 'faq-selection'
+  | 'contact-name'
+  | 'contact-phone'
+  | 'quote-contact-name'
+  | 'quote-contact-phone'
 
 export interface QuoteSummaryItem {
   productId: string
