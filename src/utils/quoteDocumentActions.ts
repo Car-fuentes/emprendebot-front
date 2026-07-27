@@ -11,8 +11,10 @@ export function isValidQuoteDocumentUrl(url: string): boolean {
 
 export function openQuoteDocument(url: string): OpenQuoteDocumentResult {
   if (!isValidQuoteDocumentUrl(url)) return 'invalid'
-  const opened = window.open(url, '_blank', 'noopener,noreferrer')
-  return opened ? 'opened' : 'blocked'
+  const opened = window.open(url, '_blank')
+  if (!opened) return 'blocked'
+  opened.opener = null
+  return 'opened'
 }
 
 export async function shareQuoteDocument(input: {
