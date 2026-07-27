@@ -1,5 +1,8 @@
 .chat-quote-card {
-  width: min(100%, 520px);
+  box-sizing: border-box;
+  width: calc(100% - 44px);
+  max-width: 520px;
+  min-width: 0;
   margin: 4px 0 12px 44px;
   overflow: hidden;
   border: 1px solid var(--color-border);
@@ -23,14 +26,18 @@
 
 .chat-quote-card__header h3 { font-size: 15px; }
 .chat-quote-card__header p { margin-top: 4px; color: var(--color-text-secondary); font-size: 12px; }
-.chat-quote-card__header--status { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.chat-quote-card__body { display: grid; gap: 16px; padding: 16px; }
+.chat-quote-card__header--status { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.chat-quote-card__header--status > div { min-width: 0; }
+.chat-quote-card__body { display: grid; min-width: 0; gap: 16px; padding: 16px; }
 .chat-quote-card__body h4 { margin-bottom: 8px; color: var(--color-text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
 .chat-quote-card__items,
 .chat-quote-card__quote-items { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .chat-quote-card__items li,
 .chat-quote-card__quote-items li,
-.chat-quote-card__total { display: flex; justify-content: space-between; gap: 16px; font-size: 13px; }
+.chat-quote-card__total { display: flex; min-width: 0; justify-content: space-between; gap: 16px; font-size: 13px; }
+.chat-quote-card__items li > span,
+.chat-quote-card__quote-items li > span,
+.chat-quote-card__total > span { min-width: 0; overflow-wrap: anywhere; }
 .chat-quote-card__items strong,
 .chat-quote-card__quote-items strong { flex-shrink: 0; }
 .chat-quote-card__quote-items strong { color: var(--color-primary); }
@@ -39,10 +46,11 @@
 .chat-quote-card__notice { color: var(--color-text-secondary); font-size: 12px; line-height: 1.5; }
 .chat-quote-card__success { font-size: 14px; line-height: 1.55; }
 .chat-quote-card__error { color: var(--color-danger, #b42318); font-size: 12px; line-height: 1.45; }
-.chat-quote-card__actions { display: flex; gap: 8px; }
+.chat-quote-card__actions { display: flex; min-width: 0; gap: 8px; }
 .chat-quote-card__primary,
 .chat-quote-card__secondary {
   min-height: 42px;
+  min-width: 0;
   padding: 10px 16px;
   border-radius: var(--radius-md);
   font: 700 14px var(--font-family);
@@ -53,10 +61,9 @@
 .chat-quote-card__primary:disabled { cursor: wait; opacity: .65; }
 .chat-quote-card__primary:focus-visible,
 .chat-quote-card__secondary:focus-visible { outline: 3px solid color-mix(in srgb, var(--color-primary) 35%, transparent); outline-offset: 2px; }
-.chat-quote-status { padding: 5px 9px; border-radius: var(--radius-full); color: var(--color-text-secondary); background: var(--color-surface-muted); font-size: 10px; font-weight: 700; text-transform: capitalize; }
+.chat-quote-status { flex: 0 0 auto; max-width: 45%; padding: 5px 9px; overflow: hidden; border-radius: var(--radius-full); color: var(--color-text-secondary); background: var(--color-surface-muted); font-size: 10px; font-weight: 700; text-overflow: ellipsis; text-transform: capitalize; white-space: nowrap; }
 
-@media (max-width: 480px) {
-  .chat-quote-card { width: calc(100% - 44px); }
+@media (max-width: 600px) {
   .chat-quote-card__items li,
   .chat-quote-card__quote-items li { align-items: flex-start; }
   .chat-quote-card__actions { flex-direction: column; }
