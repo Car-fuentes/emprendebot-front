@@ -11,6 +11,7 @@ import { useBusiness } from '../context/BusinessContext'
 import {
   useConsultas,
   type ConsultaCanalFilter,
+  type ConsultaDerivadaFilter,
   type ConsultaEstadoFilter,
   type ConsultaSortOption,
 } from '../hooks/useConsultas'
@@ -20,7 +21,15 @@ const ESTADO_OPTIONS: Array<{ value: ConsultaEstadoFilter; label: string }> = [
   { value: 'todas', label: 'Todas' },
   { value: 'nueva', label: 'Nuevas' },
   { value: 'en_proceso', label: 'En proceso' },
+  { value: 'resuelta', label: 'Resueltas' },
   { value: 'cerrada', label: 'Cerradas' },
+]
+
+const DERIVADA_OPTIONS: Array<{ value: ConsultaDerivadaFilter; label: string }> = [
+  { value: 'todas', label: 'Todas las consultas' },
+  { value: 'derivadas', label: 'Todas las derivadas' },
+  { value: 'atencion_personalizada', label: 'Atención personalizada' },
+  { value: 'cotizaciones', label: 'Cotizaciones' },
 ]
 
 const CANAL_OPTIONS: Array<{ value: ConsultaCanalFilter; label: string }> = [
@@ -47,6 +56,7 @@ export function ConsultasPage() {
     selectedConsultaId,
     estadoFilter,
     canalFilter,
+    derivadaFilter,
     sortOption,
     searchQuery,
     isLoading,
@@ -56,13 +66,14 @@ export function ConsultasPage() {
     isShowingDemo,
     setEstadoFilter,
     setCanalFilter,
+    setDerivadaFilter,
     setSortOption,
     setSearchQuery,
     selectConsulta,
     clearSelection,
     updateConsultaStatus,
     reloadConsultas,
-  } = useConsultas(user?.id)
+  } = useConsultas(user?.id, business?.slug)
 
   useEffect(() => {
     if (user) void loadBusiness(user.id)
@@ -72,7 +83,7 @@ export function ConsultasPage() {
 
   const showingDetail = Boolean(selectedConsultaId && selectedConsulta)
   const showingDemoIntro = !isLoading && !error && isShowingDemo && !demoStarted
-  const hasActiveFilters = searchQuery.trim() !== '' || estadoFilter !== 'todas' || canalFilter !== 'todos' || sortOption !== 'recentes'
+  const hasActiveFilters = searchQuery.trim() !== '' || estadoFilter !== 'todas' || canalFilter !== 'todos' || derivadaFilter !== 'todas' || sortOption !== 'recentes'
 
   const handleBack = () => {
     if (showingDetail) return clearSelection()
@@ -84,6 +95,7 @@ export function ConsultasPage() {
     setSearchQuery('')
     setEstadoFilter('todas')
     setCanalFilter('todos')
+    setDerivadaFilter('todas')
     setSortOption('recentes')
   }
 
@@ -160,6 +172,12 @@ export function ConsultasPage() {
                     onChange={event => setSearchQuery(event.target.value)}
                     placeholder="Buscar cliente o mensaje..."
                   />
+                </label>
+                <label className="consultas-filter">
+                  <span>Tipo</span>
+                  <select value={derivadaFilter} onChange={event => setDerivadaFilter(event.target.value as ConsultaDerivadaFilter)}>
+                    {DERIVADA_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
                 </label>
                 <label className="consultas-filter">
                   <span>Estado</span>

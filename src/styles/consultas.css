@@ -43,7 +43,7 @@
 .consultas-toolbar {
   padding: 14px;
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) repeat(3, minmax(130px, 165px));
+  grid-template-columns: minmax(240px, 1fr) repeat(4, minmax(125px, 160px));
   gap: 10px;
   border: 1px solid var(--consultas-border);
   border-radius: 16px;

@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CanalConsulta, Consulta, ConsultaEstado } from '../types'
-import { getConsultas, updateConsultaEstado } from '../services/consultaStorage'
+import {
+  getConsultas,
+  getConsultasDerivadas,
+  updateConsultaEstado,
+  type ConsultaDerivadaApiFilter,
+} from '../services/consultaStorage'
 
 export type ConsultaEstadoFilter = 'todas' | ConsultaEstado
 export type ConsultaCanalFilter = 'todos' | CanalConsulta
 export type ConsultaSortOption = 'recentes' | 'antiguas'
+export type ConsultaDerivadaFilter = ConsultaDerivadaApiFilter
 
 interface UseConsultasResult {
   consultas: Consulta[]
@@ -13,6 +19,7 @@ interface UseConsultasResult {
   selectedConsultaId: string | null
   estadoFilter: ConsultaEstadoFilter
   canalFilter: ConsultaCanalFilter
+  derivadaFilter: ConsultaDerivadaFilter
   sortOption: ConsultaSortOption
   searchQuery: string
   isLoading: boolean
@@ -22,6 +29,7 @@ interface UseConsultasResult {
   isShowingDemo: boolean
   setEstadoFilter: (filter: ConsultaEstadoFilter) => void
   setCanalFilter: (filter: ConsultaCanalFilter) => void
+  setDerivadaFilter: (filter: ConsultaDerivadaFilter) => void
   setSortOption: (sort: ConsultaSortOption) => void
   setSearchQuery: (query: string) => void
   selectConsulta: (consultaId: string) => void
@@ -54,11 +62,12 @@ function matchesSearch(consulta: Consulta, query: string): boolean {
   return searchable.includes(normalized)
 }
 
-export function useConsultas(userId?: string): UseConsultasResult {
+export function useConsultas(userId?: string, slug?: string): UseConsultasResult {
   const [consultas, setConsultas] = useState<Consulta[]>([])
   const [selectedConsultaId, setSelectedConsultaId] = useState<string | null>(null)
   const [estadoFilter, setEstadoFilter] = useState<ConsultaEstadoFilter>('todas')
   const [canalFilter, setCanalFilter] = useState<ConsultaCanalFilter>('todos')
+  const [derivadaFilter, setDerivadaFilter] = useState<ConsultaDerivadaFilter>('todas')
   const [sortOption, setSortOption] = useState<ConsultaSortOption>('recentes')
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -70,7 +79,11 @@ export function useConsultas(userId?: string): UseConsultasResult {
     setIsLoading(true)
     setError('')
     try {
-      const data = await getConsultas(userId)
+      const data = derivadaFilter === 'todas'
+        ? await getConsultas()
+        : slug
+          ? await getConsultasDerivadas(slug, derivadaFilter)
+          : []
       setConsultas(data)
       setSelectedConsultaId(current => (
         current && data.some(consulta => consulta.id === current) ? current : null
@@ -80,7 +93,7 @@ export function useConsultas(userId?: string): UseConsultasResult {
     } finally {
       setIsLoading(false)
     }
-  }, [userId])
+  }, [derivadaFilter, slug])
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => void reloadConsultas(), 0)
@@ -141,6 +154,7 @@ export function useConsultas(userId?: string): UseConsultasResult {
     selectedConsultaId,
     estadoFilter,
     canalFilter,
+    derivadaFilter,
     sortOption,
     searchQuery,
     isLoading,
@@ -150,6 +164,7 @@ export function useConsultas(userId?: string): UseConsultasResult {
     isShowingDemo,
     setEstadoFilter,
     setCanalFilter,
+    setDerivadaFilter,
     setSortOption,
     setSearchQuery,
     selectConsulta,
