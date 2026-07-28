@@ -11,6 +11,7 @@ interface StatCardProps {
   loading?: boolean
   error?: boolean
   unavailable?: boolean
+  helpText?: string
 }
 
 const TONE_BACKGROUNDS: Record<NonNullable<StatCardProps['tone']>, string> = {
@@ -39,6 +40,7 @@ export function StatCard({
   loading = false,
   error = false,
   unavailable = false,
+  helpText,
 }: StatCardProps) {
   const accessibleValue = loading
     ? 'Cargando'
@@ -93,9 +95,22 @@ export function StatCard({
         }}>
           {loading ? <span className="dashboard-stat-card__skeleton" /> : value}
         </p>
-        <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--dashboard-muted, var(--color-text-secondary))', lineHeight: 1.35 }}>
-          {label}
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--dashboard-muted, var(--color-text-secondary))', lineHeight: 1.35 }}>
+            {label}
+          </p>
+          {helpText && (
+            <span
+              className="dashboard-stat-card__help"
+              role="img"
+              tabIndex={0}
+              aria-label={helpText}
+              title={helpText}
+            >
+              ?
+            </span>
+          )}
+        </div>
         <p style={{ fontSize: '11px', color: 'var(--dashboard-muted, var(--color-text-secondary))', marginTop: '3px', lineHeight: 1.35 }}>
           {error ? 'No pudimos cargar este dato' : unavailable ? 'Sin datos disponibles' : description}
         </p>
@@ -122,6 +137,23 @@ export function StatCard({
           );
           background-size: 200% 100%;
           animation: dashboard-stat-loading 1.2s linear infinite;
+        }
+        .dashboard-stat-card__help {
+          width: 17px;
+          height: 17px;
+          display: inline-grid;
+          flex: 0 0 auto;
+          place-items: center;
+          color: var(--dashboard-muted, var(--color-text-secondary));
+          border: 1px solid var(--dashboard-border, var(--color-border));
+          border-radius: 50%;
+          font-size: 10px;
+          font-weight: 800;
+          cursor: help;
+        }
+        .dashboard-stat-card__help:focus-visible {
+          outline: 2px solid #13A8A2;
+          outline-offset: 2px;
         }
         @keyframes dashboard-stat-loading {
           to { background-position: -200% 0; }

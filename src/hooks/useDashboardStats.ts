@@ -7,6 +7,7 @@ type DashboardMetricStatus = 'loading' | 'success' | 'error' | 'unavailable'
 export interface DashboardMetric {
   value: number | string
   status: DashboardMetricStatus
+  detail?: string
 }
 
 export interface DashboardStatsData {
@@ -18,6 +19,9 @@ export interface DashboardStatsData {
 
 interface DashboardConsulta {
   estado?: string | null
+  derivada?: boolean | null
+  cerradaPor?: string | null
+  mensajes?: Array<{ emisor?: string | null }> | null
 }
 
 interface ConsultationsResponse {
@@ -34,16 +38,34 @@ const CACHE_TTL_MS = 10_000
 const requestCache = new Map<string, CachedDashboardStats>()
 
 const LOADING_METRIC: DashboardMetric = { value: '—', status: 'loading' }
-const UNAVAILABLE_AUTOMATION: DashboardMetric = { value: '—', status: 'unavailable' }
-
 export const normalizeDashboardStatus = (status?: string | null) =>
   status?.trim().toUpperCase().replace(/[\s-]+/g, '_') ?? ''
 
 export const countDashboardConsultations = (consultas: DashboardConsulta[]) => {
-  const statuses = consultas.map(consulta => normalizeDashboardStatus(consulta.estado))
+  let pendientes = 0
+  let resueltas = 0
+  let automatizadasEstimadas = 0
+
+  consultas.forEach(consulta => {
+    const status = normalizeDashboardStatus(consulta.estado)
+    if (status === 'NUEVA' || status === 'EN_PROCESO') pendientes += 1
+    if (status === 'RESUELTA' || status === 'CERRADA') resueltas += 1
+
+    const cerradaPorEmprendedor = normalizeDashboardStatus(consulta.cerradaPor) === 'EMPRENDEDOR'
+    const tieneMensajeEmprendedor = consulta.mensajes?.some(mensaje => {
+      const emisor = normalizeDashboardStatus(mensaje.emisor)
+      return emisor === 'EMPRENDEDOR' || emisor === 'USUARIO'
+    }) ?? false
+
+    if (!consulta.derivada && !cerradaPorEmprendedor && !tieneMensajeEmprendedor) {
+      automatizadasEstimadas += 1
+    }
+  })
+
   return {
-    pendientes: statuses.filter(status => status === 'NUEVA' || status === 'EN_PROCESO').length,
-    resueltas: statuses.filter(status => status === 'RESUELTA' || status === 'CERRADA').length,
+    pendientes,
+    resueltas,
+    automatizadasEstimadas,
   }
 }
 
@@ -58,9 +80,11 @@ const loadDashboardStats = async (): Promise<DashboardStatsData> => {
 
   let consultasPendientes: DashboardMetric
   let consultasResueltas: DashboardMetric
+  let porcentajeAutomatizacion: DashboardMetric
 
   if (consultationsResult.status === 'fulfilled') {
-    const counts = countDashboardConsultations(consultationsResult.value.consultas)
+    const consultas = consultationsResult.value.consultas
+    const counts = countDashboardConsultations(consultas)
     consultasPendientes = {
       value: counts.pendientes,
       status: 'success',
@@ -69,9 +93,17 @@ const loadDashboardStats = async (): Promise<DashboardStatsData> => {
       value: counts.resueltas,
       status: 'success',
     }
+    porcentajeAutomatizacion = {
+      value: `${consultas.length > 0
+        ? Math.round((counts.automatizadasEstimadas / consultas.length) * 100)
+        : 0}%`,
+      status: 'success',
+      detail: `${counts.automatizadasEstimadas} de ${consultas.length} consultas fueron atendidas sin intervención humana`,
+    }
   } else {
     consultasPendientes = { value: '—', status: 'error' }
     consultasResueltas = { value: '—', status: 'error' }
+    porcentajeAutomatizacion = { value: '—', status: 'error' }
   }
 
   const presupuestosPendientes: DashboardMetric = budgetsResult.status === 'fulfilled'
@@ -85,7 +117,7 @@ const loadDashboardStats = async (): Promise<DashboardStatsData> => {
     consultasPendientes,
     presupuestosPendientes,
     consultasResueltas,
-    porcentajeAutomatizacion: UNAVAILABLE_AUTOMATION,
+    porcentajeAutomatizacion,
   }
 }
 
@@ -102,7 +134,7 @@ const INITIAL_STATS: DashboardStatsData = {
   consultasPendientes: LOADING_METRIC,
   presupuestosPendientes: LOADING_METRIC,
   consultasResueltas: LOADING_METRIC,
-  porcentajeAutomatizacion: UNAVAILABLE_AUTOMATION,
+  porcentajeAutomatizacion: LOADING_METRIC,
 }
 
 export function useDashboardStats(userId?: string) {

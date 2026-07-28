@@ -56,6 +56,7 @@ export function DashboardPage() {
     stats.consultasPendientes,
     stats.presupuestosPendientes,
     stats.consultasResueltas,
+    stats.porcentajeAutomatizacion,
   ].some(metric => metric.status === 'error')
 
   const metrics = [
@@ -82,13 +83,16 @@ export function DashboardPage() {
       unavailable: businessUnavailable,
     },
     {
-      label: 'Automatización',
+      label: 'Automatización estimada',
       value: stats.porcentajeAutomatizacion.value,
-      description: 'Respuestas gestionadas por el bot',
+      description: stats.porcentajeAutomatizacion.detail ?? 'Consultas atendidas sin intervención humana',
       color: '#16C784',
       icon: <IconWrapper><AppIcon name="automation" size={22} /></IconWrapper>,
       tone: 'success' as const,
-      unavailable: stats.porcentajeAutomatizacion.status === 'unavailable',
+      loading: isBusinessLoading || (!businessUnavailable && stats.porcentajeAutomatizacion.status === 'loading'),
+      error: !businessUnavailable && stats.porcentajeAutomatizacion.status === 'error',
+      unavailable: businessUnavailable,
+      helpText: 'Esta métrica es una estimación basada en consultas sin derivación ni intervención del emprendedor. Será reemplazada por una medición oficial cuando el backend registre automáticamente la resolución de las consultas.',
     },
     {
       label: 'Consultas resueltas',
