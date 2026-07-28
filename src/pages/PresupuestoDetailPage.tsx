@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Drawer } from '../components/layout/Drawer'
-import { PageBackButton } from '../components/navigation/PageBackButton'
 import { PresupuestoStatusBadge } from '../components/presupuestos/PresupuestoStatusBadge'
 import { AppIcon } from '../components/ui/AppIcon'
 import { Avatar } from '../components/ui/Avatar'
@@ -204,7 +203,14 @@ export function PresupuestoDetailPage() {
         </header>
 
         <main className="budgets-main">
-          <PageBackButton onClick={() => navigate('/presupuestos')} />
+          <button
+            type="button"
+            className="budget-detail__back"
+            onClick={() => navigate('/presupuestos')}
+          >
+            <span aria-hidden="true">‹</span>
+            Volver a presupuestos
+          </button>
 
           {isLoading ? (
             <section className="budgets-loading" aria-label="Cargando presupuesto" aria-busy="true">

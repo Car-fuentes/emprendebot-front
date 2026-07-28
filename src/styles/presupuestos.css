@@ -57,6 +57,28 @@
   padding: 16px 16px 96px;
 }
 
+.budget-detail__back {
+  margin-bottom: 14px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--budget-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.budget-detail__back > span {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.budget-detail__back:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-primary) 32%, transparent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
 .budgets-heading,
 .budget-detail__heading {
   margin-bottom: 24px;
