@@ -19,6 +19,7 @@ export interface CurrentMetricsData {
   totalConsultas: number
   totalPresupuestos: number
   totalConcretados: number
+  totalDerivadas: number
   conversionRate: number
   budgetStates: BudgetStateMetric[]
   budgetsArePartial: boolean

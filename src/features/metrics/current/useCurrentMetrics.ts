@@ -72,8 +72,9 @@ async function loadMetrics(): Promise<CurrentMetricsData> {
     totalConsultas: consultas.length,
     totalPresupuestos,
     totalConcretados,
-    conversionRate: consultas.length > 0
-      ? Math.round((totalPresupuestos / consultas.length) * 100)
+    totalDerivadas: consultas.filter(consulta => consulta.derivada).length,
+    conversionRate: totalPresupuestos > 0
+      ? Math.round((totalConcretados / totalPresupuestos) * 100)
       : 0,
     budgetStates: countStates(budgetResponse.presupuestos),
     budgetsArePartial: totalPresupuestos > budgetResponse.presupuestos.length,
