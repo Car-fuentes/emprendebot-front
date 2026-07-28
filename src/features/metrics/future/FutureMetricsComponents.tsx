@@ -9,8 +9,8 @@ import type {
   MomentoAbandono,
   ResumenTrafico,
   SeccionVisitada,
-} from '../../types/metrics'
-import { AppIcon, type AppIconName } from '../ui/AppIcon'
+} from './futureMetrics.types'
+import { AppIcon, type AppIconName } from '../../../components/ui/AppIcon'
 
 interface SummaryMetric {
   label: string

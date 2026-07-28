@@ -11,7 +11,6 @@ import { GeneratedQuoteCard } from '../components/chat/GeneratedQuoteCard'
 import '../components/chat/quoteCards.css'
 import { useChat } from '../hooks/useChat'
 import type { Business, FAQ, Product } from '../types'
-import { useAuth } from '../context/AuthContext'
 import { getPublicBusinessApi, getPublicFaqsApi, getPublicProductsApi } from '../services/publicApi'
 import { resolveChatAppearance } from '../services/chatAppearance'
 
@@ -19,7 +18,6 @@ import { resolveChatAppearance } from '../services/chatAppearance'
 export function ChatbotPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth()
   const [business, setBusiness] = useState<Business | null>(null)
   const [isBusinessLoading, setIsBusinessLoading] = useState(Boolean(slug))
   const [publicFaqs, setPublicFaqs] = useState<FAQ[] | null>(null)
@@ -89,16 +87,10 @@ export function ChatbotPage() {
     ...(publicProducts !== null ? { productos: publicProducts } : {}),
   }
 
-  return (
-    <PublicChat
-      key={business.id}
-      business={publicBusiness}
-      onBackToDashboard={user ? () => navigate('/dashboard') : undefined}
-    />
-  )
+  return <PublicChat key={business.id} business={publicBusiness} />
 }
 
-function PublicChat({ business, onBackToDashboard }: { business: Business; onBackToDashboard?: () => void }) {
+function PublicChat({ business }: { business: Business }) {
   const {
     messages,
     isTyping,
@@ -165,7 +157,7 @@ function PublicChat({ business, onBackToDashboard }: { business: Business; onBac
         '--color-bg-answer': appearance.primary,
       } as CSSProperties}
     >
-      <ChatHeader business={business} onRefresh={reset} onBackToDashboard={onBackToDashboard} />
+      <ChatHeader business={business} onRefresh={reset} />
 
       <div ref={messagesContainerRef} className="public-chat__messages">
         {messages.map(message => (

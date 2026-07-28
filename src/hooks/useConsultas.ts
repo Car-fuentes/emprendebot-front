@@ -6,8 +6,13 @@ import {
   updateConsultaEstado,
   type ConsultaDerivadaApiFilter,
 } from '../services/consultaStorage'
+import { getPresupuestos } from '../services/presupuestoApi'
+import {
+  classifyConsultationResolution,
+  type ConsultationResolution,
+} from '../utils/consultationResolution'
 
-export type ConsultaEstadoFilter = 'todas' | ConsultaEstado
+export type ConsultaEstadoFilter = 'todas' | ConsultaEstado | 'resuelta_por_bot'
 export type ConsultaCanalFilter = 'todos' | CanalConsulta
 export type ConsultaSortOption = 'recentes' | 'antiguas'
 export type ConsultaDerivadaFilter = ConsultaDerivadaApiFilter
@@ -17,6 +22,7 @@ interface UseConsultasResult {
   filteredConsultas: Consulta[]
   selectedConsulta: Consulta | null
   selectedConsultaId: string | null
+  resolutionByConsultaId: ReadonlyMap<string, ConsultationResolution>
   estadoFilter: ConsultaEstadoFilter
   canalFilter: ConsultaCanalFilter
   derivadaFilter: ConsultaDerivadaFilter
@@ -74,17 +80,37 @@ export function useConsultas(userId?: string, slug?: string): UseConsultasResult
   const [error, setError] = useState('')
   const [updateError, setUpdateError] = useState('')
   const [updatingConsultaId, setUpdatingConsultaId] = useState<string | null>(null)
+  const [budgetConsultationIds, setBudgetConsultationIds] = useState<Set<string>>(new Set())
+  const [budgetDataComplete, setBudgetDataComplete] = useState(false)
 
   const reloadConsultas = useCallback(async () => {
     setIsLoading(true)
     setError('')
     try {
-      const data = derivadaFilter === 'todas'
-        ? await getConsultas()
+      const consultasPromise = derivadaFilter === 'todas'
+        ? getConsultas()
         : slug
-          ? await getConsultasDerivadas(slug, derivadaFilter)
-          : []
+          ? getConsultasDerivadas(slug, derivadaFilter)
+          : Promise.resolve([])
+      const [consultasResult, budgetsResult] = await Promise.allSettled([
+        consultasPromise,
+        getPresupuestos({ page: 1, limit: 100 }),
+      ])
+      if (consultasResult.status === 'rejected') throw consultasResult.reason
+
+      const data = consultasResult.value
       setConsultas(data)
+      if (budgetsResult.status === 'fulfilled') {
+        setBudgetConsultationIds(new Set(
+          budgetsResult.value.presupuestos.map(presupuesto => presupuesto.consultaId),
+        ))
+        setBudgetDataComplete(
+          budgetsResult.value.paginacion.total <= budgetsResult.value.presupuestos.length,
+        )
+      } else {
+        setBudgetConsultationIds(new Set())
+        setBudgetDataComplete(false)
+      }
       setSelectedConsultaId(current => (
         current && data.some(consulta => consulta.id === current) ? current : null
       ))
@@ -95,6 +121,16 @@ export function useConsultas(userId?: string, slug?: string): UseConsultasResult
     }
   }, [derivadaFilter, slug])
 
+  const resolutionByConsultaId = useMemo(() => new Map(
+    consultas.map(consulta => [
+      consulta.id,
+      classifyConsultationResolution(consulta, {
+        budgetConsultationIds,
+        budgetDataComplete,
+      }),
+    ]),
+  ), [budgetConsultationIds, budgetDataComplete, consultas])
+
   useEffect(() => {
     const timeoutId = window.setTimeout(() => void reloadConsultas(), 0)
     return () => window.clearTimeout(timeoutId)
@@ -102,7 +138,13 @@ export function useConsultas(userId?: string, slug?: string): UseConsultasResult
 
   const filteredConsultas = useMemo(() => {
     return consultas
-      .filter(consulta => estadoFilter === 'todas' || consulta.estado === estadoFilter)
+      .filter(consulta => {
+        if (estadoFilter === 'todas') return true
+        if (estadoFilter === 'resuelta_por_bot') {
+          return resolutionByConsultaId.get(consulta.id)?.resolvedByBot === true
+        }
+        return consulta.estado === estadoFilter
+      })
       .filter(consulta => canalFilter === 'todos' || consulta.canal === canalFilter)
       .filter(consulta => matchesSearch(consulta, searchQuery))
       .sort((left, right) => {
@@ -110,7 +152,7 @@ export function useConsultas(userId?: string, slug?: string): UseConsultasResult
         const rightTime = new Date(right.fechaActualizacion).getTime()
         return sortOption === 'recentes' ? rightTime - leftTime : leftTime - rightTime
       })
-  }, [canalFilter, consultas, estadoFilter, searchQuery, sortOption])
+  }, [canalFilter, consultas, estadoFilter, resolutionByConsultaId, searchQuery, sortOption])
 
   const selectedConsulta = useMemo(() => {
     if (!selectedConsultaId) return null
@@ -152,6 +194,7 @@ export function useConsultas(userId?: string, slug?: string): UseConsultasResult
     filteredConsultas,
     selectedConsulta,
     selectedConsultaId,
+    resolutionByConsultaId,
     estadoFilter,
     canalFilter,
     derivadaFilter,

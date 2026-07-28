@@ -1,12 +1,24 @@
 import { useCallback, useEffect, useState } from 'react'
-import { apiRequest } from '../services/apiClient'
+import { getConsultas } from '../services/consultaStorage'
 import { getPresupuestos } from '../services/presupuestoApi'
+import type { Consulta } from '../types'
+import type { RecentActivityData, RecentActivityItem } from '../types/recentActivity'
+import {
+  combineRecentActivity,
+  mapConsultationToActivity,
+  mapQuoteToActivity,
+} from '../utils/recentActivity'
+import {
+  classifyConsultationResolution,
+  type ConsultationResolutionContext,
+} from '../utils/consultationResolution'
 
 type DashboardMetricStatus = 'loading' | 'success' | 'error' | 'unavailable'
 
 export interface DashboardMetric {
   value: number | string
   status: DashboardMetricStatus
+  detail?: string
 }
 
 export interface DashboardStatsData {
@@ -14,16 +26,10 @@ export interface DashboardStatsData {
   presupuestosPendientes: DashboardMetric
   consultasResueltas: DashboardMetric
   porcentajeAutomatizacion: DashboardMetric
+  recentActivity: RecentActivityData
 }
 
-interface DashboardConsulta {
-  estado?: string | null
-}
-
-interface ConsultationsResponse {
-  success: boolean
-  consultas: DashboardConsulta[]
-}
+type DashboardConsulta = Consulta
 
 interface CachedDashboardStats {
   expiresAt: number
@@ -34,22 +40,35 @@ const CACHE_TTL_MS = 10_000
 const requestCache = new Map<string, CachedDashboardStats>()
 
 const LOADING_METRIC: DashboardMetric = { value: '—', status: 'loading' }
-const UNAVAILABLE_AUTOMATION: DashboardMetric = { value: '—', status: 'unavailable' }
-
 export const normalizeDashboardStatus = (status?: string | null) =>
   status?.trim().toUpperCase().replace(/[\s-]+/g, '_') ?? ''
 
-export const countDashboardConsultations = (consultas: DashboardConsulta[]) => {
-  const statuses = consultas.map(consulta => normalizeDashboardStatus(consulta.estado))
+export const countDashboardConsultations = (
+  consultas: DashboardConsulta[],
+  resolutionContext: ConsultationResolutionContext,
+) => {
+  let pendientes = 0
+  let resueltas = 0
+  let automatizadasEstimadas = 0
+
+  consultas.forEach(consulta => {
+    const status = normalizeDashboardStatus(consulta.estado)
+    const resolution = classifyConsultationResolution(consulta, resolutionContext)
+    if (!resolution.resolvedByBot && (status === 'NUEVA' || status === 'EN_PROCESO')) pendientes += 1
+    if (status === 'RESUELTA' || resolution.resolvedByBot) resueltas += 1
+    if (resolution.resolvedByBot) automatizadasEstimadas += 1
+  })
+
   return {
-    pendientes: statuses.filter(status => status === 'NUEVA' || status === 'EN_PROCESO').length,
-    resueltas: statuses.filter(status => status === 'RESUELTA' || status === 'CERRADA').length,
+    pendientes,
+    resueltas,
+    automatizadasEstimadas,
   }
 }
 
 const loadDashboardStats = async (): Promise<DashboardStatsData> => {
-  const consultationsPromise = apiRequest<ConsultationsResponse>('/consultations')
-  const budgetsPromise = getPresupuestos({ page: 1, limit: 1 })
+  const consultationsPromise = getConsultas()
+  const budgetsPromise = getPresupuestos({ page: 1, limit: 100 })
 
   const [consultationsResult, budgetsResult] = await Promise.allSettled([
     consultationsPromise,
@@ -58,9 +77,29 @@ const loadDashboardStats = async (): Promise<DashboardStatsData> => {
 
   let consultasPendientes: DashboardMetric
   let consultasResueltas: DashboardMetric
+  let porcentajeAutomatizacion: DashboardMetric
+  let consultationActivities: RecentActivityItem[] = []
+  let quoteActivities: RecentActivityItem[] = []
 
   if (consultationsResult.status === 'fulfilled') {
-    const counts = countDashboardConsultations(consultationsResult.value.consultas)
+    const consultas = consultationsResult.value
+    const budgetConsultationIds = new Set(
+      budgetsResult.status === 'fulfilled'
+        ? budgetsResult.value.presupuestos.map(presupuesto => presupuesto.consultaId)
+        : [],
+    )
+    const resolutionContext: ConsultationResolutionContext = {
+      budgetConsultationIds,
+      budgetDataComplete: budgetsResult.status === 'fulfilled'
+        && budgetsResult.value.paginacion.total <= budgetsResult.value.presupuestos.length,
+    }
+    const counts = countDashboardConsultations(consultas, resolutionContext)
+    consultationActivities = consultas.flatMap(consulta => (
+      mapConsultationToActivity(
+        consulta,
+        classifyConsultationResolution(consulta, resolutionContext),
+      )
+    ))
     consultasPendientes = {
       value: counts.pendientes,
       status: 'success',
@@ -69,9 +108,17 @@ const loadDashboardStats = async (): Promise<DashboardStatsData> => {
       value: counts.resueltas,
       status: 'success',
     }
+    porcentajeAutomatizacion = consultas.length === 0 || !resolutionContext.budgetDataComplete
+      ? { value: '—', status: 'unavailable' }
+      : {
+          value: `${Math.round((counts.automatizadasEstimadas / consultas.length) * 100)}%`,
+          status: 'success',
+          detail: `${counts.automatizadasEstimadas} de ${consultas.length} consultas fueron resueltas por el bot`,
+        }
   } else {
     consultasPendientes = { value: '—', status: 'error' }
     consultasResueltas = { value: '—', status: 'error' }
+    porcentajeAutomatizacion = { value: '—', status: 'error' }
   }
 
   const presupuestosPendientes: DashboardMetric = budgetsResult.status === 'fulfilled'
@@ -81,11 +128,24 @@ const loadDashboardStats = async (): Promise<DashboardStatsData> => {
       }
     : { value: '—', status: 'error' }
 
+  if (budgetsResult.status === 'fulfilled') {
+    quoteActivities = budgetsResult.value.presupuestos.flatMap(mapQuoteToActivity)
+  }
+
+  const bothSourcesFailed = consultationsResult.status === 'rejected'
+    && budgetsResult.status === 'rejected'
+  const oneSourceFailed = consultationsResult.status === 'rejected'
+    || budgetsResult.status === 'rejected'
+
   return {
     consultasPendientes,
     presupuestosPendientes,
     consultasResueltas,
-    porcentajeAutomatizacion: UNAVAILABLE_AUTOMATION,
+    porcentajeAutomatizacion,
+    recentActivity: {
+      items: combineRecentActivity(consultationActivities, quoteActivities),
+      status: bothSourcesFailed ? 'error' : oneSourceFailed ? 'partial' : 'success',
+    },
   }
 }
 
@@ -102,7 +162,8 @@ const INITIAL_STATS: DashboardStatsData = {
   consultasPendientes: LOADING_METRIC,
   presupuestosPendientes: LOADING_METRIC,
   consultasResueltas: LOADING_METRIC,
-  porcentajeAutomatizacion: UNAVAILABLE_AUTOMATION,
+  porcentajeAutomatizacion: LOADING_METRIC,
+  recentActivity: { items: [], status: 'loading' },
 }
 
 export function useDashboardStats(userId?: string) {

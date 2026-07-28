@@ -2,6 +2,7 @@ import type { Consulta, ConsultaEstado, Mensaje } from '../../types'
 import { formatRelativeTime } from '../../utils/formatRelativeTime'
 import { AppIcon } from '../ui/AppIcon'
 import { Button } from '../ui/Button'
+import type { ConsultationResolution } from '../../utils/consultationResolution'
 
 interface ConsultaDetailProps {
   consulta: Consulta | null
@@ -9,6 +10,7 @@ interface ConsultaDetailProps {
   onBack?: () => void
   isUpdating?: boolean
   updateError?: string
+  resolution?: ConsultationResolution
 }
 
 const ESTADO_STYLES: Record<ConsultaEstado, { label: string; color: string; background: string }> = {
@@ -54,17 +56,18 @@ function openWhatsApp(phone: string) {
   window.open(`https://wa.me/${digits}`, '_blank', 'noopener,noreferrer')
 }
 
-export function ConsultaDetail({ consulta, onUpdateStatus, onBack, isUpdating = false, updateError = '' }: ConsultaDetailProps) {
+export function ConsultaDetail({ consulta, onUpdateStatus, onBack, isUpdating = false, updateError = '', resolution }: ConsultaDetailProps) {
   if (!consulta) return null
 
   const estadoStyle = ESTADO_STYLES[consulta.estado]
   const statusAction = getStatusAction(consulta.estado)
   const isClosed = consulta.estado === 'cerrada'
+  const resolvedByBot = resolution?.resolvedByBot === true
   const messages = [...consulta.mensajes].sort((left, right) => (
     new Date(left.fechaCreacion).getTime() - new Date(right.fechaCreacion).getTime()
   ))
   const metadata = [
-    ['Estado', estadoStyle.label],
+    ['Estado', resolvedByBot ? 'Resuelta por el bot' : estadoStyle.label],
     ['Canal', consulta.canal === 'whatsapp' ? 'WhatsApp' : 'Web'],
     ['Tipo', consulta.tipoConsulta ?? 'General'],
     ['Prioridad', consulta.prioridad ?? 'Normal'],
@@ -109,6 +112,26 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack, isUpdating = 
         </p>
       </div>
 
+      {resolvedByBot ? (
+        <div className="consulta-detail__resolution consulta-detail__resolution--bot" role="status">
+          <AppIcon name="automation" size={20} />
+          <div>
+            <strong>Resuelta por el bot</strong>
+            <p>Esta consulta fue atendida automáticamente y no requiere seguimiento.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="consulta-detail__resolution">
+          <AppIcon name="agent" size={20} />
+          <div>
+            <strong>Requiere seguimiento</strong>
+            {consulta.derivada && !consulta.clienteNombre && !consulta.clienteTelefono && (
+              <p>Sin datos de contacto.</p>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="consulta-detail__meta" style={{
         padding: '14px',
         marginBottom: '18px',
@@ -145,8 +168,8 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack, isUpdating = 
                   display: 'inline-flex',
                   padding: '3px 7px',
                   borderRadius: 'var(--radius-full)',
-                  background: estadoStyle.background,
-                  color: estadoStyle.color,
+                  background: resolvedByBot ? 'var(--status-bot-bg)' : estadoStyle.background,
+                  color: resolvedByBot ? 'var(--status-bot-text)' : estadoStyle.color,
                   fontSize: '10px',
                   fontWeight: 700,
                 }}>
@@ -169,7 +192,7 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack, isUpdating = 
           ))}
         </div>
 
-        <div className="consulta-detail__actions" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '7px' }}>
+        {!resolvedByBot && <div className="consulta-detail__actions" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '7px' }}>
           {consulta.clienteTelefono && (
             <Button
               type="button"
@@ -222,7 +245,7 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack, isUpdating = 
             </span>
             {isUpdating ? 'Actualizando...' : statusAction.label}
           </Button>
-        </div>
+        </div>}
       </div>
 
       <h3 style={{ color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: 500, marginBottom: '10px' }}>

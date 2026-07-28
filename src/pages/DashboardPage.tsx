@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { Drawer } from '../components/layout/Drawer'
 import { StatCard } from '../components/dashboard/StatCard'
+import { RecentActivity } from '../components/dashboard/RecentActivity'
 import { Avatar } from '../components/ui/Avatar'
 import { AppIcon } from '../components/ui/AppIcon'
 import { brand } from '../styles/brand'
@@ -56,6 +57,7 @@ export function DashboardPage() {
     stats.consultasPendientes,
     stats.presupuestosPendientes,
     stats.consultasResueltas,
+    stats.porcentajeAutomatizacion,
   ].some(metric => metric.status === 'error')
 
   const metrics = [
@@ -82,13 +84,16 @@ export function DashboardPage() {
       unavailable: businessUnavailable,
     },
     {
-      label: 'Automatización',
+      label: 'Automatización estimada',
       value: stats.porcentajeAutomatizacion.value,
-      description: 'Respuestas gestionadas por el bot',
+      description: stats.porcentajeAutomatizacion.detail ?? 'Consultas atendidas sin intervención humana',
       color: '#16C784',
       icon: <IconWrapper><AppIcon name="automation" size={22} /></IconWrapper>,
       tone: 'success' as const,
-      unavailable: stats.porcentajeAutomatizacion.status === 'unavailable',
+      loading: isBusinessLoading || (!businessUnavailable && stats.porcentajeAutomatizacion.status === 'loading'),
+      error: !businessUnavailable && stats.porcentajeAutomatizacion.status === 'error',
+      unavailable: businessUnavailable || stats.porcentajeAutomatizacion.status === 'unavailable',
+      helpText: 'Esta métrica es una estimación basada en consultas sin derivación ni intervención del emprendedor. Será reemplazada por una medición oficial cuando el backend registre automáticamente la resolución de las consultas.',
     },
     {
       label: 'Consultas resueltas',
@@ -182,11 +187,7 @@ export function DashboardPage() {
 
           <section aria-labelledby="dashboard-activity-title">
             <h2 id="dashboard-activity-title" className="dashboard-section-title">Actividad reciente</h2>
-            <div className="dashboard-empty-activity">
-              <span><AppIcon name="chat" size={28} /></span>
-              <strong>Tu actividad aparecerá aquí</strong>
-              <p>Las actividades reales de tus clientes se mostrarán cuando comiencen a usar el chatbot.</p>
-            </div>
+            <RecentActivity data={stats.recentActivity} onRetry={() => void refetch()} />
           </section>
         </main>
 
@@ -195,7 +196,9 @@ export function DashboardPage() {
           className="dashboard-bot"
           disabled={!business?.slug}
           aria-label="Abrir asistente: Probá tu Bot"
-          onClick={() => business?.slug && navigate(`/${business.slug}`)}
+          onClick={() => {
+            if (business?.slug) window.open(`/${business.slug}`, '_blank', 'noopener,noreferrer')
+          }}
         >
           <span className="dashboard-bot__label">
             <i aria-hidden="true" />
@@ -387,21 +390,105 @@ export function DashboardPage() {
           background: color-mix(in srgb, currentColor 11%, transparent);
         }
 
-        .dashboard-empty-activity {
+        .recent-activity-card {
           min-height: 190px;
           padding: 28px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
           border: 1px solid var(--dashboard-border);
           border-radius: 18px;
           background: var(--dashboard-card);
           box-shadow: 0 7px 20px rgba(15, 23, 42, .06);
         }
 
-        .dashboard-empty-activity > span {
+        .recent-activity-list {
+          display: grid;
+          gap: 10px;
+        }
+
+        .recent-activity-row {
+          width: 100%;
+          min-height: 68px;
+          padding: 13px 15px;
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 14px;
+          color: var(--dashboard-text);
+          text-align: left;
+          border: 1px solid transparent;
+          border-radius: 13px;
+          background: color-mix(in srgb, var(--dashboard-bg) 68%, var(--dashboard-card));
+          transition: border-color var(--transition), background var(--transition), transform var(--transition);
+        }
+
+        .recent-activity-row:hover {
+          border-color: color-mix(in srgb, #13A8A2 45%, var(--dashboard-border));
+          background: color-mix(in srgb, #13A8A2 7%, var(--dashboard-card));
+          transform: translateY(-1px);
+        }
+
+        .recent-activity-row:focus-visible {
+          outline: 3px solid rgba(19, 168, 162, .3);
+          outline-offset: 2px;
+        }
+
+        .recent-activity-row__icon {
+          width: 42px;
+          height: 42px;
+          display: grid;
+          place-items: center;
+          color: #FFFFFF;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #13A8A2, #1372A8);
+          box-shadow: 0 7px 15px rgba(15, 23, 42, .13);
+        }
+
+        .recent-activity-row__icon.is-secondary { background: linear-gradient(135deg, #1372A8, #2563EB); }
+        .recent-activity-row__icon.is-warning { background: linear-gradient(135deg, #F59E0B, #F97316); }
+        .recent-activity-row__icon.is-success { background: linear-gradient(135deg, #10B981, #13A8A2); }
+        .recent-activity-row__icon.is-danger { background: linear-gradient(135deg, #EF4444, #DC2626); }
+
+        .recent-activity-row__content {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .recent-activity-row__content strong {
+          font-size: 13px;
+          line-height: 1.4;
+        }
+
+        .recent-activity-row__content small,
+        .recent-activity-row time {
+          color: var(--dashboard-muted);
+          font-size: 11px;
+          line-height: 1.4;
+        }
+
+        .recent-activity-row time {
+          white-space: nowrap;
+        }
+
+        .recent-activity-partial {
+          margin: 0 0 12px;
+          padding: 9px 11px;
+          color: var(--dashboard-muted);
+          border: 1px solid var(--dashboard-border);
+          border-radius: 10px;
+          background: color-mix(in srgb, #F59E0B 7%, var(--dashboard-card));
+          font-size: 11px;
+        }
+
+        .recent-activity-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+        }
+
+        .recent-activity-state__icon {
           width: 58px;
           height: 58px;
           margin-bottom: 12px;
@@ -412,18 +499,55 @@ export function DashboardPage() {
           background: rgba(19, 168, 162, .11);
         }
 
-        .dashboard-empty-activity strong {
+        .recent-activity-state strong {
           margin-bottom: 5px;
           font-size: 14px;
         }
 
-        .dashboard-empty-activity p {
+        .recent-activity-state p {
           max-width: 460px;
           margin: 0;
           color: var(--dashboard-muted);
           font-size: 12px;
           line-height: 1.5;
         }
+
+        .recent-activity-state button {
+          margin-top: 14px;
+          padding: 9px 15px;
+          color: #FFFFFF;
+          border-radius: 10px;
+          background: #0F918C;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .recent-activity-skeleton {
+          min-height: 68px;
+          padding: 13px 15px;
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr) 110px;
+          align-items: center;
+          gap: 14px;
+          border-radius: 13px;
+          background: color-mix(in srgb, var(--dashboard-bg) 68%, var(--dashboard-card));
+        }
+
+        .recent-activity-skeleton > span,
+        .recent-activity-skeleton i {
+          display: block;
+          border-radius: 8px;
+          background: linear-gradient(90deg, var(--dashboard-border), var(--dashboard-card), var(--dashboard-border));
+          background-size: 200% 100%;
+          animation: dashboard-stat-loading 1.2s linear infinite;
+        }
+
+        .recent-activity-skeleton > span { width: 42px; height: 42px; border-radius: 50%; }
+        .recent-activity-skeleton > div { display: grid; gap: 7px; }
+        .recent-activity-skeleton > div i:first-child { width: min(340px, 85%); height: 13px; }
+        .recent-activity-skeleton > div i:last-child { width: min(220px, 60%); height: 9px; }
+        .recent-activity-skeleton > i { width: 100%; height: 10px; }
+        .recent-activity-skeleton + .recent-activity-skeleton { margin-top: 10px; }
 
         .dashboard-bot {
           position: fixed;
@@ -523,6 +647,24 @@ export function DashboardPage() {
             right: 16px;
             bottom: 16px;
           }
+
+          .recent-activity-card { padding: 14px; }
+          .recent-activity-row {
+            min-height: 76px;
+            grid-template-columns: auto minmax(0, 1fr);
+            gap: 11px;
+          }
+          .recent-activity-row time {
+            grid-column: 2;
+            white-space: normal;
+          }
+          .recent-activity-skeleton {
+            grid-template-columns: auto minmax(0, 1fr);
+          }
+          .recent-activity-skeleton > i {
+            grid-column: 2;
+            width: 90px;
+          }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -533,6 +675,8 @@ export function DashboardPage() {
             transition-duration: .01ms !important;
             animation-duration: .01ms !important;
           }
+          .recent-activity-skeleton > span,
+          .recent-activity-skeleton i { animation: none; }
         }
       `}</style>
     </div>

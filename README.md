@@ -50,11 +50,15 @@ El frontend está construido como una SPA con React, TypeScript y Vite. Consume 
 - Administración de preguntas frecuentes y categorías.
 - Normalización y prevención de preguntas frecuentes duplicadas.
 - Dashboard para centralizar la actividad comercial.
+- Indicadores reales de consultas, presupuestos, conversiones y automatización estimada.
+- Actividad reciente combinada desde consultas y presupuestos.
 - Listado, detalle y actualización de consultas.
+- Clasificación visual de consultas atendidas por el bot o que requieren seguimiento.
 - Acceso rápido a WhatsApp desde los datos de contacto.
 - Chatbot público accesible mediante el enlace del negocio.
-- Solicitud de presupuestos desde la conversación.
-- Captura de nombre y teléfono para derivaciones.
+- Solicitud, generación, seguimiento y descarga de presupuestos.
+- Captura de nombre y teléfono para presupuestos y derivaciones.
+- Pantalla de métricas con actividad semanal, estados de presupuestos y tasa de conversión.
 - Temas claro y oscuro con preferencia persistente.
 
 <!--
@@ -72,7 +76,8 @@ Agregar aquí capturas representativas del dashboard, la configuración del nego
 5. Los clientes acceden al chatbot mediante el enlace compartido.
 6. El chatbot responde utilizando la información configurada.
 7. Las consultas y los datos de contacto quedan registrados.
-8. El emprendedor administra la actividad desde su panel.
+8. Los presupuestos automáticos se generan cuando todos los productos tienen precio; las cotizaciones pendientes quedan disponibles para seguimiento.
+9. El emprendedor administra consultas, presupuestos, métricas y actividad reciente desde su panel.
 
 ```mermaid
 flowchart LR
@@ -113,12 +118,11 @@ Desde la carpeta del frontend:
 npm install
 ```
 
-El repositorio incluye archivos separados por modo:
+El repositorio no versiona archivos `.env`. Para desarrollo se recomienda crear `.env.local`
+y configurar las variables indicadas debajo. El proveedor de despliegue debe definir las mismas
+variables durante el build de producción.
 
-- `.env.development`: backend local utilizado por `npm run dev`.
-- `.env.production`: backend desplegado utilizado por `npm run build`.
-
-Para valores personales se puede crear `.env.local`. No deben subirse secretos al repositorio.
+No deben subirse secretos al repositorio.
 Las variables `VITE_*` son públicas y se incorporan al bundle del navegador.
 
 ## Variables de entorno
@@ -134,11 +138,8 @@ VITE_API_URL=http://localhost:3000/api
 La variable es obligatoria. Si falta o no contiene una URL HTTP/HTTPS válida, la aplicación
 detiene el inicio con un error de configuración en lugar de conectarse a un fallback.
 
-Producción:
-
-```env
-VITE_API_URL=https://chatbot-innova-backend-6388.onrender.com/api
-```
+En producción debe reemplazarse por la URL vigente del backend desplegado, conservando el
+prefijo `/api`.
 
 ### `VITE_GOOGLE_CLIENT_ID`
 
@@ -195,6 +196,13 @@ http://localhost:5173
 | `npm run lint` | Ejecuta ESLint sobre el proyecto |
 | `npm run preview` | Sirve localmente el build generado en `dist/` |
 
+El proyecto no define actualmente un script `typecheck` independiente. `npm run build`
+ya ejecuta `tsc -b`; para comprobar únicamente los tipos se puede usar:
+
+```bash
+npx tsc --noEmit
+```
+
 Antes de entregar cambios se recomienda ejecutar:
 
 ```bash
@@ -213,6 +221,9 @@ npm run build
 | `/configurar` | Protegido | Alta y edición del negocio y del bot |
 | `/dashboard` | Protegido | Panel principal del emprendedor |
 | `/consultas` | Protegido | Listado y detalle de consultas |
+| `/presupuestos` | Protegido | Listado y filtros de presupuestos |
+| `/presupuestos/:id` | Protegido | Detalle, estado, PDF y cotización de un presupuesto |
+| `/metricas` | Protegido | Indicadores y evolución de consultas y presupuestos |
 | `/faq` | Protegido | Administración de FAQ y categorías |
 | `/catalogo` | Protegido | Catálogo de productos y servicios |
 | `/catalogo/agregar` | Protegido | Alta de producto o servicio |
@@ -228,7 +239,7 @@ src/
 ├── components/
 │   ├── chat/          Componentes de conversación pública
 │   ├── consultas/     Tarjetas y detalle de consultas
-│   ├── dashboard/     Componentes de métricas
+│   ├── dashboard/     Tarjetas del Dashboard y actividad reciente
 │   ├── faq/           Formularios y tarjetas de FAQ
 │   ├── layout/        Navegación lateral
 │   └── ui/            Componentes visuales reutilizables
@@ -239,6 +250,7 @@ src/
 ├── hooks/
 │   ├── useChat.ts            Flujo conversacional
 │   ├── useConsultas.ts       Estado de consultas
+│   ├── useDashboardStats.ts  Resumen y actividad del Dashboard
 │   ├── useFaqs.ts            Gestión de FAQ
 │   └── useTheme.ts           Acceso al tema
 ├── pages/              Pantallas asociadas a rutas
@@ -248,9 +260,13 @@ src/
 │   ├── faqCategoryApi.ts       API de categorías
 │   ├── publicApi.ts            API pública de FAQ
 │   ├── publicConsultationApi.ts API pública de consultas
+│   ├── presupuestoApi.ts       API privada de presupuestos
+│   ├── productApi.ts           API privada del catálogo
 │   └── *Storage.ts             Persistencia de datos en el navegador
+├── features/           Módulos de interfaz con alcance propio, como Métricas
 ├── styles/             Identidad visual
 ├── types/              Tipos compartidos
+├── utils/              Formateadores y clasificación derivada
 ├── App.tsx             Definición de rutas
 ├── main.tsx            Providers y montaje de React
 └── index.css           Tokens y estilos globales
@@ -310,8 +326,49 @@ await apiRequest('/public/chatbot/mi-negocio/faqs', {
 | Bot | `/bot`, `/bot/config`, `/bot/slug`, `/bot/rubros` |
 | FAQ | `/faqs`, `/faqs/:id` |
 | Categorías | `/faq-categories`, `/faq-categories/:id` |
-| Consultas privadas | `/consultations`, `/consultations/:id` |
-| Chat público | `/public/chatbot/:slug/faqs` y endpoints públicos de consultas, mensajes y contacto |
+| Catálogo | `/products`, `/products/:id` |
+| Consultas privadas | `/consultations`, `/consultations/:id/estado` y consultas derivadas |
+| Presupuestos privados | `/presupuestos`, `/presupuestos/:id`, `/presupuestos/:id/estado`, `/presupuestos/:id/cotizar` |
+| Chat público | `/public/chatbot/:slug/init`, FAQ, productos, consultas, mensajes y contacto |
+| Presupuesto público | `/public/chatbot/:slug/consultations/:id/budgets` |
+| Historial público | `/mensajes/:slug/:sessionId` |
+
+### Consultas y resolución visual
+
+El backend entrega estados técnicos `nueva`, `en_proceso`, `resuelta` y `cerrada`. El frontend
+también calcula una clasificación visual centralizada mediante señales reales disponibles:
+
+- derivación explícita;
+- mensajes o cierre del emprendedor;
+- presupuesto relacionado;
+- tipo de consulta;
+- datos de contacto;
+- cobertura completa del listado de presupuestos.
+
+Cuando no existe ninguna señal de intervención, la interfaz puede mostrar **Resuelta por el bot**
+y ocultar las acciones manuales. Esta clasificación no modifica el estado persistido ni genera
+un `PATCH` automático. Si la información es incompleta, se aplica una clasificación conservadora.
+
+### Dashboard y métricas
+
+El Dashboard combina la información de consultas y presupuestos para mostrar indicadores clave y los cinco movimientos más recientes.
+
+La **Automatización estimada** se calcula en frontend:
+
+```text
+consultas clasificadas como resueltas por el bot / total de consultas × 100
+```
+
+El Dashboard calcula automáticamente este indicador utilizando la información disponible.
+
+La **Tasa de conversión** de Métricas representa:
+
+```text
+presupuestos con estado CONCRETADO / total de presupuestos × 100
+```
+
+Estas mediciones son derivadas de las entidades actuales; no constituyen un historial de auditoría
+de todas las transiciones.
 
 ## Autenticación
 
@@ -333,8 +390,6 @@ POST /api/auth/google
 ```
 
 La credencial se verifica en el backend. El nombre personal de Google no debe utilizarse automáticamente como nombre del negocio.
-
-En desarrollo, React `StrictMode` puede provocar la advertencia de que `google.accounts.id.initialize()` fue llamado más de una vez. Es una advertencia asociada al doble montaje de efectos en desarrollo; no equivale a un error HTTP del backend.
 
 ## Generación del enlace público
 
@@ -366,12 +421,15 @@ El MVP utiliza `localStorage` y `sessionStorage` para complementar la API.
 | `eb_current_user` | Usuario autenticado |
 | `eb_businesses` | Datos de negocios asociados a los usuarios del navegador |
 | Preferencia de tema | Tema claro u oscuro |
-| Historial del chat | Mensajes mostrados en el navegador |
-| Estado del chat | Etapa activa del flujo conversacional |
-| Consultas locales | Datos de consultas conservados en el navegador |
+| `emprendebot:session:<slug>` | Identificador anónimo usado para recuperar una conversación pública |
+| Historial del chat | Copia visual de mensajes mostrados en ese navegador |
+| Estado del chat | Etapa local activa del flujo conversacional |
+| `emprendebot:consultas:*` | Consultas de demostración o compatibilidad local |
 | `emprendebot:consulta:<slug>` | ID de consulta pública durante la pestaña actual |
 
-No se deben almacenar secretos en estas claves. El usuario puede modificar o eliminar cualquier dato guardado en el navegador.
+Las consultas y presupuestos se obtienen desde la API. El almacenamiento local se utiliza para conservar la experiencia del usuario entre sesiones del navegador.
+
+No se deben almacenar secretos en estas claves.
 
 ## Integraciones
 
@@ -383,10 +441,11 @@ No se deben almacenar secretos en estas claves. El usuario puede modificar o eli
 | Logo | API mediante `FormData` |
 | Slug y enlace público | API REST |
 | Preguntas frecuentes y categorías | API REST |
-| Catálogo | Aplicación web |
+| Catálogo | API REST |
 | Consultas | API REST |
-| Chat público | API REST y aplicación web |
-| Historial de conversación | Navegador |
+| Presupuestos y PDF | API REST |
+| Chat público | API REST y estado visual en el navegador |
+| Historial de conversación | API REST y copia visual local |
 | Tema visual | Navegador |
 
 ## Build y despliegue
@@ -423,8 +482,7 @@ En otros proveedores debe configurarse una regla equivalente para enviar las rut
 
 ### Variables en producción
 
-El archivo `.env.production` contiene los valores públicos del despliegue. El proveedor puede
-sobrescribirlos con variables propias durante el build:
+El proveedor debe definir los valores públicos durante el build:
 
 ```env
 VITE_API_URL=https://url-publica-del-backend/api
@@ -456,10 +514,6 @@ La URL exacta del frontend debe estar permitida en la configuración CORS del ba
 
 Agregar la URL del frontend en **Authorized JavaScript origins** dentro de Google Cloud Console y comprobar que frontend y backend utilicen el mismo Client ID.
 
-### Google se inicializa más de una vez
-
-En desarrollo puede deberse a React `StrictMode`. Si el acceso funciona, la advertencia no está relacionada con una solicitud rechazada por la API.
-
 ### El backend responde `401`
 
 - Comprobar que exista `eb_auth_token`.
@@ -483,6 +537,8 @@ npm run dev
 
 ## Estado del proyecto
 
-EmprendeBot corresponde al MVP funcional desarrollado para InnovaLab. El sistema integra autenticación, configuración del negocio, catálogo, preguntas frecuentes, gestión de consultas y un chatbot público conectado mediante API REST.
+EmprendeBot corresponde al MVP funcional desarrollado para InnovaLab.
 
-La arquitectura está organizada para facilitar el mantenimiento, la lectura del código y futuras ampliaciones del producto.
+El sistema integra autenticación, configuración del negocio, catálogo de productos y servicios, preguntas frecuentes, gestión de consultas, presupuestos y un chatbot público conectado mediante una API REST.
+
+La arquitectura fue diseñada para facilitar el mantenimiento del código y permitir futuras ampliaciones del producto sin modificar la estructura principal del sistema.
