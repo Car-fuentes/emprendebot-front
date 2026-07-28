@@ -195,7 +195,9 @@ export function DashboardPage() {
           className="dashboard-bot"
           disabled={!business?.slug}
           aria-label="Abrir asistente: Probá tu Bot"
-          onClick={() => business?.slug && navigate(`/${business.slug}`)}
+          onClick={() => {
+            if (business?.slug) window.open(`/${business.slug}`, '_blank', 'noopener,noreferrer')
+          }}
         >
           <span className="dashboard-bot__label">
             <i aria-hidden="true" />
