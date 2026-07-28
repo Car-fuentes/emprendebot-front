@@ -8,6 +8,11 @@ interface GeneratedQuoteCardProps {
   businessName: string
 }
 
+function formatPrice(value?: number | null): string {
+  if (value == null) return ''
+  return '$' + value.toLocaleString('es-AR')
+}
+
 export function GeneratedQuoteCard({ data, businessName }: GeneratedQuoteCardProps) {
   const [documentError, setDocumentError] = useState<string | null>(null)
   const canShare = Boolean(data.pdfUrl && typeof navigator !== 'undefined' && navigator.share)
@@ -34,30 +39,65 @@ export function GeneratedQuoteCard({ data, businessName }: GeneratedQuoteCardPro
     if (result === 'unsupported') openPdf()
   }
 
+  const quoteNumber = data.number ?? (data.quoteId ? `P-${data.quoteId}` : undefined)
+
   return (
-    <article className="chat-quote-card chat-quote-card--generated" aria-label="Solicitud de presupuesto">
+    <article className="chat-quote-card chat-quote-card--generated" aria-label="Presupuesto">
       <header className="chat-quote-card__header chat-quote-card__header--status">
         <div>
-          <h3>{data.number ? `Presupuesto ${data.number}` : 'Solicitud de presupuesto'}</h3>
-          {data.issuedAt && <p>{new Date(data.issuedAt).toLocaleDateString('es-AR')}</p>}
+          <h3>Presupuesto</h3>
+          {quoteNumber && <p>Nº {quoteNumber}</p>}
         </div>
         {data.status && (
-          <span className={`chat-quote-status chat-quote-status--${data.status.toLowerCase()}`}>
+          <span className={`chat-quote-status chat-quote-status--${data.status.toLowerCase()} chat-quote-status--highlight`}>
             {getQuoteStatusLabel(data.status)}
           </span>
         )}
       </header>
 
       <div className="chat-quote-card__body">
-        <p className="chat-quote-card__success">
-          Tu solicitud fue registrada correctamente. El negocio revisará la información y se
-          pondrá en contacto con vos.
-        </p>
+        {(data.customer?.name || data.customer?.phone) && (
+          <div className="chat-quote-card__customer">
+            {data.customer.name && <p className="chat-quote-card__customer-line">{data.customer.name}</p>}
+            {data.customer.phone && <p className="chat-quote-card__customer-line">{data.customer.phone}</p>}
+          </div>
+        )}
+
+        {data.items && data.items.length > 0 && (
+          <ul className="chat-quote-card__items">
+            {data.items.map((item, i) => {
+              const lineTotal =
+                item.unitPrice != null
+                  ? item.unitPrice * item.quantity
+                  : item.subtotal
+              return (
+                <li key={item.productId ?? i}>
+                  <span>{item.quantity} × {item.name}</span>
+                  {lineTotal != null ? (
+                    <strong>{formatPrice(lineTotal)}</strong>
+                  ) : (
+                    <strong className="chat-quote-card__price-pending">A cotizar</strong>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        )}
+
+        {data.total != null && (
+          <div className="chat-quote-card__total">
+            <span>Total estimado</span>
+            <strong>{formatPrice(data.total)}</strong>
+          </div>
+        )}
 
         {data.pdfUrl ? (
           <div className="chat-quote-card__actions">
-            <button type="button" className="chat-quote-card__primary" onClick={openPdf}>
-              Ver PDF
+            <button type="button" className="chat-quote-card__primary chat-quote-card__download-btn" onClick={openPdf}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M8 1v9m0 0L5 7m3 3 3-3M2 11v1a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Descargar PDF
             </button>
             {canShare && (
               <button type="button" className="chat-quote-card__secondary" onClick={() => void sharePdf()}>
