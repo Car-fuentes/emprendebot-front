@@ -245,6 +245,7 @@ interface PendingQuote {
   sourceSummaryMessageId: string
   summary: QuoteSummaryMessageData
   customerName?: string
+  customerPhone?: string
 }
 
 function loadPendingQuote(businessId: string): PendingQuote | null {
@@ -412,7 +413,7 @@ export function useChat(business: Business) {
       const botMsg: Message = {
         id: crypto.randomUUID(),
         role: 'bot',
-        text: `Gracias ${name}. ¿Cuál es tu número de teléfono?`,
+        text: `¡Hola ${name}! ¿Y tu número de teléfono?`,
         timestamp: new Date(),
       }
       setMessages(prev => {
@@ -429,8 +430,6 @@ export function useChat(business: Business) {
 
     if (awaitingInput === 'quote-contact-phone') {
       const phone = text.trim().replace(/[\s-]/g, '')
-      const pendingQuote = pendingQuoteRef.current
-      const customerName = contactName || pendingQuote?.customerName || ''
 
       if (!/^\+?[0-9]{8,15}$/.test(phone)) {
         const botMsg: Message = {
@@ -449,8 +448,43 @@ export function useChat(business: Business) {
         return
       }
 
+      // Teléfono válido: guardarlo y mostrar paso de confirmación
+      if (pendingQuoteRef.current) {
+        pendingQuoteRef.current = { ...pendingQuoteRef.current, customerPhone: phone }
+        savePendingQuote(business.id, pendingQuoteRef.current)
+      }
+
+      const confirmMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'bot',
+        text: '¡Listo! Ya tengo toda la información necesaria.\n\nSi todo está bien, seleccioná "Confirmar presupuesto" para generarlo.\n\nVas a poder descargar tu cotización y una persona del negocio se estará contactando con vos.',
+        timestamp: new Date(),
+        confirmQuote: true,
+      }
+      setMessages(prev => {
+        const next = [...prev, confirmMsg]
+        saveChatHistory(business.id, next)
+        return next
+      })
+      if (consultationId) await savePublicMessage(business.slug, consultationId, 'bot', confirmMsg.text).catch(() => undefined)
+      setAwaitingInput('quote-confirm')
+      saveAwaitingInput(business.id, 'quote-confirm')
+      setIsTyping(false)
+      return
+    }
+
+    if (awaitingInput === 'quote-confirm') {
+      if (text.trim() !== 'Confirmar presupuesto') {
+        setIsTyping(false)
+        return
+      }
+
+      const pendingQuote = pendingQuoteRef.current
+      const customerName = contactName || pendingQuote?.customerName || ''
+      const phone = pendingQuote?.customerPhone || ''
+
       try {
-        if (!consultationId || !pendingQuote) throw new Error('No hay una solicitud pendiente.')
+        if (!consultationId || !pendingQuote || !phone) throw new Error('No hay una solicitud pendiente.')
         await updatePublicContact(
           business.slug,
           consultationId,
@@ -677,7 +711,7 @@ export function useChat(business: Business) {
       const contactPrompt: Message = {
         id: crypto.randomUUID(),
         role: 'bot',
-        text: 'Antes de preparar el presupuesto necesito registrar tus datos. ¿Cuál es tu nombre?',
+        text: '¡Genial! Voy a preparar el presupuesto con los productos seleccionados.\nAntes necesito registrar tus datos:\n¿Cuál es tu nombre?',
         timestamp: new Date(),
       }
       await savePublicMessage(business.slug, consultationId, 'bot', contactPrompt.text)

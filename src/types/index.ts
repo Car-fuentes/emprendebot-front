@@ -179,6 +179,7 @@ export type AwaitingInput =
   | 'contact-phone'
   | 'quote-contact-name'
   | 'quote-contact-phone'
+  | 'quote-confirm'
 
 export interface QuoteSummaryItem {
   productId: string
@@ -217,6 +218,7 @@ export interface Message {
   text: string
   timestamp: Date
   quickReplies?: string[]
+  confirmQuote?: boolean
   products?: Product[]
   faqs?: FAQ[]
   quoteSummary?: QuoteSummaryMessageData

@@ -964,17 +964,20 @@ export function BusinessConfigPage() {
               </div>
 
               <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: 0 }}>
-                {slugPersonalizado
-                  ? 'Este enlace ya fue personalizado y no puede volver a modificarse.'
-                  : slugPersonalizado === false
-                    ? 'Podés personalizar este enlace una sola vez. Después de confirmarlo no podrás volver a cambiarlo.'
-                    : 'Comprobando si el enlace puede editarse...'}
+                {!form.slug
+                  ? 'Guardá tu negocio y regresá para ver tu chatbot configurado.'
+                  : slugPersonalizado
+                    ? 'Este enlace ya fue personalizado y no puede volver a modificarse.'
+                    : slugPersonalizado === false
+                      ? 'Podés personalizar este enlace una sola vez. Después de confirmarlo no podrás volver a cambiarlo.'
+                      : 'Comprobando si el enlace puede editarse...'}
               </p>
 
               {/* Botón copiar */}
               <button
                 type="button"
                 onClick={handleCopyLink}
+                disabled={!form.slug}
                 style={{
                   alignSelf: 'flex-start',
                   padding: '10px 20px',
@@ -983,7 +986,9 @@ export function BusinessConfigPage() {
                   background: linkCopied ? '#22c55e' : brand.primaryGradient,
                   color: '#fff',
                   fontSize: '14px', fontWeight: 700,
-                  cursor: 'pointer', fontFamily: 'var(--font-family)',
+                  cursor: !form.slug ? 'not-allowed' : 'pointer',
+                  opacity: !form.slug ? 0.5 : 1,
+                  fontFamily: 'var(--font-family)',
                   transition: 'background 0.2s',
                 }}
               >
