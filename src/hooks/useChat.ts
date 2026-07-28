@@ -427,7 +427,6 @@ export function useChat(business: Business) {
 
     if (awaitingInput === 'quote-contact-phone') {
       const phone = text.trim().replace(/[\s-]/g, '')
-      const pendingQuote = pendingQuoteRef.current
 
       if (!/^\+?[0-9]{8,15}$/.test(phone)) {
         const botMsg: Message = {
