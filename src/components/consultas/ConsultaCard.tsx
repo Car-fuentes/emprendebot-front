@@ -1,11 +1,13 @@
 import type { Consulta, ConsultaEstado } from '../../types'
 import { formatRelativeTime } from '../../utils/formatRelativeTime'
 import { AppIcon } from '../ui/AppIcon'
+import type { ConsultationResolution } from '../../utils/consultationResolution'
 
 interface ConsultaCardProps {
   consulta: Consulta
   selected?: boolean
   onSelect: (consultaId: string) => void
+  resolution?: ConsultationResolution
 }
 
 const ESTADO_STYLES: Record<ConsultaEstado, { label: string; color: string; background: string }> = {
@@ -31,9 +33,10 @@ function getDerivadaText(consulta: Consulta): string {
   return consulta.derivadaA ? `Derivada a ${consulta.derivadaA}` : 'Derivada a un asesor'
 }
 
-export function ConsultaCard({ consulta, selected = false, onSelect }: ConsultaCardProps) {
+export function ConsultaCard({ consulta, selected = false, onSelect, resolution }: ConsultaCardProps) {
   const estadoStyle = ESTADO_STYLES[consulta.estado]
   const derivadaText = getDerivadaText(consulta)
+  const resolvedByBot = resolution?.resolvedByBot === true
 
   return (
     <button
@@ -49,12 +52,26 @@ export function ConsultaCard({ consulta, selected = false, onSelect }: ConsultaC
       <div className="consulta-card__body">
         <div className="consulta-card__heading">
           <h3>{consulta.clienteNombre || 'Cliente sin identificar'}</h3>
-          <span className="consulta-card__status" style={{ background: estadoStyle.background, color: estadoStyle.color }}>
-            {estadoStyle.label}
+          <span
+            className={`consulta-card__status${resolvedByBot ? ' consulta-card__status--bot' : ''}`}
+            style={resolvedByBot ? undefined : { background: estadoStyle.background, color: estadoStyle.color }}
+            title={resolvedByBot ? 'Estado visual estimado a partir de las señales disponibles' : undefined}
+          >
+            {resolvedByBot && <AppIcon name="automation" size={13} />}
+            {resolvedByBot ? 'Resuelta por el bot' : estadoStyle.label}
           </span>
         </div>
         <p className="consulta-card__message">{getLastMessage(consulta)}</p>
-        {derivadaText && <p className="consulta-card__derived">{derivadaText}</p>}
+        {resolvedByBot ? (
+          <p className="consulta-card__derived consulta-card__derived--bot">Sin intervención requerida</p>
+        ) : (
+          <>
+            <p className="consulta-card__derived">Requiere seguimiento{derivadaText ? ` · ${derivadaText}` : ''}</p>
+            {consulta.derivada && !consulta.clienteNombre && !consulta.clienteTelefono && (
+              <p className="consulta-card__contact-warning">Sin datos de contacto</p>
+            )}
+          </>
+        )}
         <div className="consulta-card__footer">
           <span><AppIcon name="chat" size={14} />{getCanalLabel(consulta.canal)}</span>
           <span><AppIcon name="time" size={14} />{formatRelativeTime(consulta.fechaActualizacion)}</span>

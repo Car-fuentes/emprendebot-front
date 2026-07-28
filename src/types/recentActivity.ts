@@ -1,5 +1,6 @@
 export type RecentActivityType =
   | 'consultation_created'
+  | 'consultation_bot_resolved'
   | 'quote_pending'
   | 'quote_in_progress'
   | 'quote_sent'

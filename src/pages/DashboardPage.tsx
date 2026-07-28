@@ -92,7 +92,7 @@ export function DashboardPage() {
       tone: 'success' as const,
       loading: isBusinessLoading || (!businessUnavailable && stats.porcentajeAutomatizacion.status === 'loading'),
       error: !businessUnavailable && stats.porcentajeAutomatizacion.status === 'error',
-      unavailable: businessUnavailable,
+      unavailable: businessUnavailable || stats.porcentajeAutomatizacion.status === 'unavailable',
       helpText: 'Esta métrica es una estimación basada en consultas sin derivación ni intervención del emprendedor. Será reemplazada por una medición oficial cuando el backend registre automáticamente la resolución de las consultas.',
     },
     {

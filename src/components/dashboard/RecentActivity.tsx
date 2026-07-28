@@ -10,6 +10,7 @@ interface RecentActivityProps {
 
 const ACTIVITY_ICONS: Record<RecentActivityType, { icon: AppIconName; label: string; tone: string }> = {
   consultation_created: { icon: 'chat', label: 'Consulta iniciada', tone: 'primary' },
+  consultation_bot_resolved: { icon: 'automation', label: 'Consulta resuelta por el bot', tone: 'success' },
   quote_pending: { icon: 'budget', label: 'Presupuesto pendiente', tone: 'warning' },
   quote_in_progress: { icon: 'time', label: 'Presupuesto en proceso', tone: 'secondary' },
   quote_sent: { icon: 'budget', label: 'Presupuesto enviado', tone: 'secondary' },

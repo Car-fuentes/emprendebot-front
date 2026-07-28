@@ -23,6 +23,7 @@ const ESTADO_OPTIONS: Array<{ value: ConsultaEstadoFilter; label: string }> = [
   { value: 'en_proceso', label: 'En proceso' },
   { value: 'resuelta', label: 'Resueltas' },
   { value: 'cerrada', label: 'Cerradas' },
+  { value: 'resuelta_por_bot', label: 'Resueltas por el bot' },
 ]
 
 const DERIVADA_OPTIONS: Array<{ value: ConsultaDerivadaFilter; label: string }> = [
@@ -54,6 +55,7 @@ export function ConsultasPage() {
     filteredConsultas,
     selectedConsulta,
     selectedConsultaId,
+    resolutionByConsultaId,
     estadoFilter,
     canalFilter,
     derivadaFilter,
@@ -156,6 +158,7 @@ export function ConsultasPage() {
           ) : showingDetail ? (
             <ConsultaDetail
               consulta={selectedConsulta}
+              resolution={selectedConsulta ? resolutionByConsultaId.get(selectedConsulta.id) : undefined}
               onUpdateStatus={updateConsultaStatus}
               onBack={clearSelection}
               isUpdating={updatingConsultaId === selectedConsulta?.id}
@@ -225,6 +228,7 @@ export function ConsultasPage() {
                     <ConsultaCard
                       key={consulta.id}
                       consulta={consulta}
+                      resolution={resolutionByConsultaId.get(consulta.id)}
                       selected={selectedConsultaId === consulta.id}
                       onSelect={selectConsulta}
                     />

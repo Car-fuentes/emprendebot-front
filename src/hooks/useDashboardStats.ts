@@ -7,8 +7,11 @@ import {
   combineRecentActivity,
   mapConsultationToActivity,
   mapQuoteToActivity,
-  RECENT_ACTIVITY_LIMIT,
 } from '../utils/recentActivity'
+import {
+  classifyConsultationResolution,
+  type ConsultationResolutionContext,
+} from '../utils/consultationResolution'
 
 type DashboardMetricStatus = 'loading' | 'success' | 'error' | 'unavailable'
 
@@ -40,25 +43,20 @@ const LOADING_METRIC: DashboardMetric = { value: '—', status: 'loading' }
 export const normalizeDashboardStatus = (status?: string | null) =>
   status?.trim().toUpperCase().replace(/[\s-]+/g, '_') ?? ''
 
-export const countDashboardConsultations = (consultas: DashboardConsulta[]) => {
+export const countDashboardConsultations = (
+  consultas: DashboardConsulta[],
+  resolutionContext: ConsultationResolutionContext,
+) => {
   let pendientes = 0
   let resueltas = 0
   let automatizadasEstimadas = 0
 
   consultas.forEach(consulta => {
     const status = normalizeDashboardStatus(consulta.estado)
-    if (status === 'NUEVA' || status === 'EN_PROCESO') pendientes += 1
-    if (status === 'RESUELTA' || status === 'CERRADA') resueltas += 1
-
-    const cerradaPorEmprendedor = normalizeDashboardStatus(consulta.cerradaPor) === 'EMPRENDEDOR'
-    const tieneMensajeEmprendedor = consulta.mensajes?.some(mensaje => {
-      const emisor = normalizeDashboardStatus(mensaje.emisor)
-      return emisor === 'EMPRENDEDOR' || emisor === 'USUARIO'
-    }) ?? false
-
-    if (!consulta.derivada && !cerradaPorEmprendedor && !tieneMensajeEmprendedor) {
-      automatizadasEstimadas += 1
-    }
+    const resolution = classifyConsultationResolution(consulta, resolutionContext)
+    if (!resolution.resolvedByBot && (status === 'NUEVA' || status === 'EN_PROCESO')) pendientes += 1
+    if (status === 'RESUELTA' || resolution.resolvedByBot) resueltas += 1
+    if (resolution.resolvedByBot) automatizadasEstimadas += 1
   })
 
   return {
@@ -70,7 +68,7 @@ export const countDashboardConsultations = (consultas: DashboardConsulta[]) => {
 
 const loadDashboardStats = async (): Promise<DashboardStatsData> => {
   const consultationsPromise = getConsultas()
-  const budgetsPromise = getPresupuestos({ page: 1, limit: RECENT_ACTIVITY_LIMIT })
+  const budgetsPromise = getPresupuestos({ page: 1, limit: 100 })
 
   const [consultationsResult, budgetsResult] = await Promise.allSettled([
     consultationsPromise,
@@ -85,8 +83,23 @@ const loadDashboardStats = async (): Promise<DashboardStatsData> => {
 
   if (consultationsResult.status === 'fulfilled') {
     const consultas = consultationsResult.value
-    const counts = countDashboardConsultations(consultas)
-    consultationActivities = consultas.flatMap(mapConsultationToActivity)
+    const budgetConsultationIds = new Set(
+      budgetsResult.status === 'fulfilled'
+        ? budgetsResult.value.presupuestos.map(presupuesto => presupuesto.consultaId)
+        : [],
+    )
+    const resolutionContext: ConsultationResolutionContext = {
+      budgetConsultationIds,
+      budgetDataComplete: budgetsResult.status === 'fulfilled'
+        && budgetsResult.value.paginacion.total <= budgetsResult.value.presupuestos.length,
+    }
+    const counts = countDashboardConsultations(consultas, resolutionContext)
+    consultationActivities = consultas.flatMap(consulta => (
+      mapConsultationToActivity(
+        consulta,
+        classifyConsultationResolution(consulta, resolutionContext),
+      )
+    ))
     consultasPendientes = {
       value: counts.pendientes,
       status: 'success',
@@ -95,13 +108,13 @@ const loadDashboardStats = async (): Promise<DashboardStatsData> => {
       value: counts.resueltas,
       status: 'success',
     }
-    porcentajeAutomatizacion = {
-      value: `${consultas.length > 0
-        ? Math.round((counts.automatizadasEstimadas / consultas.length) * 100)
-        : 0}%`,
-      status: 'success',
-      detail: `${counts.automatizadasEstimadas} de ${consultas.length} consultas fueron atendidas sin intervención humana`,
-    }
+    porcentajeAutomatizacion = consultas.length === 0 || !resolutionContext.budgetDataComplete
+      ? { value: '—', status: 'unavailable' }
+      : {
+          value: `${Math.round((counts.automatizadasEstimadas / consultas.length) * 100)}%`,
+          status: 'success',
+          detail: `${counts.automatizadasEstimadas} de ${consultas.length} consultas fueron resueltas por el bot`,
+        }
   } else {
     consultasPendientes = { value: '—', status: 'error' }
     consultasResueltas = { value: '—', status: 'error' }

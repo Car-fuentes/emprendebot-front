@@ -1,6 +1,7 @@
 import type { Consulta } from '../types'
 import type { PresupuestoResumen } from '../types/presupuesto'
 import type { RecentActivityItem, RecentActivityType } from '../types/recentActivity'
+import type { ConsultationResolution } from './consultationResolution'
 
 export const RECENT_ACTIVITY_LIMIT = 5
 
@@ -41,14 +42,20 @@ function validIsoDate(value?: string | null): string | null {
   return Number.isNaN(date.getTime()) ? null : date.toISOString()
 }
 
-export function mapConsultationToActivity(consulta: Consulta): RecentActivityItem[] {
+export function mapConsultationToActivity(
+  consulta: Consulta,
+  resolution?: ConsultationResolution,
+): RecentActivityItem[] {
   const createdAt = validIsoDate(consulta.fechaCreacion)
   if (!createdAt) return []
 
   return [{
     id: `consultation-${consulta.id}-created`,
-    type: 'consultation_created',
-    title: 'Un cliente inició una conversación con el chatbot',
+    type: resolution?.resolvedByBot ? 'consultation_bot_resolved' : 'consultation_created',
+    title: resolution?.resolvedByBot
+      ? 'El bot resolvió una consulta automáticamente'
+      : 'Un cliente inició una conversación con el chatbot',
+    description: resolution?.resolvedByBot ? 'Sin intervención requerida' : undefined,
     createdAt,
     source: 'consultation',
     entityId: consulta.id,
