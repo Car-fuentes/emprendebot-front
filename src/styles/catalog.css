@@ -48,6 +48,8 @@
   backdrop-filter: blur(14px);
 }
 
+.catalog-mobile-header { min-height: 64px; }
+
 .catalog-mobile-header > button,
 .product-form-topbar > button {
   width: 42px;
@@ -946,6 +948,7 @@
 
 @media (min-width: 1000px) {
   .catalog-shell { margin-left: 280px; }
+  .catalog-main { padding-top: 40px; }
   .catalog-mobile-header { display: none; }
 }
 

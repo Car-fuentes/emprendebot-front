@@ -13,6 +13,8 @@ import { ConsultasPage } from './pages/ConsultasPage'
 import { CatalogPage } from './pages/CatalogPage'
 import { ProductFormPage } from './pages/ProductFormPage'
 import { MetricsPage } from './pages/MetricsPage'
+import { PresupuestosPage } from './pages/PresupuestosPage'
+import { PresupuestoDetailPage } from './pages/PresupuestoDetailPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth()
@@ -62,6 +64,12 @@ function App() {
         } />
         <Route path="/metricas" element={
           <ProtectedRoute><MetricsPage /></ProtectedRoute>
+        } />
+        <Route path="/presupuestos" element={
+          <ProtectedRoute><PresupuestosPage /></ProtectedRoute>
+        } />
+        <Route path="/presupuestos/:id" element={
+          <ProtectedRoute><PresupuestoDetailPage /></ProtectedRoute>
         } />
 
         <Route path="/catalogo" element={

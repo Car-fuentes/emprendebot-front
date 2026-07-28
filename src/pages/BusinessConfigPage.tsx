@@ -110,10 +110,20 @@ const selectStyle: React.CSSProperties = {
   cursor: 'pointer',
 }
 
+const mensajeBienvenidaAutomatico = (nombre: string) =>
+  `¡Hola! Soy el asistente de ${nombre} ¿En qué te puedo ayudar? Elige una opción para continuar.`
+
+const esMensajeBienvenidaAutomatico = (mensaje: string, nombre: string) =>
+  !mensaje.trim()
+  || mensaje === mensajeBienvenidaAutomatico(nombre)
+  || mensaje === '¡Hola! ¿En qué te puedo ayudar?'
+  || mensaje === '¡Hola! ¿En qué te puedo ayudar hoy?'
+  || mensaje.includes('{nombreNegocio}')
+
 export function BusinessConfigPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { saveBusiness, updateBusiness, business, loadBusiness } = useBusiness()
+  const { business, loadBusiness, updateBusiness } = useBusiness()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { isDark, setTheme } = useTheme()
 
@@ -202,8 +212,24 @@ export function BusinessConfigPage() {
   }, [user])
 
   const set = (field: keyof FormData) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      setForm(prev => ({ ...prev, [field]: e.target.value }))
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = e.target.value
+      setForm(prev => {
+        if (field !== 'nombre') return { ...prev, [field]: value }
+
+        const actualizarMensaje = esMensajeBienvenidaAutomatico(
+          prev.mensajeBienvenida,
+          prev.nombre,
+        )
+        return {
+          ...prev,
+          nombre: value,
+          ...(actualizarMensaje
+            ? { mensajeBienvenida: mensajeBienvenidaAutomatico(value || 'tu negocio') }
+            : {}),
+        }
+      })
+    }
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -318,7 +344,7 @@ export function BusinessConfigPage() {
     setLoading(true)
 
     try {
-      await apiRequest<{ success: boolean; configuracion: { slug?: string } }>('/bot', {
+      await apiRequest<BotConfigResponse>('/bot', {
         method: 'PUT',
         body: JSON.stringify({
           activo: true,
@@ -330,6 +356,8 @@ export function BusinessConfigPage() {
           telefono: form.telefono || undefined,
           respuestaDerivacion: form.respuestaDerivacion || undefined,
           logoUrl: selectedLogo ? undefined : form.logo,
+          colorPrimario: form.colorPrimario.toUpperCase(),
+          colorSecundario: form.colorSecundario.toUpperCase(),
         }),
       })
 
@@ -357,7 +385,9 @@ export function BusinessConfigPage() {
           })
         } catch (uploadError) {
           if (controller.signal.aborted) {
-            throw new Error('La carga de la imagen tardó demasiado. Intentá nuevamente.')
+            throw new Error('La carga de la imagen tardó demasiado. Intentá nuevamente.', {
+              cause: uploadError,
+            })
           }
           throw uploadError
         } finally {
@@ -365,19 +395,29 @@ export function BusinessConfigPage() {
         }
       }
 
+      const confirmedResponse = await apiRequest<BotConfigResponse>('/bot')
+      const confirmedConfig = confirmedResponse.configuracion
       const syncedBusiness = await loadBusiness(user.id)
       if (!syncedBusiness) {
-        saveBusiness({ ...form, userId: user.id, rubro: user.rubro ?? '' })
-      } else {
-        updateBusiness({
-          colorPrimario: form.colorPrimario.toUpperCase(),
-          colorSecundario: form.colorSecundario.toUpperCase(),
-        })
-        const savedLogo = syncedBusiness.logo ?? ''
-        setPersistedLogo(savedLogo)
-        setForm(prev => ({ ...prev, logo: savedLogo, slug: syncedBusiness.slug }))
-        setSlugOriginal(syncedBusiness.slug)
+        throw new Error('La configuración se guardó, pero no pudo volver a cargarse desde el servidor.')
       }
+      const confirmedPrimary = confirmedConfig.colorPrimario ?? DEFAULT_CHAT_APPEARANCE.primary
+      const confirmedSecondary = confirmedConfig.colorSecundario ?? DEFAULT_CHAT_APPEARANCE.secondary
+      updateBusiness({
+        colorPrimario: confirmedPrimary,
+        colorSecundario: confirmedSecondary,
+      })
+      const savedLogo = confirmedConfig.logoUrl ?? ''
+      const savedSlug = confirmedConfig.slug ?? syncedBusiness.slug
+      setPersistedLogo(savedLogo)
+      setForm(prev => ({
+        ...prev,
+        logo: savedLogo,
+        slug: savedSlug,
+        colorPrimario: confirmedPrimary,
+        colorSecundario: confirmedSecondary,
+      }))
+      setSlugOriginal(savedSlug)
 
       setSelectedLogo(null)
       setLogoValidationError('')
@@ -486,6 +526,7 @@ export function BusinessConfigPage() {
             onClose={() => setDrawerOpen(false)}
             activeItem="configuracion"
             desktopPersistent
+            showBusinessAvatar
           />
           <header className="business-config-page__header" style={{
             height: 56, padding: '12px 20px 4px',
@@ -504,12 +545,8 @@ export function BusinessConfigPage() {
             >
               <AppIcon name="menu" size={21} strokeWidth={2.2} />
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <span aria-hidden="true" style={{ color: brand.text, lineHeight: 1, display: 'inline-flex' }}>
-                <AppIcon name="bell" size={21} />
-              </span>
-              {user && <Avatar name={user.nombre} size={32} bgColor={brand.primaryGradient} />}
-            </div>
+            <strong className="business-config-page__header-title">Configuración</strong>
+            {user && <Avatar name={user.nombre} src={business?.logo} size={38} />}
           </header>
         </>
       ) : (
@@ -522,6 +559,7 @@ export function BusinessConfigPage() {
         {isEdit && <PageBackButton onClick={() => navigate('/dashboard')} />}
 
         {/* Título y subtítulo según modo */}
+        {isEdit && <span className="business-config__eyebrow">PERSONALIZACIÓN</span>}
         <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '6px' }}>
           {isEdit ? 'Configuración' : 'Configura tu negocio'}
         </h1>
@@ -699,7 +737,7 @@ export function BusinessConfigPage() {
                 onClick={() =>
                   setForm(prev => ({
                     ...prev,
-                    mensajeBienvenida: `¡Hola! Soy el asistente de ${prev.nombre} ¿En qué te puedo ayudar? Elige una opción para continuar.`,
+                    mensajeBienvenida: mensajeBienvenidaAutomatico(prev.nombre),
                   }))
                 }
                 style={{
@@ -926,17 +964,20 @@ export function BusinessConfigPage() {
               </div>
 
               <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: 0 }}>
-                {slugPersonalizado
-                  ? 'Este enlace ya fue personalizado y no puede volver a modificarse.'
-                  : slugPersonalizado === false
-                    ? 'Podés personalizar este enlace una sola vez. Después de confirmarlo no podrás volver a cambiarlo.'
-                    : 'Comprobando si el enlace puede editarse...'}
+                {!form.slug
+                  ? 'Guardá tu negocio y regresá para ver tu chatbot configurado.'
+                  : slugPersonalizado
+                    ? 'Este enlace ya fue personalizado y no puede volver a modificarse.'
+                    : slugPersonalizado === false
+                      ? 'Podés personalizar este enlace una sola vez. Después de confirmarlo no podrás volver a cambiarlo.'
+                      : 'Comprobando si el enlace puede editarse...'}
               </p>
 
               {/* Botón copiar */}
               <button
                 type="button"
                 onClick={handleCopyLink}
+                disabled={!form.slug}
                 style={{
                   alignSelf: 'flex-start',
                   padding: '10px 20px',
@@ -945,7 +986,9 @@ export function BusinessConfigPage() {
                   background: linkCopied ? '#22c55e' : brand.primaryGradient,
                   color: '#fff',
                   fontSize: '14px', fontWeight: 700,
-                  cursor: 'pointer', fontFamily: 'var(--font-family)',
+                  cursor: !form.slug ? 'not-allowed' : 'pointer',
+                  opacity: !form.slug ? 0.5 : 1,
+                  fontFamily: 'var(--font-family)',
                   transition: 'background 0.2s',
                 }}
               >
@@ -985,13 +1028,18 @@ export function BusinessConfigPage() {
 
       <style>{`
         .business-config-page {
+          --business-config-canvas: #F7F9FB;
           position: fixed;
           inset: 0;
           z-index: 10;
           overflow-y: auto;
           background:
             radial-gradient(circle at 8% 12%, rgba(19, 168, 162, .08), transparent 26%),
-            var(--color-bg) !important;
+            var(--business-config-canvas) !important;
+        }
+
+        :root[data-theme='dark'] .business-config-page {
+          --business-config-canvas: #0F172A;
         }
 
         .business-config-page__header {
@@ -1005,6 +1053,10 @@ export function BusinessConfigPage() {
           backdrop-filter: blur(14px);
         }
 
+        .business-config-page__header-title {
+          font-size: 14px;
+        }
+
         .business-config-page__content {
           width: min(100%, 1280px);
           margin: 0 auto;
@@ -1015,6 +1067,15 @@ export function BusinessConfigPage() {
         .business-config-page__content > h1 {
           font-size: clamp(28px, 4vw, 34px) !important;
           letter-spacing: -.7px;
+        }
+
+        .business-config__eyebrow {
+          display: block;
+          margin-bottom: 7px;
+          color: #13A8A2;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 1.1px;
         }
 
         .business-config__form {
@@ -1382,8 +1443,12 @@ export function BusinessConfigPage() {
             padding-left: 280px;
           }
 
-          .business-config-page__header button[aria-label='Abrir navegación'] {
+          .business-config-page--editing .business-config-page__header {
             display: none !important;
+          }
+
+          .business-config-page--editing .business-config-page__content {
+            padding-top: 40px !important;
           }
 
         }
