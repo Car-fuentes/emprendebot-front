@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { apiRequest } from '../services/apiClient'
+import { getConsultas } from '../services/consultaStorage'
 import { getPresupuestos } from '../services/presupuestoApi'
+import type { Consulta } from '../types'
+import type { RecentActivityData, RecentActivityItem } from '../types/recentActivity'
+import {
+  combineRecentActivity,
+  mapConsultationToActivity,
+  mapQuoteToActivity,
+  RECENT_ACTIVITY_LIMIT,
+} from '../utils/recentActivity'
 
 type DashboardMetricStatus = 'loading' | 'success' | 'error' | 'unavailable'
 
@@ -15,19 +23,10 @@ export interface DashboardStatsData {
   presupuestosPendientes: DashboardMetric
   consultasResueltas: DashboardMetric
   porcentajeAutomatizacion: DashboardMetric
+  recentActivity: RecentActivityData
 }
 
-interface DashboardConsulta {
-  estado?: string | null
-  derivada?: boolean | null
-  cerradaPor?: string | null
-  mensajes?: Array<{ emisor?: string | null }> | null
-}
-
-interface ConsultationsResponse {
-  success: boolean
-  consultas: DashboardConsulta[]
-}
+type DashboardConsulta = Consulta
 
 interface CachedDashboardStats {
   expiresAt: number
@@ -70,8 +69,8 @@ export const countDashboardConsultations = (consultas: DashboardConsulta[]) => {
 }
 
 const loadDashboardStats = async (): Promise<DashboardStatsData> => {
-  const consultationsPromise = apiRequest<ConsultationsResponse>('/consultations')
-  const budgetsPromise = getPresupuestos({ page: 1, limit: 1 })
+  const consultationsPromise = getConsultas()
+  const budgetsPromise = getPresupuestos({ page: 1, limit: RECENT_ACTIVITY_LIMIT })
 
   const [consultationsResult, budgetsResult] = await Promise.allSettled([
     consultationsPromise,
@@ -81,10 +80,13 @@ const loadDashboardStats = async (): Promise<DashboardStatsData> => {
   let consultasPendientes: DashboardMetric
   let consultasResueltas: DashboardMetric
   let porcentajeAutomatizacion: DashboardMetric
+  let consultationActivities: RecentActivityItem[] = []
+  let quoteActivities: RecentActivityItem[] = []
 
   if (consultationsResult.status === 'fulfilled') {
-    const consultas = consultationsResult.value.consultas
+    const consultas = consultationsResult.value
     const counts = countDashboardConsultations(consultas)
+    consultationActivities = consultas.flatMap(mapConsultationToActivity)
     consultasPendientes = {
       value: counts.pendientes,
       status: 'success',
@@ -113,11 +115,24 @@ const loadDashboardStats = async (): Promise<DashboardStatsData> => {
       }
     : { value: '—', status: 'error' }
 
+  if (budgetsResult.status === 'fulfilled') {
+    quoteActivities = budgetsResult.value.presupuestos.flatMap(mapQuoteToActivity)
+  }
+
+  const bothSourcesFailed = consultationsResult.status === 'rejected'
+    && budgetsResult.status === 'rejected'
+  const oneSourceFailed = consultationsResult.status === 'rejected'
+    || budgetsResult.status === 'rejected'
+
   return {
     consultasPendientes,
     presupuestosPendientes,
     consultasResueltas,
     porcentajeAutomatizacion,
+    recentActivity: {
+      items: combineRecentActivity(consultationActivities, quoteActivities),
+      status: bothSourcesFailed ? 'error' : oneSourceFailed ? 'partial' : 'success',
+    },
   }
 }
 
@@ -135,6 +150,7 @@ const INITIAL_STATS: DashboardStatsData = {
   presupuestosPendientes: LOADING_METRIC,
   consultasResueltas: LOADING_METRIC,
   porcentajeAutomatizacion: LOADING_METRIC,
+  recentActivity: { items: [], status: 'loading' },
 }
 
 export function useDashboardStats(userId?: string) {
