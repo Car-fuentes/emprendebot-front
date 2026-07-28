@@ -273,6 +273,8 @@ export function useChat(business: Business) {
   const pendingResponseResolverRef = useRef<(() => void) | null>(null)
   const conversationVersionRef = useRef(0)
   const consultationPromiseRef = useRef<Promise<string | null> | null>(null)
+  const chatSessionIdRef = useRef(business.chatSessionId ?? crypto.randomUUID())
+  const canReuseInitialConsultationRef = useRef(true)
   const quoteSubmissionRef = useRef<Set<string>>(new Set(
     messages.flatMap(message => (
       message.generatedQuote ? [message.generatedQuote.sourceSummaryMessageId] : []
@@ -288,11 +290,12 @@ export function useChat(business: Business) {
     if (!consultationPromiseRef.current) {
       const storageKey = `emprendebot:consulta:${business.slug}`
       const storedId = sessionStorage.getItem(storageKey)
-      const existingConsultationId = storedId ?? business.chatConsultationId
+      const existingConsultationId = storedId
+        ?? (canReuseInitialConsultationRef.current ? business.chatConsultationId : null)
       if (existingConsultationId) sessionStorage.setItem(storageKey, existingConsultationId)
       consultationPromiseRef.current = existingConsultationId
         ? Promise.resolve(existingConsultationId)
-        : createPublicConsultation(business.slug, business.chatSessionId ?? crypto.randomUUID())
+        : createPublicConsultation(business.slug, chatSessionIdRef.current)
             .then(async consultationId => {
               sessionStorage.setItem(storageKey, consultationId)
               await savePublicMessage(business.slug, consultationId, 'bot', createInitialMessage(business).text)
@@ -714,6 +717,8 @@ export function useChat(business: Business) {
     clearChatState(business.id)
     sessionStorage.removeItem(`emprendebot:consulta:${business.slug}`)
     consultationPromiseRef.current = null
+    canReuseInitialConsultationRef.current = false
+    chatSessionIdRef.current = crypto.randomUUID()
     quoteSubmissionRef.current.clear()
     pendingQuoteRef.current = null
     savePendingQuote(business.id, null)
