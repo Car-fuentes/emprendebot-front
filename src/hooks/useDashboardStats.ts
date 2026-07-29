@@ -91,7 +91,7 @@ const loadDashboardStats = async (): Promise<DashboardStatsData> => {
     const resolutionContext: ConsultationResolutionContext = {
       budgetConsultationIds,
       budgetDataComplete: budgetsResult.status === 'fulfilled'
-        && budgetsResult.value.paginacion.total <= budgetsResult.value.presupuestos.length,
+        && (budgetsResult.value.pagination.total ?? 0) <= budgetsResult.value.presupuestos.length,
     }
     const counts = countDashboardConsultations(consultas, resolutionContext)
     consultationActivities = consultas.flatMap(consulta => (
@@ -123,7 +123,7 @@ const loadDashboardStats = async (): Promise<DashboardStatsData> => {
 
   const presupuestosPendientes: DashboardMetric = budgetsResult.status === 'fulfilled'
     ? {
-        value: budgetsResult.value.paginacion.total,
+        value: budgetsResult.value.pagination.total ?? 0,
         status: 'success',
       }
     : { value: '—', status: 'error' }

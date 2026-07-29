@@ -38,7 +38,7 @@ export function PresupuestosPage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [presupuestos, setPresupuestos] = useState<PresupuestoResumen[]>([])
   const [pagination, setPagination] = useState<PresupuestosPagination>({
-    page: 1, limit: PAGE_SIZE, total: 0, totalPages: 0,
+    page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1,
   })
   const [estado, setEstado] = useState<PresupuestoEstado | ''>('')
   const [page, setPage] = useState(1)
@@ -59,7 +59,12 @@ export function PresupuestosPage() {
         ...(estado ? { estado } : {}),
       })
       setPresupuestos(response.presupuestos)
-      setPagination(response.paginacion)
+      setPagination({
+        page: response.pagination.page ?? 1,
+        limit: response.pagination.limit ?? PAGE_SIZE,
+        total: response.pagination.total ?? 0,
+        totalPages: response.pagination.totalPages ?? 1,
+      })
     } catch (loadError) {
       setError(errorMessage(loadError))
     } finally {

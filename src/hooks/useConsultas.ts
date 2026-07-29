@@ -105,7 +105,7 @@ export function useConsultas(userId?: string, slug?: string): UseConsultasResult
           budgetsResult.value.presupuestos.map(presupuesto => presupuesto.consultaId),
         ))
         setBudgetDataComplete(
-          budgetsResult.value.paginacion.total <= budgetsResult.value.presupuestos.length,
+          (budgetsResult.value.pagination.total ?? 0) <= budgetsResult.value.presupuestos.length,
         )
       } else {
         setBudgetConsultationIds(new Set())
