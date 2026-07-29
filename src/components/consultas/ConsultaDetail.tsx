@@ -2,16 +2,21 @@ import type { Consulta, ConsultaEstado, Mensaje } from '../../types'
 import { formatRelativeTime } from '../../utils/formatRelativeTime'
 import { AppIcon } from '../ui/AppIcon'
 import { Button } from '../ui/Button'
+import type { ConsultationResolution } from '../../utils/consultationResolution'
 
 interface ConsultaDetailProps {
   consulta: Consulta | null
   onUpdateStatus: (consultaId: string, estado: ConsultaEstado) => Promise<void>
   onBack?: () => void
+  isUpdating?: boolean
+  updateError?: string
+  resolution?: ConsultationResolution
 }
 
 const ESTADO_STYLES: Record<ConsultaEstado, { label: string; color: string; background: string }> = {
   nueva: { label: 'Nueva', color: 'var(--status-new-text)', background: 'var(--status-new-bg)' },
   en_proceso: { label: 'En proceso', color: 'var(--status-progress-text)', background: 'var(--status-progress-bg)' },
+  resuelta: { label: 'Resuelta', color: 'var(--status-closed-text)', background: 'var(--status-closed-bg)' },
   cerrada: { label: 'Cerrada', color: 'var(--status-closed-text)', background: 'var(--status-closed-bg)' },
 }
 
@@ -42,6 +47,7 @@ function getMessagePresentation(emisor: Mensaje['emisor']) {
 function getStatusAction(estado: ConsultaEstado): { label: string; nextEstado: ConsultaEstado } {
   if (estado === 'nueva') return { label: 'Marcar en proceso', nextEstado: 'en_proceso' }
   if (estado === 'en_proceso') return { label: 'Marcar cerrada', nextEstado: 'cerrada' }
+  if (estado === 'resuelta') return { label: 'Marcar cerrada', nextEstado: 'cerrada' }
   return { label: 'Reabrir consulta', nextEstado: 'en_proceso' }
 }
 
@@ -50,17 +56,18 @@ function openWhatsApp(phone: string) {
   window.open(`https://wa.me/${digits}`, '_blank', 'noopener,noreferrer')
 }
 
-export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDetailProps) {
+export function ConsultaDetail({ consulta, onUpdateStatus, onBack, isUpdating = false, updateError = '', resolution }: ConsultaDetailProps) {
   if (!consulta) return null
 
   const estadoStyle = ESTADO_STYLES[consulta.estado]
   const statusAction = getStatusAction(consulta.estado)
   const isClosed = consulta.estado === 'cerrada'
+  const resolvedByBot = resolution?.resolvedByBot === true
   const messages = [...consulta.mensajes].sort((left, right) => (
     new Date(left.fechaCreacion).getTime() - new Date(right.fechaCreacion).getTime()
   ))
   const metadata = [
-    ['Estado', estadoStyle.label],
+    ['Estado', resolvedByBot ? 'Resuelta por el bot' : estadoStyle.label],
     ['Canal', consulta.canal === 'whatsapp' ? 'WhatsApp' : 'Web'],
     ['Tipo', consulta.tipoConsulta ?? 'General'],
     ['Prioridad', consulta.prioridad ?? 'Normal'],
@@ -74,10 +81,11 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDet
   ]
 
   return (
-    <section>
+    <section className="consulta-detail">
       {onBack && (
         <button
           type="button"
+          className="consulta-detail__back"
           onClick={onBack}
           style={{
             display: 'inline-flex',
@@ -95,7 +103,7 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDet
         </button>
       )}
 
-      <div style={{ marginBottom: '14px' }}>
+      <div className="consulta-detail__heading" style={{ marginBottom: '14px' }}>
         <h2 style={{ fontSize: '19px', lineHeight: 1.2, marginBottom: '7px' }}>
           {consulta.clienteNombre || 'Cliente sin identificar'}
         </h2>
@@ -104,7 +112,27 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDet
         </p>
       </div>
 
-      <div style={{
+      {resolvedByBot ? (
+        <div className="consulta-detail__resolution consulta-detail__resolution--bot" role="status">
+          <AppIcon name="automation" size={20} />
+          <div>
+            <strong>Resuelta por el bot</strong>
+            <p>Esta consulta fue atendida automáticamente y no requiere seguimiento.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="consulta-detail__resolution">
+          <AppIcon name="agent" size={20} />
+          <div>
+            <strong>Requiere seguimiento</strong>
+            {consulta.derivada && !consulta.clienteNombre && !consulta.clienteTelefono && (
+              <p>Sin datos de contacto.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="consulta-detail__meta" style={{
         padding: '14px',
         marginBottom: '18px',
         border: '1px solid var(--color-border)',
@@ -112,7 +140,19 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDet
         background: 'var(--color-bg)',
         boxShadow: 'var(--shadow-md)',
       }}>
-        <div style={{
+        {updateError && (
+          <p role="alert" style={{
+            marginBottom: 12,
+            padding: '10px 12px',
+            color: 'var(--color-danger)',
+            border: '1px solid currentColor',
+            borderRadius: 10,
+            fontSize: 12,
+          }}>
+            {updateError}
+          </p>
+        )}
+        <div className="consulta-detail__meta-grid" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
           gap: '12px 8px',
@@ -128,8 +168,8 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDet
                   display: 'inline-flex',
                   padding: '3px 7px',
                   borderRadius: 'var(--radius-full)',
-                  background: estadoStyle.background,
-                  color: estadoStyle.color,
+                  background: resolvedByBot ? 'var(--status-bot-bg)' : estadoStyle.background,
+                  color: resolvedByBot ? 'var(--status-bot-text)' : estadoStyle.color,
                   fontSize: '10px',
                   fontWeight: 700,
                 }}>
@@ -152,7 +192,7 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDet
           ))}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '7px' }}>
+        {!resolvedByBot && <div className="consulta-detail__actions" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '7px' }}>
           {consulta.clienteTelefono && (
             <Button
               type="button"
@@ -179,6 +219,7 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDet
           <Button
             type="button"
             size="md"
+            disabled={isUpdating}
             onClick={() => onUpdateStatus(consulta.id, statusAction.nextEstado)}
             style={{
               height: 37,
@@ -202,9 +243,9 @@ export function ConsultaDetail({ consulta, onUpdateStatus, onBack }: ConsultaDet
             }}>
               <AppIcon name="check" size={11} strokeWidth={2.2} />
             </span>
-            {statusAction.label}
+            {isUpdating ? 'Actualizando...' : statusAction.label}
           </Button>
-        </div>
+        </div>}
       </div>
 
       <h3 style={{ color: 'var(--color-text-secondary)', fontSize: '11px', fontWeight: 500, marginBottom: '10px' }}>

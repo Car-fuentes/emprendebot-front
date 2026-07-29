@@ -4,9 +4,11 @@ import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { Drawer } from '../components/layout/Drawer'
 import { StatCard } from '../components/dashboard/StatCard'
+import { RecentActivity } from '../components/dashboard/RecentActivity'
 import { Avatar } from '../components/ui/Avatar'
 import { AppIcon } from '../components/ui/AppIcon'
 import { brand } from '../styles/brand'
+import { useDashboardStats } from '../hooks/useDashboardStats'
 
 function IconWrapper({ children }: { children: ReactNode }) {
   return <span className="dashboard-icon-wrapper">{children}</span>
@@ -36,8 +38,9 @@ function QuickAccessCard({
 export function DashboardPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { business, stats, loadBusiness } = useBusiness()
+  const { business, isBusinessLoading, loadBusiness } = useBusiness()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const { stats, refetch } = useDashboardStats(business ? user?.id : undefined)
 
   useEffect(() => {
     if (user) void loadBusiness(user.id)
@@ -49,39 +52,59 @@ export function DashboardPage() {
   }
 
   const firstName = user.nombre.split(' ')[0]
+  const businessUnavailable = !isBusinessLoading && !business
+  const hasStatsError = !businessUnavailable && [
+    stats.consultasPendientes,
+    stats.presupuestosPendientes,
+    stats.consultasResueltas,
+    stats.porcentajeAutomatizacion,
+  ].some(metric => metric.status === 'error')
 
   const metrics = [
     {
-      label: 'Consultas recibidas',
-      value: stats.consultasPendientes,
+      label: 'Consultas que esperan respuesta',
+      value: stats.consultasPendientes.value,
       description: 'Requieren seguimiento',
       color: brand.primary,
       icon: <IconWrapper><AppIcon name="chat" size={22} /></IconWrapper>,
       tone: 'primary' as const,
+      loading: isBusinessLoading || (!businessUnavailable && stats.consultasPendientes.status === 'loading'),
+      error: !businessUnavailable && stats.consultasPendientes.status === 'error',
+      unavailable: businessUnavailable,
     },
     {
-      label: 'Presupuestos generados',
-      value: stats.presupuestosPendientes,
-      description: 'Pedidos comerciales activos',
+      label: 'Presupuestos registrados',
+      value: stats.presupuestosPendientes.value,
+      description: 'Solicitudes recibidas desde el chat',
       color: '#7C3AED',
       icon: <IconWrapper><AppIcon name="budget" size={22} /></IconWrapper>,
       tone: 'secondary' as const,
+      loading: isBusinessLoading || (!businessUnavailable && stats.presupuestosPendientes.status === 'loading'),
+      error: !businessUnavailable && stats.presupuestosPendientes.status === 'error',
+      unavailable: businessUnavailable,
     },
     {
-      label: 'Automatización',
-      value: `${stats.porcentajeAutomatizacion}%`,
-      description: 'Respuestas gestionadas por el bot',
+      label: 'Automatización estimada',
+      value: stats.porcentajeAutomatizacion.value,
+      description: stats.porcentajeAutomatizacion.detail ?? 'Consultas atendidas sin intervención humana',
       color: '#16C784',
       icon: <IconWrapper><AppIcon name="automation" size={22} /></IconWrapper>,
       tone: 'success' as const,
+      loading: isBusinessLoading || (!businessUnavailable && stats.porcentajeAutomatizacion.status === 'loading'),
+      error: !businessUnavailable && stats.porcentajeAutomatizacion.status === 'error',
+      unavailable: businessUnavailable || stats.porcentajeAutomatizacion.status === 'unavailable',
+      helpText: 'Esta métrica es una estimación basada en consultas sin derivación ni intervención del emprendedor. Será reemplazada por una medición oficial cuando el backend registre automáticamente la resolución de las consultas.',
     },
     {
       label: 'Consultas resueltas',
-      value: stats.consultasResueltas,
+      value: stats.consultasResueltas.value,
       description: 'Conversaciones completadas',
       color: '#F97316',
       icon: <IconWrapper><AppIcon name="check" size={22} /></IconWrapper>,
       tone: 'warning' as const,
+      loading: isBusinessLoading || (!businessUnavailable && stats.consultasResueltas.status === 'loading'),
+      error: !businessUnavailable && stats.consultasResueltas.status === 'error',
+      unavailable: businessUnavailable,
     },
   ]
 
@@ -98,29 +121,16 @@ export function DashboardPage() {
 
       <div className="dashboard-page__content">
         <header className="dashboard-header">
-          <div className="dashboard-header__title">
-            <button
-              type="button"
-              aria-label="Abrir navegación"
-              className="dashboard-header__menu"
-              onClick={() => setDrawerOpen(true)}
-            >
-              <AppIcon name="menu" size={22} strokeWidth={2.2} />
-            </button>
-            <div>
-              <strong>Dashboard</strong>
-              <span>Panel de control de tu negocio</span>
-            </div>
-          </div>
-
-          <div className="dashboard-header__profile">
-            <Avatar
-              name={user.nombre}
-              src={business?.logo}
-              size={38}
-              bgColor={brand.primaryGradient}
-            />
-          </div>
+          <button
+            type="button"
+            aria-label="Abrir navegación"
+            className="dashboard-header__menu"
+            onClick={() => setDrawerOpen(true)}
+          >
+            <AppIcon name="menu" size={22} strokeWidth={2.2} />
+          </button>
+          <strong>Dashboard</strong>
+          <Avatar name={user.nombre} src={business?.logo} size={38} bgColor={brand.primaryGradient} />
         </header>
 
         <main className="dashboard-main">
@@ -134,6 +144,12 @@ export function DashboardPage() {
 
           <section aria-labelledby="dashboard-summary-title">
             <h2 id="dashboard-summary-title" className="dashboard-section-title">Resumen</h2>
+            {hasStatsError && (
+              <div className="dashboard-stats-notice" role="status">
+                <span>Algunos datos no pudieron cargarse.</span>
+                <button type="button" onClick={() => void refetch()}>Reintentar</button>
+              </div>
+            )}
             <div className="dashboard-metrics">
               {metrics.map(metric => <StatCard key={metric.label} {...metric} />)}
             </div>
@@ -171,11 +187,7 @@ export function DashboardPage() {
 
           <section aria-labelledby="dashboard-activity-title">
             <h2 id="dashboard-activity-title" className="dashboard-section-title">Actividad reciente</h2>
-            <div className="dashboard-empty-activity">
-              <span><AppIcon name="chat" size={28} /></span>
-              <strong>Tu actividad aparecerá aquí</strong>
-              <p>Las actividades reales de tus clientes se mostrarán cuando comiencen a usar el chatbot.</p>
-            </div>
+            <RecentActivity data={stats.recentActivity} onRetry={() => void refetch()} />
           </section>
         </main>
 
@@ -184,7 +196,9 @@ export function DashboardPage() {
           className="dashboard-bot"
           disabled={!business?.slug}
           aria-label="Abrir asistente: Probá tu Bot"
-          onClick={() => business?.slug && navigate(`/${business.slug}`)}
+          onClick={() => {
+            if (business?.slug) window.open(`/${business.slug}`, '_blank', 'noopener,noreferrer')
+          }}
         >
           <span className="dashboard-bot__label">
             <i aria-hidden="true" />
@@ -228,7 +242,7 @@ export function DashboardPage() {
           position: sticky;
           top: 0;
           z-index: 20;
-          min-height: 72px;
+          min-height: 64px;
           padding: 12px clamp(18px, 3vw, 34px);
           display: flex;
           align-items: center;
@@ -238,31 +252,7 @@ export function DashboardPage() {
           backdrop-filter: blur(14px);
         }
 
-        .dashboard-header__title,
-        .dashboard-header__profile {
-          display: flex;
-          align-items: center;
-        }
-
-        .dashboard-header__title {
-          gap: 13px;
-        }
-
-        .dashboard-header__title strong,
-        .dashboard-header__title span {
-          display: block;
-        }
-
-        .dashboard-header__title strong {
-          font-size: 18px;
-          line-height: 1.2;
-        }
-
-        .dashboard-header__title span {
-          margin-top: 2px;
-          color: var(--dashboard-muted);
-          font-size: 11px;
-        }
+        .dashboard-header > strong { font-size: 14px; }
 
         .dashboard-header__menu {
           width: 40px;
@@ -326,6 +316,26 @@ export function DashboardPage() {
           gap: 16px;
         }
 
+        .dashboard-stats-notice {
+          margin: -4px 0 14px;
+          padding: 10px 12px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          color: var(--dashboard-muted);
+          border: 1px solid var(--dashboard-border);
+          border-radius: 11px;
+          background: var(--dashboard-card);
+          font-size: 12px;
+        }
+
+        .dashboard-stats-notice button {
+          color: #13A8A2;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
         .dashboard-icon-wrapper {
           display: inline-flex;
           align-items: center;
@@ -380,21 +390,105 @@ export function DashboardPage() {
           background: color-mix(in srgb, currentColor 11%, transparent);
         }
 
-        .dashboard-empty-activity {
+        .recent-activity-card {
           min-height: 190px;
           padding: 28px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
           border: 1px solid var(--dashboard-border);
           border-radius: 18px;
           background: var(--dashboard-card);
           box-shadow: 0 7px 20px rgba(15, 23, 42, .06);
         }
 
-        .dashboard-empty-activity > span {
+        .recent-activity-list {
+          display: grid;
+          gap: 10px;
+        }
+
+        .recent-activity-row {
+          width: 100%;
+          min-height: 68px;
+          padding: 13px 15px;
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 14px;
+          color: var(--dashboard-text);
+          text-align: left;
+          border: 1px solid transparent;
+          border-radius: 13px;
+          background: color-mix(in srgb, var(--dashboard-bg) 68%, var(--dashboard-card));
+          transition: border-color var(--transition), background var(--transition), transform var(--transition);
+        }
+
+        .recent-activity-row:hover {
+          border-color: color-mix(in srgb, #13A8A2 45%, var(--dashboard-border));
+          background: color-mix(in srgb, #13A8A2 7%, var(--dashboard-card));
+          transform: translateY(-1px);
+        }
+
+        .recent-activity-row:focus-visible {
+          outline: 3px solid rgba(19, 168, 162, .3);
+          outline-offset: 2px;
+        }
+
+        .recent-activity-row__icon {
+          width: 42px;
+          height: 42px;
+          display: grid;
+          place-items: center;
+          color: #FFFFFF;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #13A8A2, #1372A8);
+          box-shadow: 0 7px 15px rgba(15, 23, 42, .13);
+        }
+
+        .recent-activity-row__icon.is-secondary { background: linear-gradient(135deg, #1372A8, #2563EB); }
+        .recent-activity-row__icon.is-warning { background: linear-gradient(135deg, #F59E0B, #F97316); }
+        .recent-activity-row__icon.is-success { background: linear-gradient(135deg, #10B981, #13A8A2); }
+        .recent-activity-row__icon.is-danger { background: linear-gradient(135deg, #EF4444, #DC2626); }
+
+        .recent-activity-row__content {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .recent-activity-row__content strong {
+          font-size: 13px;
+          line-height: 1.4;
+        }
+
+        .recent-activity-row__content small,
+        .recent-activity-row time {
+          color: var(--dashboard-muted);
+          font-size: 11px;
+          line-height: 1.4;
+        }
+
+        .recent-activity-row time {
+          white-space: nowrap;
+        }
+
+        .recent-activity-partial {
+          margin: 0 0 12px;
+          padding: 9px 11px;
+          color: var(--dashboard-muted);
+          border: 1px solid var(--dashboard-border);
+          border-radius: 10px;
+          background: color-mix(in srgb, #F59E0B 7%, var(--dashboard-card));
+          font-size: 11px;
+        }
+
+        .recent-activity-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+        }
+
+        .recent-activity-state__icon {
           width: 58px;
           height: 58px;
           margin-bottom: 12px;
@@ -405,18 +499,55 @@ export function DashboardPage() {
           background: rgba(19, 168, 162, .11);
         }
 
-        .dashboard-empty-activity strong {
+        .recent-activity-state strong {
           margin-bottom: 5px;
           font-size: 14px;
         }
 
-        .dashboard-empty-activity p {
+        .recent-activity-state p {
           max-width: 460px;
           margin: 0;
           color: var(--dashboard-muted);
           font-size: 12px;
           line-height: 1.5;
         }
+
+        .recent-activity-state button {
+          margin-top: 14px;
+          padding: 9px 15px;
+          color: #FFFFFF;
+          border-radius: 10px;
+          background: #0F918C;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .recent-activity-skeleton {
+          min-height: 68px;
+          padding: 13px 15px;
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr) 110px;
+          align-items: center;
+          gap: 14px;
+          border-radius: 13px;
+          background: color-mix(in srgb, var(--dashboard-bg) 68%, var(--dashboard-card));
+        }
+
+        .recent-activity-skeleton > span,
+        .recent-activity-skeleton i {
+          display: block;
+          border-radius: 8px;
+          background: linear-gradient(90deg, var(--dashboard-border), var(--dashboard-card), var(--dashboard-border));
+          background-size: 200% 100%;
+          animation: dashboard-stat-loading 1.2s linear infinite;
+        }
+
+        .recent-activity-skeleton > span { width: 42px; height: 42px; border-radius: 50%; }
+        .recent-activity-skeleton > div { display: grid; gap: 7px; }
+        .recent-activity-skeleton > div i:first-child { width: min(340px, 85%); height: 13px; }
+        .recent-activity-skeleton > div i:last-child { width: min(220px, 60%); height: 9px; }
+        .recent-activity-skeleton > i { width: 100%; height: 10px; }
+        .recent-activity-skeleton + .recent-activity-skeleton { margin-top: 10px; }
 
         .dashboard-bot {
           position: fixed;
@@ -479,13 +610,8 @@ export function DashboardPage() {
             margin-left: 280px;
           }
 
-          .dashboard-header__menu {
-            display: none;
-          }
-
-          .dashboard-header__profile {
-            display: none;
-          }
+          .dashboard-header { display: none; }
+          .dashboard-main { padding-top: 40px; }
         }
 
         @media (max-width: 1120px) {
@@ -499,10 +625,6 @@ export function DashboardPage() {
         @media (max-width: 620px) {
           .dashboard-header {
             min-height: 64px;
-          }
-
-          .dashboard-header__title span {
-            display: none;
           }
 
           .dashboard-main {
@@ -525,6 +647,24 @@ export function DashboardPage() {
             right: 16px;
             bottom: 16px;
           }
+
+          .recent-activity-card { padding: 14px; }
+          .recent-activity-row {
+            min-height: 76px;
+            grid-template-columns: auto minmax(0, 1fr);
+            gap: 11px;
+          }
+          .recent-activity-row time {
+            grid-column: 2;
+            white-space: normal;
+          }
+          .recent-activity-skeleton {
+            grid-template-columns: auto minmax(0, 1fr);
+          }
+          .recent-activity-skeleton > i {
+            grid-column: 2;
+            width: 90px;
+          }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -535,6 +675,8 @@ export function DashboardPage() {
             transition-duration: .01ms !important;
             animation-duration: .01ms !important;
           }
+          .recent-activity-skeleton > span,
+          .recent-activity-skeleton i { animation: none; }
         }
       `}</style>
     </div>

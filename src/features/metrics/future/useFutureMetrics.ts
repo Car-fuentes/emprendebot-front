@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react'
-import { getMetricsMock } from '../mocks/metricsMockData'
-import type { UseMetricsParams, UseMetricsResult } from '../types/metrics'
+import { getMetricsMock } from './futureMetrics.mock'
+import type { UseMetricsParams, UseMetricsResult } from './futureMetrics.types'
 
 export function useMetrics(params: UseMetricsParams = {}): UseMetricsResult {
   const {

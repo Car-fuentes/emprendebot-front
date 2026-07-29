@@ -68,7 +68,7 @@ export function CatalogPage() {
       window.clearTimeout(showMessage)
       window.clearTimeout(hideMessage)
     }
-  }, [location.key, successMessage])
+  }, [successMessage, location.key])
 
   const handlePricingChoice = (precioConsultar: boolean) => {
     setShowPricingModal(false)

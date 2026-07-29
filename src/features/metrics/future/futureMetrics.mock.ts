@@ -1,4 +1,4 @@
-import type { LeadItem, MetricsData, MetricsPeriod, MetricsPeriodOption } from '../types/metrics'
+import type { LeadItem, MetricsData, MetricsPeriod, MetricsPeriodOption } from './futureMetrics.types'
 
 export const METRICS_PERIOD_OPTIONS: MetricsPeriodOption[] = [
   { value: 'last7Days', label: 'Últimos 7 días' },
