@@ -234,6 +234,15 @@ export function PresupuestoDetailPage() {
             </section>
           ) : presupuesto ? (
             <>
+              <button
+                type="button"
+                className="budget-detail__back"
+                onClick={() => navigate('/presupuestos')}
+              >
+                <span aria-hidden="true">‹</span>
+                Volver a presupuestos
+              </button>
+
               <section className="budget-detail__heading">
                 <div>
                   <span>Presupuesto #{presupuesto.id}</span>

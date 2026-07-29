@@ -306,6 +306,10 @@
   .budget-actions { flex-direction: row; align-items: center; justify-content: space-between; }
 }
 
+@media (max-width: 999px) {
+  .budget-detail__back { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .budgets-loading > div { animation: none; }
 }
