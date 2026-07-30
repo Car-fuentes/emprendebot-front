@@ -11,11 +11,11 @@ const catalogStyles = readFileSync(
   'utf8',
 )
 
-test('Catálogo presenta el filtro como visibilidad para clientes', () => {
+test('Catálogo presenta el filtro de visibilidad con los estados definidos por UX', () => {
   assert.match(catalogPage, /<span>Visibilidad<\/span>/)
   assert.match(catalogPage, /<option value="all">Todos<\/option>/)
-  assert.match(catalogPage, /<option value="active">Visibles para clientes<\/option>/)
-  assert.match(catalogPage, /<option value="inactive">Ocultos para clientes<\/option>/)
+  assert.match(catalogPage, /<option value="active">Activos<\/option>/)
+  assert.match(catalogPage, /<option value="inactive">Inactivos<\/option>/)
 })
 
 test('el filtro conserva el contrato activo del backend', () => {
