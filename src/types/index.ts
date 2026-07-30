@@ -66,7 +66,6 @@ export interface CreateProductPayload {
   nombre: string
   descripcion?: string
   precio?: number
-  stock: number
   activo: boolean
   requiereCotizacion: boolean
   imagen?: File
@@ -76,7 +75,6 @@ export interface UpdateProductPayload {
   nombre?: string
   descripcion?: string | null
   precio?: number
-  stock?: number
   activo?: boolean
   requiereCotizacion?: boolean
   urlImagen?: string | null
@@ -90,7 +88,6 @@ export interface FAQ {
   pregunta: string
   respuesta: string
   categoria?: string
-  activa: boolean
   createdAt: string
   updatedAt: string
 }
@@ -101,7 +98,15 @@ export interface FAQFormData {
   categoriaId?: string
   categoria?: string
   nuevaCategoriaNombre?: string
-  activa: boolean
+}
+
+export interface FAQSuggestion {
+  id: string
+  pregunta: string
+  respuesta: string
+  categoria: {
+    nombre: string
+  }
 }
 
 export interface FAQCategory {
@@ -116,7 +121,6 @@ export interface FAQApi {
   categoriaId: string
   pregunta: string
   respuesta: string
-  activa?: boolean
   fechaCreacion: string
   fechaModificacion: string
   categoria?: {
@@ -136,14 +140,12 @@ export interface CreateFAQPayload {
   categoriaId: string
   pregunta: string
   respuesta: string
-  activa?: boolean
 }
 
 export interface UpdateFAQPayload {
   categoriaId?: string
   pregunta?: string
   respuesta?: string
-  activa?: boolean
 }
 
 export interface Business {

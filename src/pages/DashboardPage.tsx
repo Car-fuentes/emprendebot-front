@@ -62,7 +62,7 @@ export function DashboardPage() {
 
   const metrics = [
     {
-      label: 'Consultas que esperan respuesta',
+      label: 'Consultas pendientes',
       value: stats.consultasPendientes.value,
       description: 'Requieren seguimiento',
       color: brand.primary,
@@ -71,6 +71,7 @@ export function DashboardPage() {
       loading: isBusinessLoading || (!businessUnavailable && stats.consultasPendientes.status === 'loading'),
       error: !businessUnavailable && stats.consultasPendientes.status === 'error',
       unavailable: businessUnavailable,
+      onClick: () => navigate('/consultas?atencion=humana&estado=en_proceso'),
     },
     {
       label: 'Presupuestos registrados',
@@ -82,6 +83,7 @@ export function DashboardPage() {
       loading: isBusinessLoading || (!businessUnavailable && stats.presupuestosPendientes.status === 'loading'),
       error: !businessUnavailable && stats.presupuestosPendientes.status === 'error',
       unavailable: businessUnavailable,
+      onClick: () => navigate('/presupuestos'),
     },
     {
       label: 'Automatización estimada',
@@ -94,17 +96,19 @@ export function DashboardPage() {
       error: !businessUnavailable && stats.porcentajeAutomatizacion.status === 'error',
       unavailable: businessUnavailable || stats.porcentajeAutomatizacion.status === 'unavailable',
       helpText: 'Esta métrica es una estimación basada en consultas sin derivación ni intervención del emprendedor. Será reemplazada por una medición oficial cuando el backend registre automáticamente la resolución de las consultas.',
+      onClick: () => navigate('/metricas'),
     },
     {
       label: 'Consultas resueltas',
       value: stats.consultasResueltas.value,
-      description: 'Conversaciones completadas',
+      description: 'Atendidas automáticamente por el chatbot',
       color: '#F97316',
       icon: <IconWrapper><AppIcon name="check" size={22} /></IconWrapper>,
       tone: 'warning' as const,
       loading: isBusinessLoading || (!businessUnavailable && stats.consultasResueltas.status === 'loading'),
       error: !businessUnavailable && stats.consultasResueltas.status === 'error',
       unavailable: businessUnavailable,
+      onClick: () => navigate('/consultas?resolucion=bot'),
     },
   ]
 

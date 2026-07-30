@@ -12,6 +12,7 @@ interface StatCardProps {
   error?: boolean
   unavailable?: boolean
   helpText?: string
+  onClick: () => void
 }
 
 const TONE_BACKGROUNDS: Record<NonNullable<StatCardProps['tone']>, string> = {
@@ -41,6 +42,7 @@ export function StatCard({
   error = false,
   unavailable = false,
   helpText,
+  onClick,
 }: StatCardProps) {
   const accessibleValue = loading
     ? 'Cargando'
@@ -49,10 +51,13 @@ export function StatCard({
         : String(value)
 
   return (
-    <div className="dashboard-stat-card" aria-label={`${label}: ${accessibleValue}`} style={{
+    <button type="button" className="dashboard-stat-card" aria-label={`${label}: ${accessibleValue}`} onClick={onClick} style={{
       position: 'relative',
+      width: '100%',
       minHeight: 148,
       padding: '20px',
+      color: 'inherit',
+      textAlign: 'left',
       background: 'var(--dashboard-card, var(--color-bg))',
       borderRadius: '16px',
       border: '1px solid var(--dashboard-border, var(--color-border))',
@@ -106,6 +111,7 @@ export function StatCard({
               tabIndex={0}
               aria-label={helpText}
               title={helpText}
+              onClick={event => event.stopPropagation()}
             >
               ?
             </span>
@@ -123,6 +129,10 @@ export function StatCard({
           border-color: color-mix(in srgb, ${color} 52%, var(--dashboard-border, var(--color-border)));
           box-shadow: 0 14px 30px rgba(15, 23, 42, .11) !important;
           transform: translateY(-3px);
+        }
+        .dashboard-stat-card:focus-visible {
+          outline: 3px solid color-mix(in srgb, ${color} 35%, transparent);
+          outline-offset: 3px;
         }
         .dashboard-stat-card__skeleton {
           width: 62px;
@@ -162,6 +172,6 @@ export function StatCard({
           .dashboard-stat-card__skeleton { animation: none; }
         }
       `}</style>
-    </div>
+    </button>
   )
 }

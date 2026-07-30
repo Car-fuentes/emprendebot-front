@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FAQ, FAQCategory, FAQFormData } from '../types'
-import { createFaqApi, deleteFaqApi, getFaqsApi, updateFaqApi } from '../services/faqApi'
+import {
+  createFaqApi,
+  createFaqsFromSuggestionsApi,
+  deleteFaqApi,
+  getFaqsApi,
+  updateFaqApi,
+} from '../services/faqApi'
 import { createFaqCategoryApi, getFaqCategoriesApi } from '../services/faqCategoryApi'
 import { mapFaqApiToUi, mapFaqCategoryApiToUi } from '../services/faqMappers'
 import { DUPLICATE_FAQ_MESSAGE, normalizeFaqQuestion } from '../utils/normalizeFaqQuestion'
 
-export type FAQStatusFilter = 'all' | 'active' | 'inactive'
 export type FAQSortOption = 'created-desc' | 'created-asc' | 'alpha-asc' | 'alpha-desc'
 
 interface UseFaqFilters {
-  status: FAQStatusFilter
   category: string
   sort: FAQSortOption
 }
@@ -94,7 +98,6 @@ function normalizeFaqData(data: FAQFormData): FAQFormData {
     categoriaId: data.categoriaId,
     categoria,
     nuevaCategoriaNombre,
-    activa: data.activa ?? true,
   }
 }
 
@@ -141,7 +144,8 @@ export function useFaqs(filters: UseFaqFilters) {
   }, [])
 
   useEffect(() => {
-    void loadFaqData()
+    const timeoutId = window.setTimeout(() => void loadFaqData(), 0)
+    return () => window.clearTimeout(timeoutId)
   }, [loadFaqData])
 
   const resolveCategoryId = useCallback(async (data: FAQFormData): Promise<{ categoryId: string; categories: FAQCategory[] }> => {
@@ -176,7 +180,6 @@ export function useFaqs(filters: UseFaqFilters) {
         categoriaId: categoryId,
         pregunta: normalizedData.pregunta,
         respuesta: normalizedData.respuesta,
-        activa: normalizedData.activa,
       })
       const mappedFaq = mapFaqsWithCategories([createdFaq], nextCategories)[0]
       setAllFaqs(current => [mappedFaq, ...current])
@@ -200,7 +203,6 @@ export function useFaqs(filters: UseFaqFilters) {
         categoriaId: categoryId,
         pregunta: normalizedData.pregunta,
         respuesta: normalizedData.respuesta,
-        activa: normalizedData.activa,
       })
       const mappedFaq = mapFaqsWithCategories([updatedFaq], nextCategories)[0]
       setAllFaqs(current => current.map(faq => faq.id === faqId ? mappedFaq : faq))
@@ -221,32 +223,24 @@ export function useFaqs(filters: UseFaqFilters) {
     }
   }, [])
 
-  const toggleFaq = useCallback(async (faqId: string): Promise<FAQ> => {
-    const faq = allFaqs.find(item => item.id === faqId)
-    if (!faq) throw new Error('No se encontró la FAQ que querés actualizar.')
-
+  const createFromSuggestions = useCallback(async (suggestionIds: string[]): Promise<FAQ[]> => {
     try {
-      const updatedFaq = await updateFaqApi(faqId, { activa: !faq.activa })
-      const mappedFaq = mapFaqsWithCategories([updatedFaq], categories)[0]
-      setAllFaqs(current => current.map(item => item.id === faqId ? mappedFaq : item))
-      setError('')
-      return mappedFaq
-    } catch (toggleError) {
-      throw normalizeApiError(toggleError)
+      const created = await createFaqsFromSuggestionsApi(suggestionIds)
+      await loadFaqData()
+      return mapFaqsWithCategories(created, categories)
+    } catch (createError) {
+      throw normalizeApiError(createError)
     }
-  }, [allFaqs, categories])
+  }, [categories, loadFaqData])
 
   const faqs = useMemo(() => {
     return [...allFaqs]
       .filter(faq => {
-        const matchesStatus = filters.status === 'all'
-          || (filters.status === 'active' && faq.activa)
-          || (filters.status === 'inactive' && !faq.activa)
         const matchesCategory = filters.category === 'all' || faq.categoriaId === filters.category
-        return matchesStatus && matchesCategory
+        return matchesCategory
       })
       .sort((left, right) => sortFaqs(left, right, filters.sort))
-  }, [allFaqs, filters.category, filters.sort, filters.status])
+  }, [allFaqs, filters.category, filters.sort])
 
   const sortedCategories = useMemo(
     () => [...categories].sort((a, b) => a.nombre.localeCompare(b.nombre)),
@@ -263,6 +257,6 @@ export function useFaqs(filters: UseFaqFilters) {
     createFaq,
     updateFaq,
     deleteFaq,
-    toggleFaq,
+    createFromSuggestions,
   }
 }

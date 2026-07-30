@@ -69,16 +69,16 @@ function isFaqMenuCommand(message: string): boolean {
     || message === 'ver preguntas frecuentes'
 }
 
-function getActiveFaqs(business: Business): FAQ[] {
-  return business.faq.filter(faq => faq.activa)
+function getFaqs(business: Business): FAQ[] {
+  return business.faq
 }
 
 function createFaqMenuResponse(business: Business): BotResponse {
-  const activeFaqs = getActiveFaqs(business)
+  const activeFaqs = getFaqs(business)
 
   if (activeFaqs.length === 0) {
     return {
-      text: 'No hay preguntas frecuentes activas en este momento. Podés volver al menú principal.',
+      text: 'No hay preguntas frecuentes disponibles en este momento. Podés volver al menú principal.',
       quickReplies: ['Menú principal'],
     }
   }
@@ -130,7 +130,7 @@ function generateBotResponse(
   }
 
   if (awaitingInput === 'faq-selection') {
-    const activeFaqs = getActiveFaqs(business)
+    const activeFaqs = getFaqs(business)
     if (activeFaqs.length === 0) return createFaqMenuResponse(business)
 
     const selectedFaq = findSelectedFaq(userMessage, activeFaqs)

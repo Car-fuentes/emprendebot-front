@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import type { FAQ, FAQCategory, FAQFormData } from '../../types'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
-import { Switch } from '../ui/Switch'
 import { Textarea } from '../ui/Textarea'
 
 interface FaqFormProps {
@@ -24,7 +23,6 @@ export function FaqForm({ faq, categories, loading = false, submitError, onSubmi
     categoriaId: faq?.categoriaId ?? '',
     categoria: faq?.categoria ?? '',
     nuevaCategoriaNombre: '',
-    activa: faq?.activa ?? true,
   })
   const [errors, setErrors] = useState<{ pregunta?: string; respuesta?: string; categoria?: string }>({})
   const initialSnapshot = useMemo(() => JSON.stringify({
@@ -32,7 +30,6 @@ export function FaqForm({ faq, categories, loading = false, submitError, onSubmi
     respuesta: faq?.respuesta ?? '',
     categoriaId: initialCategoryMode === 'existing' ? faq?.categoriaId ?? '' : '',
     nuevaCategoriaNombre: '',
-    activa: faq?.activa ?? true,
     categoryMode: initialCategoryMode,
   }), [faq, initialCategoryMode])
   const currentSnapshot = JSON.stringify({
@@ -40,7 +37,6 @@ export function FaqForm({ faq, categories, loading = false, submitError, onSubmi
     respuesta: form.respuesta,
     categoriaId: categoryMode === 'existing' ? form.categoriaId ?? '' : '',
     nuevaCategoriaNombre: categoryMode === 'new' ? form.nuevaCategoriaNombre ?? '' : '',
-    activa: form.activa,
     categoryMode,
   })
 
@@ -76,7 +72,7 @@ export function FaqForm({ faq, categories, loading = false, submitError, onSubmi
         <Input
           autoFocus
           label="Pregunta *"
-          placeholder="Ej.: ¿Cuáles son los medios de pago?"
+          placeholder="Escribí la pregunta frecuente"
           value={form.pregunta}
           error={errors.pregunta}
           onChange={event => {
@@ -135,11 +131,6 @@ export function FaqForm({ faq, categories, loading = false, submitError, onSubmi
         )}
         {categoryMode === 'existing' && errors.categoria && <span className="faq-form__error">{errors.categoria}</span>}
       </fieldset>
-
-      <div className="faq-form__visibility">
-        <Switch checked={form.activa} label="Mostrar en el chatbot" disabled={loading} onChange={checked => setForm(current => ({ ...current, activa: checked }))} />
-        <p>Cuando está activada, esta pregunta estará disponible para que el chatbot la use en las conversaciones con clientes.</p>
-      </div>
 
       {submitError && <div className="faq-form__submit-error" role="alert">{submitError}</div>}
 

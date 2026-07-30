@@ -7,10 +7,9 @@ interface FaqCardProps {
   busy?: boolean
   onEdit: (faq: FAQ) => void
   onDelete: (faq: FAQ) => void
-  onToggle: (faqId: string) => Promise<void>
 }
 
-export function FaqCard({ faq, busy = false, onEdit, onDelete, onToggle }: FaqCardProps) {
+export function FaqCard({ faq, busy = false, onEdit, onDelete }: FaqCardProps) {
   const [expanded, setExpanded] = useState(false)
 
   return (
@@ -28,9 +27,6 @@ export function FaqCard({ faq, busy = false, onEdit, onDelete, onToggle }: FaqCa
           </span>
         </button>
 
-        <span className={`faq-card__status${faq.activa ? ' faq-card__status--active' : ''}`}>
-          {busy ? 'Actualizando…' : faq.activa ? 'Activa' : 'Inactiva'}
-        </span>
         <button
           type="button"
           className={`faq-card__expand${expanded ? ' faq-card__expand--open' : ''}`}
@@ -53,23 +49,6 @@ export function FaqCard({ faq, busy = false, onEdit, onDelete, onToggle }: FaqCa
       {expanded && (
         <div className="faq-card__details">
           <p>{faq.respuesta}</p>
-          <div className="faq-card__toggle-row">
-            <span>
-              <strong>Mostrar en el chatbot</strong>
-              <small>Disponible para responder consultas de tus clientes.</small>
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={faq.activa}
-              aria-label={`${faq.activa ? 'Ocultar del chatbot' : 'Mostrar en el chatbot'}: ${faq.pregunta}`}
-              className={`faq-switch${faq.activa ? ' faq-switch--active' : ''}`}
-              disabled={busy}
-              onClick={() => void onToggle(faq.id)}
-            >
-              <span />
-            </button>
-          </div>
         </div>
       )}
     </article>

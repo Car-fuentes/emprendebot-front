@@ -16,7 +16,6 @@ export function mapFaqApiToUi(faq: FAQApi): FAQ {
     pregunta: faq.pregunta,
     respuesta: faq.respuesta,
     categoria: faq.categoria?.nombre,
-    activa: faq.activa ?? true,
     createdAt: faq.fechaCreacion,
     updatedAt: faq.fechaModificacion,
   }
