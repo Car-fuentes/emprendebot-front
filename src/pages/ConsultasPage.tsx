@@ -10,8 +10,6 @@ import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import {
   useConsultas,
-  type ConsultaCanalFilter,
-  type ConsultaDerivadaFilter,
   type ConsultaEstadoFilter,
   type ConsultaSortOption,
 } from '../hooks/useConsultas'
@@ -19,25 +17,9 @@ import '../styles/consultas.css'
 
 const ESTADO_OPTIONS: Array<{ value: ConsultaEstadoFilter; label: string }> = [
   { value: 'todas', label: 'Todas' },
-  { value: 'pendientes_atencion', label: 'Pendientes de atención' },
-  { value: 'nueva', label: 'Nuevas' },
-  { value: 'en_proceso', label: 'En proceso' },
-  { value: 'resuelta', label: 'Resueltas' },
-  { value: 'cerrada', label: 'Cerradas' },
+  { value: 'pendientes_atencion', label: 'Requieren mi atención' },
   { value: 'resuelta_por_bot', label: 'Resueltas por el bot' },
-]
-
-const DERIVADA_OPTIONS: Array<{ value: ConsultaDerivadaFilter; label: string }> = [
-  { value: 'todas', label: 'Todas las consultas' },
-  { value: 'derivadas', label: 'Todas las derivadas' },
-  { value: 'atencion_personalizada', label: 'Atención personalizada' },
-  { value: 'cotizaciones', label: 'Cotizaciones' },
-]
-
-const CANAL_OPTIONS: Array<{ value: ConsultaCanalFilter; label: string }> = [
-  { value: 'todos', label: 'Todos' },
-  { value: 'web', label: 'Web' },
-  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'cerrada', label: 'Cerradas' },
 ]
 
 const SORT_OPTIONS: Array<{ value: ConsultaSortOption; label: string }> = [
@@ -64,8 +46,6 @@ export function ConsultasPage() {
     selectedConsultaId,
     resolutionByConsultaId,
     estadoFilter,
-    canalFilter,
-    derivadaFilter,
     sortOption,
     searchQuery,
     isLoading,
@@ -74,26 +54,47 @@ export function ConsultasPage() {
     updatingConsultaId,
     isShowingDemo,
     setEstadoFilter,
-    setCanalFilter,
-    setDerivadaFilter,
     setSortOption,
     setSearchQuery,
     selectConsulta,
     clearSelection,
     updateConsultaStatus,
     reloadConsultas,
-  } = useConsultas(user?.id, business?.slug)
+  } = useConsultas(user?.id)
 
   useEffect(() => {
     if (user) void loadBusiness(user.id)
   }, [loadBusiness, user])
 
   useEffect(() => {
+    const sanitizedParams = new URLSearchParams(searchParams)
+    sanitizedParams.delete('tipo')
+    sanitizedParams.delete('canal')
+
+    const hasBotResolution = sanitizedParams.get('resolucion') === 'bot'
+    const hasHumanAttention = sanitizedParams.get('atencion') === 'humana'
+      && sanitizedParams.get('estado') === 'en_proceso'
+
+    if (hasBotResolution) {
+      sanitizedParams.delete('atencion')
+      sanitizedParams.delete('estado')
+    } else if (hasHumanAttention) {
+      sanitizedParams.delete('resolucion')
+    } else {
+      sanitizedParams.delete('atencion')
+      sanitizedParams.delete('resolucion')
+      if (sanitizedParams.get('estado') !== 'cerrada') sanitizedParams.delete('estado')
+    }
+    if (!isOptionValue(SORT_OPTIONS, sanitizedParams.get('orden'))) sanitizedParams.delete('orden')
+
+    if (sanitizedParams.toString() !== searchParams.toString()) {
+      setSearchParams(sanitizedParams, { replace: true })
+      return
+    }
+
     const requestedStatus = searchParams.get('estado')
     const requestedResolution = searchParams.get('resolucion')
     const requestedAttention = searchParams.get('atencion')
-    const requestedChannel = searchParams.get('canal')
-    const requestedType = searchParams.get('tipo')
     const requestedSort = searchParams.get('orden')
 
     if (requestedResolution === 'bot') {
@@ -103,16 +104,13 @@ export function ConsultasPage() {
     } else {
       setEstadoFilter(isOptionValue(ESTADO_OPTIONS, requestedStatus) ? requestedStatus : 'todas')
     }
-    setCanalFilter(isOptionValue(CANAL_OPTIONS, requestedChannel) ? requestedChannel : 'todos')
-    setDerivadaFilter(isOptionValue(DERIVADA_OPTIONS, requestedType) ? requestedType : 'todas')
     setSortOption(isOptionValue(SORT_OPTIONS, requestedSort) ? requestedSort : 'recentes')
     setSearchQuery(searchParams.get('buscar') ?? '')
   }, [
     searchParams,
-    setCanalFilter,
-    setDerivadaFilter,
     setEstadoFilter,
     setSearchQuery,
+    setSearchParams,
     setSortOption,
   ])
 
@@ -120,7 +118,7 @@ export function ConsultasPage() {
 
   const showingDetail = Boolean(selectedConsultaId && selectedConsulta)
   const showingDemoIntro = !isLoading && !error && isShowingDemo && !demoStarted
-  const hasActiveFilters = searchQuery.trim() !== '' || estadoFilter !== 'todas' || canalFilter !== 'todos' || derivadaFilter !== 'todas' || sortOption !== 'recentes'
+  const hasActiveFilters = searchQuery.trim() !== '' || estadoFilter !== 'todas' || sortOption !== 'recentes'
 
   const updateQueryParam = (key: string, value: string, defaultValue: string, replace = false) => {
     const next = new URLSearchParams(searchParams)
@@ -155,8 +153,6 @@ export function ConsultasPage() {
   const clearFilters = () => {
     setSearchQuery('')
     setEstadoFilter('todas')
-    setCanalFilter('todos')
-    setDerivadaFilter('todas')
     setSortOption('recentes')
     setSearchParams({})
   }
@@ -240,29 +236,9 @@ export function ConsultasPage() {
                   />
                 </label>
                 <label className="consultas-filter">
-                  <span>Tipo</span>
-                  <select value={derivadaFilter} onChange={event => {
-                    const value = event.target.value as ConsultaDerivadaFilter
-                    setDerivadaFilter(value)
-                    updateQueryParam('tipo', value, 'todas')
-                  }}>
-                    {DERIVADA_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                  </select>
-                </label>
-                <label className="consultas-filter">
-                  <span>Estado</span>
+                  <span>Filtro</span>
                   <select value={estadoFilter} onChange={event => handleEstadoFilter(event.target.value as ConsultaEstadoFilter)}>
                     {ESTADO_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                  </select>
-                </label>
-                <label className="consultas-filter">
-                  <span>Canal</span>
-                  <select value={canalFilter} onChange={event => {
-                    const value = event.target.value as ConsultaCanalFilter
-                    setCanalFilter(value)
-                    updateQueryParam('canal', value, 'todos')
-                  }}>
-                    {CANAL_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
                 </label>
                 <label className="consultas-filter">

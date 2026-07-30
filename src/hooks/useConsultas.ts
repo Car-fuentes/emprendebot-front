@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { CanalConsulta, Consulta, ConsultaEstado } from '../types'
+import type { Consulta, ConsultaEstado } from '../types'
 import {
   getConsultas,
-  getConsultasDerivadas,
   updateConsultaEstado,
-  type ConsultaDerivadaApiFilter,
 } from '../services/consultaStorage'
 import { getPresupuestos } from '../services/presupuestoApi'
 import {
@@ -14,9 +12,7 @@ import {
 } from '../utils/consultationResolution'
 
 export type ConsultaEstadoFilter = 'todas' | ConsultaEstado | 'pendientes_atencion' | 'resuelta_por_bot'
-export type ConsultaCanalFilter = 'todos' | CanalConsulta
 export type ConsultaSortOption = 'recentes' | 'antiguas'
-export type ConsultaDerivadaFilter = ConsultaDerivadaApiFilter
 
 interface UseConsultasResult {
   consultas: Consulta[]
@@ -25,8 +21,6 @@ interface UseConsultasResult {
   selectedConsultaId: string | null
   resolutionByConsultaId: ReadonlyMap<string, ConsultationResolution>
   estadoFilter: ConsultaEstadoFilter
-  canalFilter: ConsultaCanalFilter
-  derivadaFilter: ConsultaDerivadaFilter
   sortOption: ConsultaSortOption
   searchQuery: string
   isLoading: boolean
@@ -35,8 +29,6 @@ interface UseConsultasResult {
   updatingConsultaId: string | null
   isShowingDemo: boolean
   setEstadoFilter: (filter: ConsultaEstadoFilter) => void
-  setCanalFilter: (filter: ConsultaCanalFilter) => void
-  setDerivadaFilter: (filter: ConsultaDerivadaFilter) => void
   setSortOption: (sort: ConsultaSortOption) => void
   setSearchQuery: (query: string) => void
   selectConsulta: (consultaId: string) => void
@@ -69,12 +61,10 @@ function matchesSearch(consulta: Consulta, query: string): boolean {
   return searchable.includes(normalized)
 }
 
-export function useConsultas(userId?: string, slug?: string): UseConsultasResult {
+export function useConsultas(userId?: string): UseConsultasResult {
   const [consultas, setConsultas] = useState<Consulta[]>([])
   const [selectedConsultaId, setSelectedConsultaId] = useState<string | null>(null)
   const [estadoFilter, setEstadoFilter] = useState<ConsultaEstadoFilter>('todas')
-  const [canalFilter, setCanalFilter] = useState<ConsultaCanalFilter>('todos')
-  const [derivadaFilter, setDerivadaFilter] = useState<ConsultaDerivadaFilter>('todas')
   const [sortOption, setSortOption] = useState<ConsultaSortOption>('recentes')
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -88,13 +78,8 @@ export function useConsultas(userId?: string, slug?: string): UseConsultasResult
     setIsLoading(true)
     setError('')
     try {
-      const consultasPromise = derivadaFilter === 'todas'
-        ? getConsultas()
-        : slug
-          ? getConsultasDerivadas(slug, derivadaFilter)
-          : Promise.resolve([])
       const [consultasResult, budgetsResult] = await Promise.allSettled([
-        consultasPromise,
+        getConsultas(),
         getPresupuestos({ page: 1, limit: 100 }),
       ])
       if (consultasResult.status === 'rejected') throw consultasResult.reason
@@ -120,7 +105,7 @@ export function useConsultas(userId?: string, slug?: string): UseConsultasResult
     } finally {
       setIsLoading(false)
     }
-  }, [derivadaFilter, slug])
+  }, [])
 
   const resolutionByConsultaId = useMemo(() => new Map(
     consultas.map(consulta => [
@@ -150,14 +135,13 @@ export function useConsultas(userId?: string, slug?: string): UseConsultasResult
         }
         return consulta.estado === estadoFilter
       })
-      .filter(consulta => canalFilter === 'todos' || consulta.canal === canalFilter)
       .filter(consulta => matchesSearch(consulta, searchQuery))
       .sort((left, right) => {
         const leftTime = new Date(left.fechaActualizacion).getTime()
         const rightTime = new Date(right.fechaActualizacion).getTime()
         return sortOption === 'recentes' ? rightTime - leftTime : leftTime - rightTime
       })
-  }, [canalFilter, consultas, estadoFilter, resolutionByConsultaId, searchQuery, sortOption])
+  }, [consultas, estadoFilter, resolutionByConsultaId, searchQuery, sortOption])
 
   const selectedConsulta = useMemo(() => {
     if (!selectedConsultaId) return null
@@ -201,8 +185,6 @@ export function useConsultas(userId?: string, slug?: string): UseConsultasResult
     selectedConsultaId,
     resolutionByConsultaId,
     estadoFilter,
-    canalFilter,
-    derivadaFilter,
     sortOption,
     searchQuery,
     isLoading,
@@ -211,8 +193,6 @@ export function useConsultas(userId?: string, slug?: string): UseConsultasResult
     updatingConsultaId,
     isShowingDemo,
     setEstadoFilter,
-    setCanalFilter,
-    setDerivadaFilter,
     setSortOption,
     setSearchQuery,
     selectConsulta,

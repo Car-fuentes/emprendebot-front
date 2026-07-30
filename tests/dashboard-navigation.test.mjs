@@ -31,9 +31,15 @@ test('Consultas aplica los filtros recibidos en la URL', () => {
   assert.match(consultasPage, /searchParams\.get\('atencion'\)/)
   assert.match(consultasPage, /searchParams\.get\('resolucion'\)/)
   assert.match(consultasPage, /setSearchParams/)
-  assert.match(consultasPage, /Pendientes de atención/)
+  assert.match(consultasPage, /Requieren mi atención/)
   assert.match(consultasPage, /Requiere atención humana/)
   assert.match(consultasPage, /Resueltas por el bot/)
+  assert.match(consultasPage, /Cerradas/)
+  assert.doesNotMatch(consultasPage, /label: 'Nuevas'/)
+  assert.doesNotMatch(consultasPage, /label: 'En proceso'/)
+  assert.doesNotMatch(consultasPage, /label: 'Resueltas'/)
+  assert.doesNotMatch(consultasPage, />Tipo</)
+  assert.doesNotMatch(consultasPage, />Canal</)
 })
 
 test('Dashboard y Consultas comparten el criterio de pendientes', () => {
