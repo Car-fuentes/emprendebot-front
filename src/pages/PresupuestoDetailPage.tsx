@@ -90,7 +90,8 @@ export function PresupuestoDetailPage() {
     try {
       const response = await getPresupuestoById(budgetId)
       setPresupuesto(response.presupuesto)
-      setQuoteItems(response.presupuesto.items.map(item => ({
+      const responseItems = response.presupuesto.items ?? []
+      setQuoteItems(responseItems.map(item => ({
         ...(item.productoId ? { productoId: item.productoId } : {}),
         nombre: item.nombre,
         cantidad: item.cantidad,
@@ -181,6 +182,7 @@ export function PresupuestoDetailPage() {
   const canQuote = presupuesto
     ? ['PENDIENTE', 'EN_PROCESO', 'ENVIADO'].includes(presupuesto.estado)
     : false
+  const items = presupuesto?.items ?? []
 
   return (
     <div className="budgets-page">
@@ -232,6 +234,15 @@ export function PresupuestoDetailPage() {
             </section>
           ) : presupuesto ? (
             <>
+              <button
+                type="button"
+                className="budget-detail__back"
+                onClick={() => navigate('/presupuestos')}
+              >
+                <span aria-hidden="true">‹</span>
+                Volver a presupuestos
+              </button>
+
               <section className="budget-detail__heading">
                 <div>
                   <span>Presupuesto #{presupuesto.id}</span>
@@ -251,14 +262,20 @@ export function PresupuestoDetailPage() {
                     <table className="budget-table">
                       <thead><tr><th>Ítem</th><th>Cantidad</th><th>Unitario</th><th>Subtotal</th></tr></thead>
                       <tbody>
-                        {presupuesto.items.map((item, index) => (
-                          <tr key={`${item.productoId ?? item.nombre}-${index}`}>
-                            <td>{item.nombre}</td>
-                            <td>{item.cantidad}</td>
-                            <td>{formatCurrency(item.precioUnitario)}</td>
-                            <td>{formatCurrency(item.subtotal)}</td>
+                        {items.length > 0 ? (
+                          items.map((item, index) => (
+                            <tr key={`${item.productoId ?? item.nombre}-${index}`}>
+                              <td>{item.nombre}</td>
+                              <td>{item.cantidad}</td>
+                              <td>{formatCurrency(item.precioUnitario)}</td>
+                              <td>{formatCurrency(item.subtotal)}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={4}>Este presupuesto no tiene ítems para mostrar.</td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                       <tfoot><tr><td colSpan={3}>Total</td><td>{formatCurrency(presupuesto.total)}</td></tr></tfoot>
                     </table>
