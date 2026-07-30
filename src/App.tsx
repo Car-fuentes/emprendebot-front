@@ -15,6 +15,7 @@ import { ProductFormPage } from './pages/ProductFormPage'
 import { MetricsPage } from './pages/MetricsPage'
 import { PresupuestosPage } from './pages/PresupuestosPage'
 import { PresupuestoDetailPage } from './pages/PresupuestoDetailPage'
+import { CHAT_PREVIEW_ROUTE, PUBLIC_CHAT_ROUTE } from './utils/chatRoutes'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth()
@@ -82,8 +83,12 @@ function App() {
           <ProtectedRoute><ProductFormPage /></ProtectedRoute>
         } />
 
+        <Route path={CHAT_PREVIEW_ROUTE} element={
+          <ProtectedRoute><ChatbotPage preview /></ProtectedRoute>
+        } />
+
         {/* Chatbot público por slug: www.emprendebot/minegocio */}
-        <Route path="/:slug" element={<ChatbotPage />} />
+        <Route path={PUBLIC_CHAT_ROUTE} element={<ChatbotPage />} />
       </Routes>
 
       {backgroundLocation && (

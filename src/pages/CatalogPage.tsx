@@ -8,6 +8,7 @@ import { AppIcon } from '../components/ui/AppIcon'
 import { PageBackButton } from '../components/navigation/PageBackButton'
 import type { ProductApi } from '../types'
 import { deleteProductApi, getProductsApi } from '../services/productApi'
+import { openChatPreview } from '../utils/chatRoutes'
 import '../styles/catalog.css'
 
 const PAGE_SIZE = 10
@@ -232,7 +233,7 @@ export function CatalogPage() {
           className="catalog-bot"
           disabled={!business?.slug}
           aria-label="Abrir asistente: Probá tu chat"
-          onClick={() => business?.slug && navigate(`/${business.slug}`)}
+          onClick={() => business?.slug && openChatPreview(business.slug)}
         >
           <span className="catalog-bot__label"><i aria-hidden="true" />Probá tu chat</span>
           <span className="catalog-bot__avatar" aria-hidden="true"><img src="/isoBot-transparente.png" alt="" /></span>

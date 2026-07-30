@@ -15,7 +15,7 @@ import { getPublicBusinessApi, getPublicFaqsApi, getPublicProductsApi } from '..
 import { resolveChatAppearance } from '../services/chatAppearance'
 
 // Página pública: www.emprendebot/[slug]
-export function ChatbotPage() {
+export function ChatbotPage({ preview = false }: { preview?: boolean }) {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
   const [business, setBusiness] = useState<Business | null>(null)
@@ -87,10 +87,10 @@ export function ChatbotPage() {
     ...(publicProducts !== null ? { productos: publicProducts } : {}),
   }
 
-  return <PublicChat key={business.id} business={publicBusiness} />
+  return <PublicChat key={business.id} business={publicBusiness} preview={preview} />
 }
 
-function PublicChat({ business }: { business: Business }) {
+function PublicChat({ business, preview }: { business: Business; preview: boolean }) {
   const {
     messages,
     isTyping,
@@ -157,7 +157,7 @@ function PublicChat({ business }: { business: Business }) {
         '--color-bg-answer': appearance.primary,
       } as CSSProperties}
     >
-      <ChatHeader business={business} onRefresh={reset} />
+      <ChatHeader business={business} onRefresh={preview ? reset : undefined} />
 
       <div ref={messagesContainerRef} className="public-chat__messages">
         {messages.map(message => (

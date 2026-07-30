@@ -9,6 +9,7 @@ import { Avatar } from '../components/ui/Avatar'
 import { AppIcon } from '../components/ui/AppIcon'
 import { brand } from '../styles/brand'
 import { useDashboardStats } from '../hooks/useDashboardStats'
+import { openChatPreview } from '../utils/chatRoutes'
 
 function IconWrapper({ children }: { children: ReactNode }) {
   return <span className="dashboard-icon-wrapper">{children}</span>
@@ -200,9 +201,7 @@ export function DashboardPage() {
           className="dashboard-bot"
           disabled={!business?.slug}
           aria-label="Abrir asistente: Probá tu Bot"
-          onClick={() => {
-            if (business?.slug) window.open(`/${business.slug}`, '_blank', 'noopener,noreferrer')
-          }}
+          onClick={() => business?.slug && openChatPreview(business.slug)}
         >
           <span className="dashboard-bot__label">
             <i aria-hidden="true" />
