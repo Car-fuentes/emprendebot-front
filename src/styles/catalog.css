@@ -241,10 +241,12 @@
 .product-card__media {
   position: relative;
   aspect-ratio: 16 / 9;
+  margin: 18px 18px 0;
   display: grid;
   place-items: center;
   overflow: hidden;
   color: var(--catalog-muted);
+  border-radius: 14px;
   background: linear-gradient(135deg, color-mix(in srgb, #13a8a2 8%, var(--catalog-card)), color-mix(in srgb, #255f80 12%, var(--catalog-card)));
 }
 
@@ -274,7 +276,7 @@
 }
 
 .product-card__body {
-  padding: 18px;
+  padding: 20px 22px 22px;
 }
 
 .product-card__title-row {
@@ -964,6 +966,8 @@
 
 @media (max-width: 425px) {
   .catalog-main { padding-right: 14px; padding-left: 14px; }
+  .product-card__media { margin: 14px 14px 0; }
+  .product-card__body { padding: 18px; }
   .catalog-modal-backdrop { padding: 10px; align-items: end; }
   .catalog-modal { max-height: calc(100svh - 20px); padding: 20px; border-radius: 20px 20px 12px 12px; }
   .product-form-page { padding: 0; place-items: end center; }
