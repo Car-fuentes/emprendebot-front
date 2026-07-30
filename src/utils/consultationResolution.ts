@@ -22,6 +22,20 @@ export interface ConsultationResolutionContext {
 const normalize = (value?: string | null) =>
   value?.trim().toUpperCase().replace(/[\s-]+/g, '_') ?? ''
 
+export function isPendingHumanConsultation(
+  consulta: Consulta,
+  resolution: ConsultationResolution,
+): boolean {
+  const hasConfirmedHumanReason = resolution.reason === 'human_handoff'
+    || resolution.reason === 'human_intervention'
+    || resolution.reason === 'contact_data'
+
+  return normalize(consulta.estado) === 'EN_PROCESO'
+    && resolution.requiresHumanAction
+    && !resolution.resolvedByBot
+    && hasConfirmedHumanReason
+}
+
 export function classifyConsultationResolution(
   consulta: Consulta,
   context: ConsultationResolutionContext,

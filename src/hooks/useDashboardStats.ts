@@ -10,6 +10,7 @@ import {
 } from '../utils/recentActivity'
 import {
   classifyConsultationResolution,
+  isPendingHumanConsultation,
   type ConsultationResolutionContext,
 } from '../utils/consultationResolution'
 
@@ -52,10 +53,9 @@ export const countDashboardConsultations = (
   let automatizadasEstimadas = 0
 
   consultas.forEach(consulta => {
-    const status = normalizeDashboardStatus(consulta.estado)
     const resolution = classifyConsultationResolution(consulta, resolutionContext)
-    if (!resolution.resolvedByBot && (status === 'NUEVA' || status === 'EN_PROCESO')) pendientes += 1
-    if (status === 'RESUELTA' || resolution.resolvedByBot) resueltas += 1
+    if (isPendingHumanConsultation(consulta, resolution)) pendientes += 1
+    if (resolution.resolvedByBot) resueltas += 1
     if (resolution.resolvedByBot) automatizadasEstimadas += 1
   })
 

@@ -9,10 +9,11 @@ import {
 import { getPresupuestos } from '../services/presupuestoApi'
 import {
   classifyConsultationResolution,
+  isPendingHumanConsultation,
   type ConsultationResolution,
 } from '../utils/consultationResolution'
 
-export type ConsultaEstadoFilter = 'todas' | ConsultaEstado | 'resuelta_por_bot'
+export type ConsultaEstadoFilter = 'todas' | ConsultaEstado | 'pendientes_atencion' | 'resuelta_por_bot'
 export type ConsultaCanalFilter = 'todos' | CanalConsulta
 export type ConsultaSortOption = 'recentes' | 'antiguas'
 export type ConsultaDerivadaFilter = ConsultaDerivadaApiFilter
@@ -142,6 +143,10 @@ export function useConsultas(userId?: string, slug?: string): UseConsultasResult
         if (estadoFilter === 'todas') return true
         if (estadoFilter === 'resuelta_por_bot') {
           return resolutionByConsultaId.get(consulta.id)?.resolvedByBot === true
+        }
+        if (estadoFilter === 'pendientes_atencion') {
+          const resolution = resolutionByConsultaId.get(consulta.id)
+          return resolution ? isPendingHumanConsultation(consulta, resolution) : false
         }
         return consulta.estado === estadoFilter
       })

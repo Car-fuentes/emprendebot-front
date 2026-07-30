@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ConsultaCard } from '../components/consultas/ConsultaCard'
 import { ConsultaDetail } from '../components/consultas/ConsultaDetail'
 import { Drawer } from '../components/layout/Drawer'
@@ -19,6 +19,7 @@ import '../styles/consultas.css'
 
 const ESTADO_OPTIONS: Array<{ value: ConsultaEstadoFilter; label: string }> = [
   { value: 'todas', label: 'Todas' },
+  { value: 'pendientes_atencion', label: 'Pendientes de atención' },
   { value: 'nueva', label: 'Nuevas' },
   { value: 'en_proceso', label: 'En proceso' },
   { value: 'resuelta', label: 'Resueltas' },
@@ -44,8 +45,14 @@ const SORT_OPTIONS: Array<{ value: ConsultaSortOption; label: string }> = [
   { value: 'antiguas', label: 'Más antiguas' },
 ]
 
+const isOptionValue = <T extends string>(
+  options: Array<{ value: T }>,
+  value: string | null,
+): value is T => options.some(option => option.value === value)
+
 export function ConsultasPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { user } = useAuth()
   const { business, loadBusiness } = useBusiness()
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -81,11 +88,63 @@ export function ConsultasPage() {
     if (user) void loadBusiness(user.id)
   }, [loadBusiness, user])
 
+  useEffect(() => {
+    const requestedStatus = searchParams.get('estado')
+    const requestedResolution = searchParams.get('resolucion')
+    const requestedAttention = searchParams.get('atencion')
+    const requestedChannel = searchParams.get('canal')
+    const requestedType = searchParams.get('tipo')
+    const requestedSort = searchParams.get('orden')
+
+    if (requestedResolution === 'bot') {
+      setEstadoFilter('resuelta_por_bot')
+    } else if (requestedAttention === 'humana' && requestedStatus === 'en_proceso') {
+      setEstadoFilter('pendientes_atencion')
+    } else {
+      setEstadoFilter(isOptionValue(ESTADO_OPTIONS, requestedStatus) ? requestedStatus : 'todas')
+    }
+    setCanalFilter(isOptionValue(CANAL_OPTIONS, requestedChannel) ? requestedChannel : 'todos')
+    setDerivadaFilter(isOptionValue(DERIVADA_OPTIONS, requestedType) ? requestedType : 'todas')
+    setSortOption(isOptionValue(SORT_OPTIONS, requestedSort) ? requestedSort : 'recentes')
+    setSearchQuery(searchParams.get('buscar') ?? '')
+  }, [
+    searchParams,
+    setCanalFilter,
+    setDerivadaFilter,
+    setEstadoFilter,
+    setSearchQuery,
+    setSortOption,
+  ])
+
   if (!user) return null
 
   const showingDetail = Boolean(selectedConsultaId && selectedConsulta)
   const showingDemoIntro = !isLoading && !error && isShowingDemo && !demoStarted
   const hasActiveFilters = searchQuery.trim() !== '' || estadoFilter !== 'todas' || canalFilter !== 'todos' || derivadaFilter !== 'todas' || sortOption !== 'recentes'
+
+  const updateQueryParam = (key: string, value: string, defaultValue: string, replace = false) => {
+    const next = new URLSearchParams(searchParams)
+    if (value === defaultValue || value.trim() === '') next.delete(key)
+    else next.set(key, value)
+    setSearchParams(next, { replace })
+  }
+
+  const handleEstadoFilter = (filter: ConsultaEstadoFilter) => {
+    setEstadoFilter(filter)
+    const next = new URLSearchParams(searchParams)
+    next.delete('estado')
+    next.delete('atencion')
+    next.delete('resolucion')
+    if (filter === 'pendientes_atencion') {
+      next.set('atencion', 'humana')
+      next.set('estado', 'en_proceso')
+    } else if (filter === 'resuelta_por_bot') {
+      next.set('resolucion', 'bot')
+    } else if (filter !== 'todas') {
+      next.set('estado', filter)
+    }
+    setSearchParams(next)
+  }
 
   const handleBack = () => {
     if (showingDetail) return clearSelection()
@@ -99,6 +158,7 @@ export function ConsultasPage() {
     setCanalFilter('todos')
     setDerivadaFilter('todas')
     setSortOption('recentes')
+    setSearchParams({})
   }
 
   return (
@@ -172,35 +232,62 @@ export function ConsultasPage() {
                   <AppIcon name="search" size={18} />
                   <input
                     value={searchQuery}
-                    onChange={event => setSearchQuery(event.target.value)}
+                    onChange={event => {
+                      setSearchQuery(event.target.value)
+                      updateQueryParam('buscar', event.target.value, '', true)
+                    }}
                     placeholder="Buscar cliente o mensaje..."
                   />
                 </label>
                 <label className="consultas-filter">
                   <span>Tipo</span>
-                  <select value={derivadaFilter} onChange={event => setDerivadaFilter(event.target.value as ConsultaDerivadaFilter)}>
+                  <select value={derivadaFilter} onChange={event => {
+                    const value = event.target.value as ConsultaDerivadaFilter
+                    setDerivadaFilter(value)
+                    updateQueryParam('tipo', value, 'todas')
+                  }}>
                     {DERIVADA_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
                 </label>
                 <label className="consultas-filter">
                   <span>Estado</span>
-                  <select value={estadoFilter} onChange={event => setEstadoFilter(event.target.value as ConsultaEstadoFilter)}>
+                  <select value={estadoFilter} onChange={event => handleEstadoFilter(event.target.value as ConsultaEstadoFilter)}>
                     {ESTADO_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
                 </label>
                 <label className="consultas-filter">
                   <span>Canal</span>
-                  <select value={canalFilter} onChange={event => setCanalFilter(event.target.value as ConsultaCanalFilter)}>
+                  <select value={canalFilter} onChange={event => {
+                    const value = event.target.value as ConsultaCanalFilter
+                    setCanalFilter(value)
+                    updateQueryParam('canal', value, 'todos')
+                  }}>
                     {CANAL_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
                 </label>
                 <label className="consultas-filter">
                   <span>Orden</span>
-                  <select value={sortOption} onChange={event => setSortOption(event.target.value as ConsultaSortOption)}>
+                  <select value={sortOption} onChange={event => {
+                    const value = event.target.value as ConsultaSortOption
+                    setSortOption(value)
+                    updateQueryParam('orden', value, 'recentes')
+                  }}>
                     {SORT_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
                 </label>
               </section>
+
+              {estadoFilter === 'pendientes_atencion' && (
+                <div className="consultas-active-filters" aria-label="Filtros activos">
+                  <span>Requiere atención humana</span>
+                  <span>En proceso</span>
+                </div>
+              )}
+              {estadoFilter === 'resuelta_por_bot' && (
+                <div className="consultas-active-filters" aria-label="Filtros activos">
+                  <span>Resueltas por el bot</span>
+                </div>
+              )}
 
               {isShowingDemo && (
                 <aside className="consultas-demo" aria-label="Consultas de ejemplo">
