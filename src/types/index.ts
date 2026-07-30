@@ -66,7 +66,6 @@ export interface CreateProductPayload {
   nombre: string
   descripcion?: string
   precio?: number
-  stock: number
   activo: boolean
   requiereCotizacion: boolean
   imagen?: File
@@ -76,7 +75,6 @@ export interface UpdateProductPayload {
   nombre?: string
   descripcion?: string | null
   precio?: number
-  stock?: number
   activo?: boolean
   requiereCotizacion?: boolean
   urlImagen?: string | null

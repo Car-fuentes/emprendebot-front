@@ -196,7 +196,6 @@ export function CatalogPage() {
                     <div className="product-card__body">
                       <div className="product-card__title-row">
                         <h2>{product.nombre}</h2>
-                        <span className="product-card__stock">Stock: {product.stock}</span>
                       </div>
                       <p className="product-card__description">{product.descripcion || 'Sin descripción'}</p>
                       <div className="product-card__footer">
