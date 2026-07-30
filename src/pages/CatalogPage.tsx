@@ -147,11 +147,11 @@ export function CatalogPage() {
                 />
               </label>
               <label className="catalog-filter">
-                <span>Estado</span>
+                <span>Visibilidad</span>
                 <select value={activeFilter} onChange={event => { setActiveFilter(event.target.value as typeof activeFilter); setPage(1) }}>
                   <option value="all">Todos</option>
-                  <option value="active">Activos</option>
-                  <option value="inactive">Inactivos</option>
+                  <option value="active">Visibles para clientes</option>
+                  <option value="inactive">Ocultos para clientes</option>
                 </select>
               </label>
             </section>
