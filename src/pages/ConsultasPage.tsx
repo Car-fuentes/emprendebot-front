@@ -13,6 +13,7 @@ import {
   type ConsultaEstadoFilter,
   type ConsultaSortOption,
 } from '../hooks/useConsultas'
+import { openChatPreview } from '../utils/chatRoutes'
 import '../styles/consultas.css'
 
 const ESTADO_OPTIONS: Array<{ value: ConsultaEstadoFilter; label: string }> = [
@@ -307,7 +308,7 @@ export function ConsultasPage() {
           className="consultas-bot"
           disabled={!business?.slug}
           aria-label="Abrir asistente: Probá tu chat"
-          onClick={() => business?.slug && navigate(`/${business.slug}`)}
+          onClick={() => business?.slug && openChatPreview(business.slug)}
         >
           <span className="consultas-bot__label"><i aria-hidden="true" />Probá tu chat</span>
           <span className="consultas-bot__avatar" aria-hidden="true"><img src="/isoBot-transparente.png" alt="" /></span>

@@ -12,6 +12,7 @@ import { useBusiness } from '../context/BusinessContext'
 import { useFaqs, type FAQSortOption } from '../hooks/useFaqs'
 import type { FAQ, FAQFormData, FAQSuggestion } from '../types'
 import { DUPLICATE_FAQ_MESSAGE, normalizeFaqQuestion } from '../utils/normalizeFaqQuestion'
+import { openChatPreview } from '../utils/chatRoutes'
 import { getFaqSuggestionsApi } from '../services/faqApi'
 import '../styles/faq.css'
 
@@ -302,7 +303,7 @@ export function FaqPage() {
         </main>
       </div>
 
-      <button className="faq-bot" type="button" disabled={!business?.slug} onClick={() => business?.slug && navigate(`/${business.slug}`)}>
+      <button className="faq-bot" type="button" disabled={!business?.slug} onClick={() => business?.slug && openChatPreview(business.slug)}>
         <span className="faq-bot__label"><i aria-hidden="true" />Probá tu chat</span>
         <span className="faq-bot__avatar" aria-hidden="true"><img src="/isoBot-transparente.png" alt="" /></span>
       </button>
