@@ -190,7 +190,7 @@ function generateBotResponse(
   }
 
   return {
-    text: `Entendido. Estoy aquí para ayudarte con información sobre ${business.nombre}. ¿Qué necesitás?`,
+    text: 'No encontré una respuesta para esa consulta.\nElegí por favor una opción para continuar',
     quickReplies: QUICK_REPLIES_INICIAL,
   }
 }
@@ -435,7 +435,7 @@ export function useChat(business: Business) {
         const botMsg: Message = {
           id: crypto.randomUUID(),
           role: 'bot',
-          text: 'Ingresá un teléfono válido de entre 8 y 15 números.',
+          text: 'Por favor ingresá un teléfono válido de entre 8 y 15 números, para que luego podamos contactarte.',
           timestamp: new Date(),
         }
         setMessages(prev => {
@@ -523,10 +523,16 @@ export function useChat(business: Business) {
             items: pendingQuote.summary.items,
             total: presupuesto.total,
           },
-          quickReplies: QUICK_REPLIES_INICIAL,
+        }
+        const followUpMsg: Message = {
+          id: crypto.randomUUID(),
+          role: 'bot',
+          text: `Recibimos tu solicitud. Una persona del negocio se comunicará con vos a la brevedad. ¡Gracias por comunicarte con ${business.nombre}!`,
+          timestamp: new Date(),
+          quickReplies: ['Preguntas frecuentes', 'Hablar con una persona'],
         }
         setMessages(prev => {
-          const next = [...prev, generatedMsg]
+          const next = [...prev, generatedMsg, followUpMsg]
           saveChatHistory(business.id, next)
           return next
         })
@@ -584,7 +590,25 @@ export function useChat(business: Business) {
     }
 
     if (awaitingInput === 'contact-phone') {
-      const phone = text.trim()
+      const phone = text.trim().replace(/[\s-]/g, '')
+
+      if (!/^\+?[0-9]{8,15}$/.test(phone)) {
+        const botMsg: Message = {
+          id: crypto.randomUUID(),
+          role: 'bot',
+          text: 'Por favor ingresá un teléfono válido de entre 8 y 15 números, para que luego podamos contactarte.',
+          timestamp: new Date(),
+        }
+        setMessages(prev => {
+          const next = [...prev, botMsg]
+          saveChatHistory(business.id, next)
+          return next
+        })
+        if (consultationId) await savePublicMessage(business.slug, consultationId, 'bot', botMsg.text).catch(() => undefined)
+        setIsTyping(false)
+        return
+      }
+
       if (consultationId) {
         void updatePublicContact(
           business.slug,
