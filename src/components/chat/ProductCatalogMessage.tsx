@@ -165,7 +165,7 @@ export function ProductCatalogMessage({ products, onConfirm, onBack }: ProductCa
           boxShadow: 'var(--shadow-sm)',
           maxWidth: '82%',
         }}>
-          Seleccioná las opciones y cantidades que te interesan y confirmá tu elección.
+          Seleccioná los productos y cantidades que te interesan.Cuando finalices, podrás solicitar un presupuesto.
         </div>
       </div>
 
@@ -189,7 +189,7 @@ export function ProductCatalogMessage({ products, onConfirm, onBack }: ProductCa
         }}
       >
         {totalItems > 0
-          ? `Confirmar selección (${totalItems} ${totalItems === 1 ? 'item' : 'items'})`
+          ? `Continuar al presupuesto (${totalItems} ${totalItems === 1 ? 'item' : 'items'})`
           : 'Seleccioná al menos un producto'}
       </button>
 
