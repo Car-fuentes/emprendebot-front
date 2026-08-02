@@ -288,9 +288,6 @@ function createInitialMessage(business: Business): Message {
 }
 
 function getInitialHistory(business: Business): Message[] {
-  const storedMessages = loadChatHistory(business.id)
-  if (storedMessages.length > 0) return storedMessages
-
   const initialMessages = [createInitialMessage(business)]
   saveChatHistory(business.id, initialMessages)
   return initialMessages
@@ -330,7 +327,7 @@ interface UseChatOptions {
 
 export function useChat(business: Business, { isOnline = true, onNetworkError }: UseChatOptions = {}) {
   const [messages, setMessages] = useState<Message[]>(() => getInitialHistory(business))
-  const [awaitingInput, setAwaitingInput] = useState<AwaitingInput | null>(() => loadAwaitingInput(business.id))
+  const [awaitingInput, setAwaitingInput] = useState<AwaitingInput | null>(null)
   const [isTyping, setIsTyping] = useState(false)
   const [contactName, setContactName] = useState<string>('')
   const responseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -344,11 +341,8 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
       message.generatedQuote ? [message.generatedQuote.sourceSummaryMessageId] : []
     )),
   ))
-  const [initialPendingQuote] = useState<PendingQuote | null>(() => loadPendingQuote(business.id))
-  const pendingQuoteRef = useRef<PendingQuote | null>(initialPendingQuote)
-  const [submittingQuoteMessageId, setSubmittingQuoteMessageId] = useState<string | null>(
-    initialPendingQuote?.sourceSummaryMessageId ?? null,
-  )
+  const pendingQuoteRef = useRef<PendingQuote | null>(null)
+  const [submittingQuoteMessageId, setSubmittingQuoteMessageId] = useState<string | null>(null)
   const cancelledQuoteMessageIds = new Set(
     messages
       .filter(message => message.action === 'CANCEL_BUDGET' && message.actionValue)
