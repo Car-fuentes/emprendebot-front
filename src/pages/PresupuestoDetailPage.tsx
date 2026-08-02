@@ -165,13 +165,16 @@ export function PresupuestoDetailPage() {
     setError(null)
     setSuccess(null)
     try {
-      const response = await cotizarPresupuesto(presupuesto.id, {
+      await cotizarPresupuesto(presupuesto.id, {
         itemsCotizados: quoteItems,
         diasValidez,
       })
-      setPresupuesto(response.presupuesto)
-      setShowQuoteForm(false)
-      setSuccess('Cotización guardada y PDF generado correctamente.')
+      navigate('/presupuestos', {
+        replace: true,
+        state: {
+          successMessage: 'Presupuesto actualizado con éxito. Ya está listo para enviar al cliente.',
+        },
+      })
     } catch (quoteError) {
       setError(readableError(quoteError))
     } finally {
