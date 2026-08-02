@@ -10,6 +10,7 @@ import {
 } from '../utils/recentActivity'
 import {
   classifyConsultationResolution,
+  isPendingHumanConsultation,
   type ConsultationResolutionContext,
 } from '../utils/consultationResolution'
 
@@ -52,10 +53,9 @@ export const countDashboardConsultations = (
   let automatizadasEstimadas = 0
 
   consultas.forEach(consulta => {
-    const status = normalizeDashboardStatus(consulta.estado)
     const resolution = classifyConsultationResolution(consulta, resolutionContext)
-    if (!resolution.resolvedByBot && (status === 'NUEVA' || status === 'EN_PROCESO')) pendientes += 1
-    if (status === 'RESUELTA' || resolution.resolvedByBot) resueltas += 1
+    if (isPendingHumanConsultation(consulta, resolution)) pendientes += 1
+    if (resolution.resolvedByBot) resueltas += 1
     if (resolution.resolvedByBot) automatizadasEstimadas += 1
   })
 
@@ -91,7 +91,7 @@ const loadDashboardStats = async (): Promise<DashboardStatsData> => {
     const resolutionContext: ConsultationResolutionContext = {
       budgetConsultationIds,
       budgetDataComplete: budgetsResult.status === 'fulfilled'
-        && budgetsResult.value.paginacion.total <= budgetsResult.value.presupuestos.length,
+        && (budgetsResult.value.pagination.total ?? 0) <= budgetsResult.value.presupuestos.length,
     }
     const counts = countDashboardConsultations(consultas, resolutionContext)
     consultationActivities = consultas.flatMap(consulta => (
@@ -123,7 +123,7 @@ const loadDashboardStats = async (): Promise<DashboardStatsData> => {
 
   const presupuestosPendientes: DashboardMetric = budgetsResult.status === 'fulfilled'
     ? {
-        value: budgetsResult.value.paginacion.total,
+        value: budgetsResult.value.pagination.total ?? 0,
         status: 'success',
       }
     : { value: '—', status: 'error' }

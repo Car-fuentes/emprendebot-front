@@ -63,7 +63,7 @@ async function loadMetrics(): Promise<CurrentMetricsData> {
     if (day) day.presupuestos += 1
   })
 
-  const totalPresupuestos = budgetResponse.paginacion.total
+  const totalPresupuestos = budgetResponse.pagination.total ?? 0
   const totalConcretados = budgetResponse.presupuestos
     .filter(budget => budget.estado === 'CONCRETADO').length
 

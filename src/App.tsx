@@ -15,6 +15,7 @@ import { ProductFormPage } from './pages/ProductFormPage'
 import { MetricsPage } from './pages/MetricsPage'
 import { PresupuestosPage } from './pages/PresupuestosPage'
 import { PresupuestoDetailPage } from './pages/PresupuestoDetailPage'
+import { CHAT_PREVIEW_ROUTE, PUBLIC_CHAT_ROUTE } from './utils/chatRoutes'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth()
@@ -25,10 +26,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const location = useLocation()
-  const routeState = location.state as { backgroundLocation?: Location } | null
+  const routeState = location.state as { backgroundLocation?: Location; backgroundPath?: string } | null
   const isCatalogModalRoute = location.pathname === '/catalogo/agregar'
     || location.pathname.startsWith('/catalogo/editar/')
-  const backgroundLocation = routeState?.backgroundLocation
+  const isChatPreviewRoute = location.pathname.startsWith('/chat-preview/')
+  const backgroundLocation: Location | string | undefined = routeState?.backgroundLocation
+    ?? routeState?.backgroundPath
     ?? (isCatalogModalRoute
       ? {
           ...location,
@@ -38,7 +41,7 @@ function App() {
           state: null,
           key: 'catalog-modal-background',
         }
-      : undefined)
+      : isChatPreviewRoute ? '/dashboard' : undefined)
 
   return (
     <>
@@ -82,8 +85,12 @@ function App() {
           <ProtectedRoute><ProductFormPage /></ProtectedRoute>
         } />
 
+        <Route path={CHAT_PREVIEW_ROUTE} element={
+          <ProtectedRoute><ChatbotPage preview /></ProtectedRoute>
+        } />
+
         {/* Chatbot público por slug: www.emprendebot/minegocio */}
-        <Route path="/:slug" element={<ChatbotPage />} />
+        <Route path={PUBLIC_CHAT_ROUTE} element={<ChatbotPage />} />
       </Routes>
 
       {backgroundLocation && (
@@ -93,6 +100,9 @@ function App() {
           } />
           <Route path="/catalogo/editar/:id" element={
             <ProtectedRoute><ProductFormPage /></ProtectedRoute>
+          } />
+          <Route path={CHAT_PREVIEW_ROUTE} element={
+            <ProtectedRoute><ChatbotPage preview /></ProtectedRoute>
           } />
         </Routes>
       )}

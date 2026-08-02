@@ -66,7 +66,6 @@ export interface CreateProductPayload {
   nombre: string
   descripcion?: string
   precio?: number
-  stock: number
   activo: boolean
   requiereCotizacion: boolean
   imagen?: File
@@ -76,7 +75,6 @@ export interface UpdateProductPayload {
   nombre?: string
   descripcion?: string | null
   precio?: number
-  stock?: number
   activo?: boolean
   requiereCotizacion?: boolean
   urlImagen?: string | null
@@ -90,7 +88,6 @@ export interface FAQ {
   pregunta: string
   respuesta: string
   categoria?: string
-  activa: boolean
   createdAt: string
   updatedAt: string
 }
@@ -101,7 +98,15 @@ export interface FAQFormData {
   categoriaId?: string
   categoria?: string
   nuevaCategoriaNombre?: string
-  activa: boolean
+}
+
+export interface FAQSuggestion {
+  id: string
+  pregunta: string
+  respuesta: string
+  categoria: {
+    nombre: string
+  }
 }
 
 export interface FAQCategory {
@@ -116,7 +121,6 @@ export interface FAQApi {
   categoriaId: string
   pregunta: string
   respuesta: string
-  activa?: boolean
   fechaCreacion: string
   fechaModificacion: string
   categoria?: {
@@ -136,14 +140,12 @@ export interface CreateFAQPayload {
   categoriaId: string
   pregunta: string
   respuesta: string
-  activa?: boolean
 }
 
 export interface UpdateFAQPayload {
   categoriaId?: string
   pregunta?: string
   respuesta?: string
-  activa?: boolean
 }
 
 export interface Business {
@@ -172,6 +174,26 @@ export interface Business {
 
 // ===== CHAT =====
 export type MessageRole = 'bot' | 'user'
+export type QuickReplyAction =
+  | 'SHOW_MAIN_MENU'
+  | 'SHOW_FAQ_MENU'
+  | 'SHOW_CATALOG'
+  | 'SHOW_SCHEDULE'
+  | 'START_HUMAN_HANDOFF'
+  | 'START_BUDGET'
+  | 'SELECT_FAQ'
+  | 'REQUEST_BUDGET'
+  | 'CONFIRM_BUDGET'
+  | 'CANCEL_BUDGET'
+  | 'SEND_TEXT'
+
+export interface QuickReplyOption {
+  id: string
+  label: string
+  action: QuickReplyAction
+  value?: string
+}
+
 export type AwaitingInput =
   | 'budget'
   | 'faq-selection'
@@ -217,7 +239,9 @@ export interface Message {
   role: MessageRole
   text: string
   timestamp: Date
-  quickReplies?: string[]
+  action?: QuickReplyAction
+  actionValue?: string
+  quickReplies?: QuickReplyOption[]
   confirmQuote?: boolean
   products?: Product[]
   faqs?: FAQ[]

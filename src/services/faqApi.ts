@@ -1,4 +1,4 @@
-import type { CreateFAQPayload, FAQApi, UpdateFAQPayload } from '../types'
+import type { CreateFAQPayload, FAQApi, FAQSuggestion, UpdateFAQPayload } from '../types'
 import { apiRequest } from './apiClient'
 
 interface FAQListResponse {
@@ -16,6 +16,17 @@ interface FAQMutationResponse {
   success: boolean
   message: string
   faq: FAQApi
+}
+
+interface FAQSuggestionsResponse {
+  success: boolean
+  data: FAQSuggestion[]
+}
+
+interface FAQSuggestionsMutationResponse {
+  success: boolean
+  message: string
+  faqs: FAQApi[]
 }
 
 export async function getFaqsApi(): Promise<FAQApi[]> {
@@ -52,4 +63,17 @@ export async function deleteFaqApi(id: string): Promise<void> {
   await apiRequest<{ success: boolean; message: string }>(`/faqs/${id}`, {
     method: 'DELETE',
   })
+}
+
+export async function getFaqSuggestionsApi(): Promise<FAQSuggestion[]> {
+  const response = await apiRequest<FAQSuggestionsResponse>('/faqs/suggestions')
+  return response.data
+}
+
+export async function createFaqsFromSuggestionsApi(suggestionIds: string[]): Promise<FAQApi[]> {
+  const response = await apiRequest<FAQSuggestionsMutationResponse>('/faqs/from-suggestions', {
+    method: 'POST',
+    body: JSON.stringify({ suggestionIds }),
+  })
+  return response.faqs
 }

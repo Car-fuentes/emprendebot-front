@@ -2,6 +2,14 @@ import { useState } from 'react'
 import type { Product } from '../../types'
 import type { OrderItem } from '../../hooks/useChat'
 
+function ProductImage({ product }: { product: Product }) {
+  const [failed, setFailed] = useState(false)
+  if (!product.imagen || failed) {
+    return <svg aria-label={`Sin imagen para ${product.nombre}`} width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+  }
+  return <img src={product.imagen} alt={product.nombre} onError={() => setFailed(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+}
+
 interface ProductCatalogMessageProps {
   products: Product[]
   onConfirm: (items: OrderItem[]) => void
@@ -73,14 +81,7 @@ export function ProductCatalogMessage({ products, onConfirm, onBack }: ProductCa
                 background: 'var(--color-surface-muted)', flexShrink: 0, overflow: 'hidden',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                {product.imagen
-                  ? <img src={product.imagen} alt={product.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="18" height="18" rx="2" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <polyline points="21 15 16 10 5 21" />
-                    </svg>
-                }
+                <ProductImage product={product} />
               </div>
 
               {/* Info */}
@@ -165,7 +166,7 @@ export function ProductCatalogMessage({ products, onConfirm, onBack }: ProductCa
           boxShadow: 'var(--shadow-sm)',
           maxWidth: '82%',
         }}>
-          Seleccioná las opciones y cantidades que te interesan y confirmá tu elección.
+          Seleccioná los productos y cantidades que te interesan.Cuando finalices, podrás solicitar un presupuesto.
         </div>
       </div>
 
@@ -189,7 +190,7 @@ export function ProductCatalogMessage({ products, onConfirm, onBack }: ProductCa
         }}
       >
         {totalItems > 0
-          ? `Confirmar selección (${totalItems} ${totalItems === 1 ? 'item' : 'items'})`
+          ? `Continuar al presupuesto (${totalItems} ${totalItems === 1 ? 'item' : 'items'})`
           : 'Seleccioná al menos un producto'}
       </button>
 

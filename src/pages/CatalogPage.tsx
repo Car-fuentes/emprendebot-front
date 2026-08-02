@@ -8,9 +8,12 @@ import { AppIcon } from '../components/ui/AppIcon'
 import { PageBackButton } from '../components/navigation/PageBackButton'
 import type { ProductApi } from '../types'
 import { deleteProductApi, getProductsApi } from '../services/productApi'
+import { openChatPreview } from '../utils/chatRoutes'
+import { filterCatalogProducts, normalizeSearchText } from '../utils/catalogSearch'
 import '../styles/catalog.css'
 
 const PAGE_SIZE = 10
+const SEARCH_FETCH_LIMIT = 100
 
 export function CatalogPage() {
   const navigate = useNavigate()
@@ -40,10 +43,36 @@ export function CatalogPage() {
     setIsLoading(true)
     setError('')
     try {
+      if (normalizeSearchText(search)) {
+        const firstPage = await getProductsApi({
+          page: 1,
+          limit: SEARCH_FETCH_LIMIT,
+          activo: activeFilter === 'all' ? undefined : activeFilter === 'active',
+        })
+        const remainingPages = await Promise.all(
+          Array.from(
+            { length: Math.max(0, firstPage.totalPaginas - 1) },
+            (_, index) => getProductsApi({
+              page: index + 2,
+              limit: SEARCH_FETCH_LIMIT,
+              activo: activeFilter === 'all' ? undefined : activeFilter === 'active',
+            }),
+          ),
+        )
+        const matches = filterCatalogProducts(
+          [firstPage, ...remainingPages].flatMap(result => result.productos),
+          search,
+        )
+        const start = (page - 1) * PAGE_SIZE
+
+        setProducts(matches.slice(start, start + PAGE_SIZE))
+        setTotalPages(Math.max(Math.ceil(matches.length / PAGE_SIZE), 1))
+        return
+      }
+
       const result = await getProductsApi({
         page,
         limit: PAGE_SIZE,
-        buscar: search,
         activo: activeFilter === 'all' ? undefined : activeFilter === 'active',
       })
       setProducts(result.productos)
@@ -147,7 +176,7 @@ export function CatalogPage() {
                 />
               </label>
               <label className="catalog-filter">
-                <span>Estado</span>
+                <span>Visibilidad</span>
                 <select value={activeFilter} onChange={event => { setActiveFilter(event.target.value as typeof activeFilter); setPage(1) }}>
                   <option value="all">Todos</option>
                   <option value="active">Activos</option>
@@ -196,7 +225,6 @@ export function CatalogPage() {
                     <div className="product-card__body">
                       <div className="product-card__title-row">
                         <h2>{product.nombre}</h2>
-                        <span className="product-card__stock">Stock: {product.stock}</span>
                       </div>
                       <p className="product-card__description">{product.descripcion || 'Sin descripción'}</p>
                       <div className="product-card__footer">
@@ -233,7 +261,7 @@ export function CatalogPage() {
           className="catalog-bot"
           disabled={!business?.slug}
           aria-label="Abrir asistente: Probá tu chat"
-          onClick={() => business?.slug && navigate(`/${business.slug}`)}
+          onClick={() => business?.slug && openChatPreview(business.slug, navigate)}
         >
           <span className="catalog-bot__label"><i aria-hidden="true" />Probá tu chat</span>
           <span className="catalog-bot__avatar" aria-hidden="true"><img src="/isoBot-transparente.png" alt="" /></span>

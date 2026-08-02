@@ -9,13 +9,11 @@ import { AppIcon } from '../components/ui/AppIcon'
 import { PageBackButton } from '../components/navigation/PageBackButton'
 import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
-import { useFaqs, type FAQSortOption, type FAQStatusFilter } from '../hooks/useFaqs'
-import type { FAQ, FAQFormData } from '../types'
+import { useFaqs, type FAQSortOption } from '../hooks/useFaqs'
+import type { FAQ, FAQFormData, FAQSuggestion } from '../types'
 import { DUPLICATE_FAQ_MESSAGE, normalizeFaqQuestion } from '../utils/normalizeFaqQuestion'
-import {
-  FAQ_FALLBACK_SUGGESTIONS,
-  mapFallbackSuggestionToFormData,
-} from '../services/faqFallbackSuggestions'
+import { openChatPreview } from '../utils/chatRoutes'
+import { getFaqSuggestionsApi } from '../services/faqApi'
 import '../styles/faq.css'
 
 export function FaqPage() {
@@ -27,11 +25,12 @@ export function FaqPage() {
   const [editingFaq, setEditingFaq] = useState<FAQ | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<FAQ | null>(null)
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const [selectedSuggestionKeys, setSelectedSuggestionKeys] = useState<string[]>([])
-  const [statusFilter, setStatusFilter] = useState<FAQStatusFilter>('all')
+  const [suggestions, setSuggestions] = useState<FAQSuggestion[] | null>(null)
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false)
+  const [suggestionsError, setSuggestionsError] = useState('')
+  const [selectedSuggestionIds, setSelectedSuggestionIds] = useState<string[]>([])
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [sortOption, setSortOption] = useState<FAQSortOption>('created-desc')
-  const [search, setSearch] = useState('')
   const [formLoading, setFormLoading] = useState(false)
   const [busyFaqId, setBusyFaqId] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -44,11 +43,11 @@ export function FaqPage() {
     isLoading: isFaqLoading,
     error: faqLoadError,
     createFaq,
+    createFromSuggestions,
     updateFaq,
     deleteFaq,
-    toggleFaq,
     reload,
-  } = useFaqs({ status: statusFilter, category: categoryFilter, sort: sortOption })
+  } = useFaqs({ category: categoryFilter, sort: sortOption })
 
   useEffect(() => {
     if (user) void loadBusiness(user.id)
@@ -64,23 +63,14 @@ export function FaqPage() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [hasUnsavedFaqChanges])
 
-  const visibleFaqs = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase('es')
-    if (!term) return faqs
-    return faqs.filter(faq =>
-      faq.pregunta.toLocaleLowerCase('es').includes(term)
-      || faq.respuesta.toLocaleLowerCase('es').includes(term)
-      || faq.categoria?.toLocaleLowerCase('es').includes(term),
-    )
-  }, [faqs, search])
   const availableSuggestions = useMemo(() => {
     const existingQuestions = new Set(allFaqs.map(faq => normalizeFaqQuestion(faq.pregunta)))
-    return FAQ_FALLBACK_SUGGESTIONS.filter(
+    return (suggestions ?? []).filter(
       suggestion => !existingQuestions.has(normalizeFaqQuestion(suggestion.pregunta)),
     )
-  }, [allFaqs])
+  }, [allFaqs, suggestions])
 
-  const hasFilters = search.trim() !== '' || statusFilter !== 'all' || categoryFilter !== 'all' || sortOption !== 'created-desc'
+  const hasFilters = categoryFilter !== 'all' || sortOption !== 'created-desc'
   const isLoading = isBusinessLoading || isFaqLoading
 
   const runWithUnsavedCheck = (action: () => void) => {
@@ -108,23 +98,30 @@ export function FaqPage() {
     setShowForm(true)
   }
 
-  const openSuggestions = () => {
-    setSelectedSuggestionKeys([])
+  const openSuggestions = async () => {
+    if (suggestionsLoading) return
+    setSelectedSuggestionIds([])
     setError('')
+    setSuggestionsError('')
     setShowSuggestions(true)
+    setSuggestionsLoading(true)
+    try {
+      setSuggestions(await getFaqSuggestionsApi())
+    } catch (caught) {
+      setSuggestions(null)
+      setSuggestionsError(caught instanceof Error ? caught.message : 'No pudimos cargar las preguntas sugeridas.')
+    } finally {
+      setSuggestionsLoading(false)
+    }
   }
 
   const handleAddSuggestions = async () => {
-    if (formLoading || selectedSuggestionKeys.length === 0) return
+    if (formLoading || selectedSuggestionIds.length === 0) return
     setFormLoading(true)
     setError('')
     try {
-      const selected = availableSuggestions.filter(suggestion => selectedSuggestionKeys.includes(suggestion.key))
-      for (const suggestion of selected) {
-        await createFaq(mapFallbackSuggestionToFormData(suggestion))
-      }
-      await reload()
-      setSelectedSuggestionKeys([])
+      await createFromSuggestions(selectedSuggestionIds)
+      setSelectedSuggestionIds([])
       setShowSuggestions(false)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No pudimos agregar las preguntas seleccionadas.')
@@ -176,22 +173,7 @@ export function FaqPage() {
     }
   }
 
-  const handleToggle = async (faqId: string) => {
-    if (busyFaqId) return
-    setBusyFaqId(faqId)
-    setError('')
-    try {
-      await toggleFaq(faqId)
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'No pudimos cambiar el estado de la pregunta.')
-    } finally {
-      setBusyFaqId(null)
-    }
-  }
-
   const clearFilters = () => {
-    setSearch('')
-    setStatusFilter('all')
     setCategoryFilter('all')
     setSortOption('created-desc')
   }
@@ -251,19 +233,7 @@ export function FaqPage() {
           </section>
 
           {!isLoading && allFaqs.length > 0 && (
-            <section className="faq-toolbar" aria-label="Buscar y filtrar preguntas frecuentes">
-              <label className="faq-search">
-                <AppIcon name="search" size={18} />
-                <input value={search} onChange={event => setSearch(event.target.value)} placeholder="Buscar por pregunta, respuesta o categoría" />
-              </label>
-              <label className="faq-filter">
-                <span>Estado</span>
-                <select value={statusFilter} onChange={event => setStatusFilter(event.target.value as FAQStatusFilter)}>
-                  <option value="all">Todas</option>
-                  <option value="active">Activas</option>
-                  <option value="inactive">Inactivas</option>
-                </select>
-              </label>
+            <section className="faq-toolbar" aria-label="Filtrar preguntas frecuentes">
               <label className="faq-filter">
                 <span>Categoría</span>
                 <select value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)}>
@@ -303,40 +273,37 @@ export function FaqPage() {
               <span className="faq-state-card__icon"><AppIcon name="faq" size={42} /></span>
               <h2>Todavía no tenés preguntas frecuentes cargadas</h2>
               <p>Agregá tu primera pregunta para comenzar a responder consultas automáticamente.</p>
-              <Button type="button" onClick={openSuggestions}><AppIcon name="plus" size={18} />Comenzar</Button>
+              <Button type="button" onClick={() => void openSuggestions()}><AppIcon name="plus" size={18} />Comenzar</Button>
             </section>
-          ) : visibleFaqs.length === 0 ? (
+          ) : faqs.length === 0 ? (
             <section className="faq-state-card faq-state-card--compact">
-              <span className="faq-state-card__icon"><AppIcon name="search" size={38} /></span>
-              <h2>No encontramos coincidencias</h2>
-              <p>Probá con otra búsqueda o limpiá los filtros aplicados.</p>
+              <span className="faq-state-card__icon"><AppIcon name="faq" size={38} /></span>
+              <h2>No hay preguntas en esta categoría</h2>
+              <p>Elegí otra categoría o restablecé los filtros.</p>
               <Button type="button" variant="outline" onClick={clearFilters}>Limpiar filtros</Button>
             </section>
           ) : (
             <section className="faq-list" aria-live="polite">
-              {visibleFaqs.map(faq => (
+              {faqs.map(faq => (
                 <FaqCard
                   key={faq.id}
                   faq={faq}
                   busy={busyFaqId === faq.id}
                   onEdit={openEditForm}
                   onDelete={setDeleteTarget}
-                  onToggle={handleToggle}
                 />
               ))}
-              {availableSuggestions.length > 0 && (
-                <button type="button" className="faq-suggestions-entry" onClick={openSuggestions}>
-                  <AppIcon name="plus" size={17} />
-                  Agregar preguntas sugeridas
-                </button>
-              )}
-              {hasFilters && <button type="button" className="faq-clear-filters" onClick={clearFilters}>Limpiar búsqueda y filtros</button>}
+              <button type="button" className="faq-suggestions-entry" onClick={() => void openSuggestions()}>
+                <AppIcon name="plus" size={17} />
+                Agregar preguntas sugeridas
+              </button>
+              {hasFilters && <button type="button" className="faq-clear-filters" onClick={clearFilters}>Limpiar filtros</button>}
             </section>
           )}
         </main>
       </div>
 
-      <button className="faq-bot" type="button" disabled={!business?.slug} onClick={() => business?.slug && navigate(`/${business.slug}`)}>
+      <button className="faq-bot" type="button" disabled={!business?.slug} onClick={() => business?.slug && openChatPreview(business.slug, navigate)}>
         <span className="faq-bot__label"><i aria-hidden="true" />Probá tu chat</span>
         <span className="faq-bot__avatar" aria-hidden="true"><img src="/isoBot-transparente.png" alt="" /></span>
       </button>
@@ -380,19 +347,31 @@ export function FaqPage() {
               </div>
             </header>
             <div className="faq-suggestions">
-              {availableSuggestions.map(suggestion => {
-                const selected = selectedSuggestionKeys.includes(suggestion.key)
+              {suggestionsLoading ? (
+                <div className="faq-skeleton" aria-label="Cargando preguntas sugeridas" aria-busy="true"><i /><span /><small /></div>
+              ) : suggestionsError ? (
+                <div className="faq-form__submit-error" role="alert">
+                  {suggestionsError}
+                  <Button type="button" variant="outline" onClick={() => void openSuggestions()}>Reintentar</Button>
+                </div>
+              ) : availableSuggestions.length === 0 ? (
+                <div className="faq-state-card faq-state-card--compact">
+                  <h2>No hay sugerencias disponibles</h2>
+                  <p>Ya agregaste todas las preguntas sugeridas del catálogo.</p>
+                </div>
+              ) : availableSuggestions.map(suggestion => {
+                const selected = selectedSuggestionIds.includes(suggestion.id)
                 return (
                   <button
-                    key={suggestion.key}
+                    key={suggestion.id}
                     type="button"
                     aria-pressed={selected}
                     className={selected ? 'is-selected' : ''}
                     disabled={formLoading}
-                    onClick={() => setSelectedSuggestionKeys(current =>
-                      current.includes(suggestion.key)
-                        ? current.filter(key => key !== suggestion.key)
-                        : [...current, suggestion.key],
+                    onClick={() => setSelectedSuggestionIds(current =>
+                      current.includes(suggestion.id)
+                        ? current.filter(id => id !== suggestion.id)
+                        : [...current, suggestion.id],
                     )}
                   >
                     <span className="faq-suggestions__check">{selected && <AppIcon name="check" size={14} strokeWidth={3} />}</span>
@@ -405,10 +384,10 @@ export function FaqPage() {
                 <Button
                   type="button"
                   loading={formLoading}
-                  disabled={selectedSuggestionKeys.length === 0}
+                  disabled={suggestionsLoading || selectedSuggestionIds.length === 0}
                   onClick={() => void handleAddSuggestions()}
                 >
-                  Agregar seleccionadas{selectedSuggestionKeys.length > 0 ? ` (${selectedSuggestionKeys.length})` : ''}
+                  Agregar seleccionadas{selectedSuggestionIds.length > 0 ? ` (${selectedSuggestionIds.length})` : ''}
                 </Button>
                 <button type="button" className="faq-suggestions__custom" disabled={formLoading} onClick={openCreateForm}>
                   <AppIcon name="plus" size={16} />

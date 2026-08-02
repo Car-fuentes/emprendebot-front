@@ -22,6 +22,7 @@ import { useBusiness } from '../../../context/BusinessContext'
 import { useMetrics } from './useFutureMetrics'
 import { METRICS_PERIOD_OPTIONS } from './futureMetrics.mock'
 import type { MetricsData, MetricsPeriod } from './futureMetrics.types'
+import { openChatPreview } from '../../../utils/chatRoutes'
 
 type MetricsTab = 'summary' | 'abandonment' | 'leads'
 
@@ -230,8 +231,8 @@ export function MetricsPage() {
           type="button"
           className="metrics-public-bot"
           disabled={!business?.slug}
-          aria-label="Abrir el chat público de tu negocio"
-          onClick={() => business?.slug && navigate(`/${business.slug}`)}
+          aria-label="Abrir modo de prueba del chatbot"
+          onClick={() => business?.slug && openChatPreview(business.slug, navigate)}
         >
           <span className="metrics-public-bot__label"><i aria-hidden="true" />Probá tu chat</span>
           <span className="metrics-public-bot__avatar" aria-hidden="true">

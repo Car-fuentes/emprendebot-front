@@ -13,6 +13,8 @@ import { brand } from '../styles/brand'
 import { Switch } from '../components/ui/Switch'
 import { useTheme } from '../hooks/useTheme'
 import { DEFAULT_CHAT_APPEARANCE, isValidHexColor } from '../services/chatAppearance'
+import { getPublicChatUrl, openChatPreview } from '../utils/chatRoutes'
+import { getDefaultWelcomeMessage, syncDefaultWelcomeMessage } from '../utils/welcomeMessage'
 
 interface RubroApi {
   id: string
@@ -110,16 +112,6 @@ const selectStyle: React.CSSProperties = {
   cursor: 'pointer',
 }
 
-const mensajeBienvenidaAutomatico = (nombre: string) =>
-  `¡Hola! Soy el asistente de ${nombre} ¿En qué te puedo ayudar? Elige una opción para continuar.`
-
-const esMensajeBienvenidaAutomatico = (mensaje: string, nombre: string) =>
-  !mensaje.trim()
-  || mensaje === mensajeBienvenidaAutomatico(nombre)
-  || mensaje === '¡Hola! ¿En qué te puedo ayudar?'
-  || mensaje === '¡Hola! ¿En qué te puedo ayudar hoy?'
-  || mensaje.includes('{nombreNegocio}')
-
 export function BusinessConfigPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -159,7 +151,7 @@ export function BusinessConfigPage() {
   const [slugOriginal, setSlugOriginal] = useState(business?.slug ?? '')
   const [persistedLogo, setPersistedLogo] = useState(business?.logo ?? '')
 
-  const publicUrl = form.slug ? `${window.location.origin}/${form.slug}` : ''
+  const publicUrl = form.slug ? getPublicChatUrl(form.slug, window.location.origin) : ''
 
   // Resolver el modo antes de renderizar para evitar mostrar fugazmente
   // la creación de negocio mientras se carga una configuración existente.
@@ -217,16 +209,14 @@ export function BusinessConfigPage() {
       setForm(prev => {
         if (field !== 'nombre') return { ...prev, [field]: value }
 
-        const actualizarMensaje = esMensajeBienvenidaAutomatico(
-          prev.mensajeBienvenida,
-          prev.nombre,
-        )
         return {
           ...prev,
           nombre: value,
-          ...(actualizarMensaje
-            ? { mensajeBienvenida: mensajeBienvenidaAutomatico(value || 'tu negocio') }
-            : {}),
+          mensajeBienvenida: syncDefaultWelcomeMessage(
+            prev.mensajeBienvenida,
+            prev.nombre,
+            value,
+          ),
         }
       })
     }
@@ -336,7 +326,7 @@ export function BusinessConfigPage() {
       return
     }
     if (slugCambio && !window.confirm(
-      `¿Confirmás el enlace ${window.location.origin}/${form.slug.trim()}? Solo podés personalizarlo una vez y después no podrá modificarse.`
+      `¿Confirmás el enlace ${getPublicChatUrl(form.slug, window.location.origin)}? Solo podés personalizarlo una vez y después no podrá modificarse.`
     )) {
       return
     }
@@ -737,7 +727,7 @@ export function BusinessConfigPage() {
                 onClick={() =>
                   setForm(prev => ({
                     ...prev,
-                    mensajeBienvenida: mensajeBienvenidaAutomatico(prev.nombre),
+                    mensajeBienvenida: getDefaultWelcomeMessage(prev.nombre),
                   }))
                 }
                 style={{
@@ -1013,8 +1003,8 @@ export function BusinessConfigPage() {
           type="button"
           className="business-config__public-chat-bot"
           disabled={!business?.slug}
-          aria-label="Abrir el chat público de tu negocio"
-          onClick={() => business?.slug && navigate(`/${business.slug}`)}
+          aria-label="Abrir modo de prueba del chatbot"
+          onClick={() => business?.slug && openChatPreview(business.slug, navigate)}
         >
           <span className="business-config__public-chat-label">
             <i aria-hidden="true" />

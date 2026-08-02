@@ -85,9 +85,8 @@ export interface PresupuestosPagination {
 }
 
 export interface PresupuestosListResponse {
-  success: boolean
   presupuestos: PresupuestoResumen[]
-  paginacion: PresupuestosPagination
+  pagination: PresupuestosPagination
 }
 
 export interface PresupuestoResponse {

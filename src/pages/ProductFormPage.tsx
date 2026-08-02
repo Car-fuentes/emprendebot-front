@@ -13,7 +13,6 @@ interface ProductForm {
   nombre: string
   descripcion: string
   precio: string
-  stock: string
   activo: boolean
   precioConsultar: boolean
   imagenActual: string
@@ -26,7 +25,6 @@ const EMPTY_FORM: ProductForm = {
   nombre: '',
   descripcion: '',
   precio: '',
-  stock: '0',
   activo: true,
   precioConsultar: false,
   imagenActual: '',
@@ -73,7 +71,6 @@ export function ProductFormPage() {
           nombre: product.nombre,
           descripcion: product.descripcion ?? '',
           precio: product.requiereCotizacion ? '' : String(Number(product.precio)),
-          stock: String(product.stock),
           activo: product.activo,
           precioConsultar: product.requiereCotizacion,
           imagenActual: product.urlImagen ?? '',
@@ -89,7 +86,7 @@ export function ProductFormPage() {
     return () => { active = false }
   }, [id])
 
-  const updateField = (field: 'nombre' | 'descripcion' | 'precio' | 'stock') =>
+  const updateField = (field: 'nombre' | 'descripcion' | 'precio') =>
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm(current => ({ ...current, [field]: event.target.value }))
 
@@ -113,11 +110,9 @@ export function ProductFormPage() {
   }
 
   const price = Number(form.precio)
-  const stock = Number(form.stock)
   const hasValidPrice = form.precioConsultar || (form.precio.trim() !== '' && Number.isFinite(price) && price > 0)
-  const hasValidStock = form.stock.trim() !== '' && Number.isInteger(stock) && stock >= 0
   const canSave = form.nombre.trim() !== '' && form.nombre.trim().length <= 200
-    && form.descripcion.trim().length <= 2000 && hasValidPrice && hasValidStock
+    && form.descripcion.trim().length <= 2000 && hasValidPrice
     && !isSubmitting && !isLoading
 
   const handleSave = async (event: React.FormEvent) => {
@@ -131,7 +126,6 @@ export function ProductFormPage() {
           nombre: form.nombre.trim(),
           descripcion: form.descripcion.trim() || null,
           ...(!form.precioConsultar ? { precio: price } : {}),
-          stock,
           activo: form.activo,
           requiereCotizacion: form.precioConsultar,
           ...(removeImage ? { urlImagen: null } : {}),
@@ -143,7 +137,6 @@ export function ProductFormPage() {
           nombre: form.nombre.trim(),
           descripcion: form.descripcion.trim() || undefined,
           ...(!form.precioConsultar ? { precio: price } : {}),
-          stock,
           activo: form.activo,
           requiereCotizacion: form.precioConsultar,
           ...(imageFile ? { imagen: imageFile } : {}),
@@ -228,21 +221,14 @@ export function ProductFormPage() {
             <textarea id="product-description" value={form.descripcion} onChange={updateField('descripcion')} maxLength={2000} rows={4} placeholder="Describí tu producto" />
           </div>
 
-          <div className="product-form-row">
-            {!form.precioConsultar ? (
-              <div className="product-form-field">
-                <label htmlFor="product-price">Precio</label>
-                <div className="product-input-prefix"><span>$</span><input id="product-price" value={form.precio} onChange={updateField('precio')} type="number" min="0.01" step="0.01" required /></div>
-              </div>
-            ) : (
-              <div className="product-quote-help"><AppIcon name="chat" size={20} /><span>En el chatbot se mostrará como <strong>Precio a convenir</strong>.</span></div>
-            )}
-
+          {!form.precioConsultar ? (
             <div className="product-form-field">
-              <label htmlFor="product-stock">Stock</label>
-              <input id="product-stock" value={form.stock} onChange={updateField('stock')} type="number" min="0" step="1" required />
+              <label htmlFor="product-price">Precio</label>
+              <div className="product-input-prefix"><span>$</span><input id="product-price" value={form.precio} onChange={updateField('precio')} type="number" min="0.01" step="0.01" required /></div>
             </div>
-          </div>
+          ) : (
+            <div className="product-quote-help"><AppIcon name="chat" size={20} /><span>En el chatbot se mostrará como <strong>Precio a convenir</strong>.</span></div>
+          )}
 
           <label className="product-active-toggle">
             <span><strong>Producto activo</strong><small>Los clientes podrán verlo en el catálogo.</small></span>

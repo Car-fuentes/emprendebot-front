@@ -1,14 +1,19 @@
+import type { HTMLAttributes } from 'react'
 import { Avatar } from '../ui/Avatar'
 import type { Business } from '../../types'
 
 interface ChatHeaderProps {
   business: Business
   onRefresh?: () => void
+  onClose?: () => void
+  dragHandleProps?: HTMLAttributes<HTMLElement>
+  draggable?: boolean
+  isOnline?: boolean
 }
 
-export function ChatHeader({ business, onRefresh }: ChatHeaderProps) {
+export function ChatHeader({ business, onRefresh, onClose, dragHandleProps, draggable = false, isOnline = true }: ChatHeaderProps) {
   return (
-    <header className="public-chat__header" style={{
+    <header {...dragHandleProps} className={`public-chat__header${draggable ? ' public-chat__header--draggable' : ''}`} style={{
       display: 'flex',
       alignItems: 'center',
       gap: '12px',
@@ -37,11 +42,11 @@ export function ChatHeader({ business, onRefresh }: ChatHeaderProps) {
           <span style={{
             width: 7, height: 7,
             borderRadius: '50%',
-            background: '#22c55e',
+            background: isOnline ? '#22c55e' : '#f59e0b',
             flexShrink: 0,
           }} />
           <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>
-            Asistente · en línea
+            Asistente · {isOnline ? 'en línea' : 'sin conexión'}
           </span>
         </div>
       </div>
@@ -70,6 +75,19 @@ export function ChatHeader({ business, onRefresh }: ChatHeaderProps) {
             }}
           >
             Reiniciar chat
+          </button>
+        )}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            title="Cerrar vista previa"
+            aria-label="Cerrar vista previa"
+            className="public-chat__close"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
           </button>
         )}
       </div>
