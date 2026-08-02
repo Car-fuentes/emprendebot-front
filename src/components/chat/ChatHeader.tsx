@@ -8,9 +8,10 @@ interface ChatHeaderProps {
   onClose?: () => void
   dragHandleProps?: HTMLAttributes<HTMLElement>
   draggable?: boolean
+  isOnline?: boolean
 }
 
-export function ChatHeader({ business, onRefresh, onClose, dragHandleProps, draggable = false }: ChatHeaderProps) {
+export function ChatHeader({ business, onRefresh, onClose, dragHandleProps, draggable = false, isOnline = true }: ChatHeaderProps) {
   return (
     <header {...dragHandleProps} className={`public-chat__header${draggable ? ' public-chat__header--draggable' : ''}`} style={{
       display: 'flex',
@@ -41,11 +42,11 @@ export function ChatHeader({ business, onRefresh, onClose, dragHandleProps, drag
           <span style={{
             width: 7, height: 7,
             borderRadius: '50%',
-            background: '#22c55e',
+            background: isOnline ? '#22c55e' : '#f59e0b',
             flexShrink: 0,
           }} />
           <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>
-            Asistente · en línea
+            Asistente · {isOnline ? 'en línea' : 'sin conexión'}
           </span>
         </div>
       </div>

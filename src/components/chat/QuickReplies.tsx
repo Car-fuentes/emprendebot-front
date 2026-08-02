@@ -6,11 +6,11 @@ interface QuickRepliesProps {
   onSelect: (option: QuickReplyOption) => void
 }
 
-const ICON_MAP: Partial<Record<QuickReplyAction, string>> = {
-  SHOW_CATALOG: '/Package.png',
-  SHOW_SCHEDULE: '/time.png',
-  SHOW_FAQ_MENU: '/help.png',
-  START_HUMAN_HANDOFF: '/agent.png',
+const ICON_MAP: Partial<Record<QuickReplyAction, 'catalog' | 'time' | 'faq' | 'agent'>> = {
+  SHOW_CATALOG: 'catalog',
+  SHOW_SCHEDULE: 'time',
+  SHOW_FAQ_MENU: 'faq',
+  START_HUMAN_HANDOFF: 'agent',
 }
 
 export function QuickReplies({ options, onSelect }: QuickRepliesProps) {
@@ -47,9 +47,7 @@ export function QuickReplies({ options, onSelect }: QuickRepliesProps) {
                 boxShadow: '0 1px 3px rgba(17,27,39,0.05)',
               }}
             >
-              {icon && (
-                <img src={icon} alt="" style={{ width: 16, height: 16, objectFit: 'contain' }} />
-              )}
+              {icon && <AppIcon name={icon} size={16} />}
               {option.action === 'SHOW_MAIN_MENU' && <AppIcon name="arrowLeft" size={16} />}
               {option.label}
             </button>

@@ -17,6 +17,9 @@ import { FloatingChatWindow } from '../components/chat/FloatingChatWindow'
 import { PublicChatBackground } from '../components/chat/PublicChatBackground'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { restoreChatPreviewFocus } from '../utils/chatRoutes'
+import { useNetworkStatus } from '../hooks/useNetworkStatus'
+import { isNetworkError } from '../utils/networkError'
+import { ConnectionNotice } from '../components/chat/ConnectionNotice'
 
 // Página pública: www.emprendebot/[slug]
 export function ChatbotPage({ preview = false }: { preview?: boolean }) {
@@ -27,6 +30,9 @@ export function ChatbotPage({ preview = false }: { preview?: boolean }) {
   const [isBusinessLoading, setIsBusinessLoading] = useState(Boolean(slug))
   const [publicFaqs, setPublicFaqs] = useState<FAQ[] | null>(null)
   const [publicProducts, setPublicProducts] = useState<Product[] | null>(null)
+  const isBrowserOnline = useNetworkStatus()
+  const [hasNetworkError, setHasNetworkError] = useState(false)
+  const [isRetrying, setIsRetrying] = useState(false)
 
   const closePreview = useCallback(() => {
     const hasBackground = Boolean((location.state as { backgroundPath?: string } | null)?.backgroundPath)
@@ -48,7 +54,10 @@ export function ChatbotPage({ preview = false }: { preview?: boolean }) {
     if (!slug) return
     getPublicBusinessApi(slug)
       .then(setBusiness)
-      .catch(() => setBusiness(null))
+      .catch(error => {
+        if (isNetworkError(error)) setHasNetworkError(true)
+        else setBusiness(null)
+      })
       .finally(() => setIsBusinessLoading(false))
   }, [slug])
 
@@ -56,14 +65,43 @@ export function ChatbotPage({ preview = false }: { preview?: boolean }) {
     if (!slug) return
     getPublicFaqsApi(slug)
       .then(faqs => setPublicFaqs(faqs))
-      .catch(() => setPublicFaqs([]))
+      .catch(error => {
+        if (isNetworkError(error)) setHasNetworkError(true)
+        else setPublicFaqs([])
+      })
 
     getPublicProductsApi(slug)
       .then(products => setPublicProducts(products))
       // Compatibilidad: si el endpoint todavía no existe, se conservan
       // los productos incluidos por /init.
-      .catch(() => setPublicProducts(null))
+      .catch(error => {
+        if (isNetworkError(error)) setHasNetworkError(true)
+        setPublicProducts(null)
+      })
   }, [slug])
+
+  const retryConnection = useCallback(async () => {
+    if (!slug || !navigator.onLine || isRetrying) {
+      setHasNetworkError(true)
+      return
+    }
+    setIsRetrying(true)
+    try {
+      const [nextBusiness, nextFaqs, nextProducts] = await Promise.all([
+        getPublicBusinessApi(slug),
+        getPublicFaqsApi(slug),
+        getPublicProductsApi(slug),
+      ])
+      setBusiness(nextBusiness)
+      setPublicFaqs(nextFaqs)
+      setPublicProducts(nextProducts)
+      setHasNetworkError(false)
+    } catch (error) {
+      if (isNetworkError(error)) setHasNetworkError(true)
+    } finally {
+      setIsRetrying(false)
+    }
+  }, [isRetrying, slug])
 
   if (isBusinessLoading && !business) {
     return (
@@ -74,6 +112,10 @@ export function ChatbotPage({ preview = false }: { preview?: boolean }) {
         Cargando chatbot...
       </div>
     )
+  }
+
+  if (!business && (!isBrowserOnline || hasNetworkError)) {
+    return <main className="public-chat__load-error"><ConnectionNotice isRetrying={isRetrying} onRetry={() => void retryConnection()} /></main>
   }
 
   if (!business) {
@@ -114,6 +156,10 @@ export function ChatbotPage({ preview = false }: { preview?: boolean }) {
       business={publicBusiness}
       preview={preview}
       onClose={preview ? closePreview : undefined}
+      isOnline={isBrowserOnline && !hasNetworkError}
+      isRetrying={isRetrying}
+      onNetworkError={() => setHasNetworkError(true)}
+      onRetry={() => void retryConnection()}
     />
   )
 
@@ -122,7 +168,17 @@ export function ChatbotPage({ preview = false }: { preview?: boolean }) {
     : <PublicChatBackground>{chat}</PublicChatBackground>
 }
 
-function PublicChat({ business, preview, onClose }: { business: Business; preview: boolean; onClose?: () => void }) {
+interface PublicChatProps {
+  business: Business
+  preview: boolean
+  onClose?: () => void
+  isOnline: boolean
+  isRetrying: boolean
+  onNetworkError: () => void
+  onRetry: () => void
+}
+
+function PublicChat({ business, preview, onClose, isOnline, isRetrying, onNetworkError, onRetry }: PublicChatProps) {
   const {
     messages,
     isTyping,
@@ -134,7 +190,7 @@ function PublicChat({ business, preview, onClose }: { business: Business; previe
     awaitingInput,
     cancelledQuoteMessageIds,
     reset,
-  } = useChat(business)
+  } = useChat(business, { isOnline, onNetworkError })
   const previewInitializedRef = useRef(false)
   const appearance = resolveChatAppearance(business)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -208,7 +264,10 @@ function PublicChat({ business, preview, onClose }: { business: Business; previe
         onClose={onClose}
         dragHandleProps={dragHandleProps}
         draggable={isDesktop}
+        isOnline={isOnline}
       />
+
+      {!isOnline && <ConnectionNotice isRetrying={isRetrying} onRetry={onRetry} />}
 
       <div ref={messagesContainerRef} className="public-chat__messages">
         {messages.map(message => (
@@ -222,12 +281,12 @@ function PublicChat({ business, preview, onClose }: { business: Business; previe
                 isSubmitted={messages.some(
                   candidate => candidate.generatedQuote?.sourceSummaryMessageId === message.id,
                 )}
-                onContinue={() => void requestQuote(message.id, message.quoteSummary!, {
+                onContinue={() => isOnline ? void requestQuote(message.id, message.quoteSummary!, {
                   id: `request-budget-${message.id}`,
                   label: 'Solicitar presupuesto',
                   action: 'REQUEST_BUDGET',
                   value: message.id,
-                })}
+                }) : onNetworkError()}
                 onCancel={() => handleQuickReply({
                   id: `cancel-budget-${message.id}`,
                   label: 'Cancelar presupuesto',
@@ -248,11 +307,11 @@ function PublicChat({ business, preview, onClose }: { business: Business; previe
                     <button
                       type="button"
                       className="chat-quote-card__primary"
-                      onClick={() => handleQuickReply({
+                      onClick={() => isOnline ? handleQuickReply({
                         id: 'confirm-budget',
                         label: 'Confirmar presupuesto',
                         action: 'CONFIRM_BUDGET',
-                      })}
+                      }) : onNetworkError()}
                     >
                       Confirmar presupuesto
                     </button>
@@ -312,7 +371,7 @@ function PublicChat({ business, preview, onClose }: { business: Business; previe
           </div>
         )}
 
-      <ChatInput onSend={sendMessage} disabled={isTyping} />
+      <ChatInput onSend={sendMessage} disabled={isTyping || !isOnline} />
       </div>}
     </FloatingChatWindow>
   )

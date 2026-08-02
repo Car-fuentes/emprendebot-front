@@ -369,6 +369,51 @@ body.public-chat-active #root {
   flex: 0 0 1px;
 }
 
+.public-chat__connection {
+  margin: 10px 12px 0;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #f59e0b;
+  border-radius: 12px;
+  background: #fff7ed;
+  color: #7c2d12;
+  font-size: 13px;
+}
+
+.public-chat__connection-icon {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #f59e0b;
+  color: #fff;
+  font-weight: 800;
+}
+
+.public-chat__connection p { margin: 2px 0 0; line-height: 1.35; }
+.public-chat__connection button {
+  padding: 7px 10px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.public-chat__connection button:disabled { cursor: wait; opacity: .65; }
+.public-chat__load-error { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.public-chat__load-error .public-chat__connection { max-width: 520px; margin: 0; }
+
+@media (max-width: 480px) {
+  .public-chat__connection { grid-template-columns: auto 1fr; }
+  .public-chat__connection button { grid-column: 2; justify-self: start; }
+}
+
 .quick-replies {
   width: 100%;
   margin-top: 6px;

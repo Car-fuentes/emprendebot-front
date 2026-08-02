@@ -29,6 +29,7 @@ import {
   savePublicMessage,
   updatePublicContact,
 } from '../services/publicConsultationApi'
+import { isNetworkError } from '../utils/networkError'
 
 const QUICK_REPLIES_INICIAL: QuickReplyOption[] = [
   { id: 'show-catalog', label: 'Ver catálogo', action: 'SHOW_CATALOG' },
@@ -322,7 +323,12 @@ function savePendingQuote(businessId: string, pendingQuote: PendingQuote | null)
   }
 }
 
-export function useChat(business: Business) {
+interface UseChatOptions {
+  isOnline?: boolean
+  onNetworkError?: () => void
+}
+
+export function useChat(business: Business, { isOnline = true, onNetworkError }: UseChatOptions = {}) {
   const [messages, setMessages] = useState<Message[]>(() => getInitialHistory(business))
   const [awaitingInput, setAwaitingInput] = useState<AwaitingInput | null>(() => loadAwaitingInput(business.id))
   const [isTyping, setIsTyping] = useState(false)
@@ -364,10 +370,13 @@ export function useChat(business: Business) {
               await savePublicMessage(business.slug, consultationId, 'bot', createInitialMessage(business).text)
               return consultationId
             })
-            .catch(() => null)
+            .catch(error => {
+              if (isNetworkError(error)) onNetworkError?.()
+              return null
+            })
     }
     return consultationPromiseRef.current
-  }, [business])
+  }, [business, onNetworkError])
 
   const cancelPendingResponse = useCallback(() => {
     if (responseTimeoutRef.current) {
@@ -414,6 +423,10 @@ export function useChat(business: Business) {
     }
   }, [cancelPendingResponse])
 
+  useEffect(() => {
+    if (!isOnline) consultationPromiseRef.current = null
+  }, [isOnline])
+
   const processMessage = useCallback(async (text: string, quickReply?: QuickReplyOption) => {
     if (isTyping) return
     const actionValue = quickReply?.action === 'CANCEL_BUDGET'
@@ -435,7 +448,7 @@ export function useChat(business: Business) {
     })
     setIsTyping(true)
 
-    const consultationId = await ensureConsultation()
+    const consultationId = isOnline ? await ensureConsultation() : null
     if (consultationId) {
       await savePublicMessage(business.slug, consultationId, 'cliente', text).catch(() => undefined)
     }
@@ -638,14 +651,15 @@ export function useChat(business: Business) {
         pendingQuoteRef.current = null
         savePendingQuote(business.id, null)
         setContactName('')
-      } catch {
-        if (pendingQuote) {
-          quoteSubmissionRef.current.delete(pendingQuote.sourceSummaryMessageId)
+      } catch (error) {
+        if (isNetworkError(error) || !navigator.onLine) {
+          onNetworkError?.()
+          if (pendingQuote) quoteSubmissionRef.current.delete(pendingQuote.sourceSummaryMessageId)
+          setSubmittingQuoteMessageId(null)
+          setIsTyping(false)
+          return
         }
-        pendingQuoteRef.current = null
-        savePendingQuote(business.id, null)
-        setAwaitingInput(null)
-        saveAwaitingInput(business.id, null)
+        if (pendingQuote) quoteSubmissionRef.current.delete(pendingQuote.sourceSummaryMessageId)
         const errorMsg: Message = {
           id: crypto.randomUUID(),
           role: 'bot',
@@ -708,13 +722,33 @@ export function useChat(business: Business) {
       }
 
       if (consultationId) {
-        void updatePublicContact(
+        try {
+          await updatePublicContact(
           business.slug,
           consultationId,
           contactName,
           phone,
           'derivacion',
-        ).catch(() => undefined)
+          )
+        } catch (error) {
+          if (isNetworkError(error) || !navigator.onLine) onNetworkError?.()
+          const errorMsg: Message = {
+            id: crypto.randomUUID(), role: 'bot',
+            text: 'No pudimos registrar tu solicitud de contacto. Intentá nuevamente.',
+            timestamp: new Date(),
+          }
+          setMessages(prev => {
+            const next = [...prev, errorMsg]
+            saveChatHistory(business.id, next)
+            return next
+          })
+          setIsTyping(false)
+          return
+        }
+      } else {
+        onNetworkError?.()
+        setIsTyping(false)
+        return
       }
       // TODO: POST /api/consultas cuando el backend esté listo
       console.log('Derivación a asesor:', { nombre: contactName, telefono: phone, businessId: business.id })
@@ -757,7 +791,7 @@ export function useChat(business: Business) {
     setAwaitingInput(nextAwaitingInput)
     saveAwaitingInput(business.id, nextAwaitingInput)
     setIsTyping(false)
-  }, [awaitingInput, business, contactName, ensureConsultation, isTyping])
+  }, [awaitingInput, business, contactName, ensureConsultation, isOnline, isTyping, onNetworkError])
 
   const sendMessage = useCallback((text: string) => processMessage(text), [processMessage])
 
@@ -859,8 +893,13 @@ export function useChat(business: Business) {
       savePendingQuote(business.id, pendingQuote)
       setAwaitingInput('quote-contact-name')
       saveAwaitingInput(business.id, 'quote-contact-name')
-    } catch {
+    } catch (error) {
       quoteSubmissionRef.current.delete(sourceSummaryMessageId)
+      if (isNetworkError(error) || !navigator.onLine) {
+        onNetworkError?.()
+        setSubmittingQuoteMessageId(null)
+        return
+      }
       const errorMessage: Message = {
         id: crypto.randomUUID(),
         role: 'bot',
@@ -874,7 +913,7 @@ export function useChat(business: Business) {
       })
       setSubmittingQuoteMessageId(null)
     }
-  }, [business.id, business.slug, ensureConsultation])
+  }, [business.id, business.slug, ensureConsultation, onNetworkError])
 
   const reset = useCallback(() => {
     conversationVersionRef.current += 1
