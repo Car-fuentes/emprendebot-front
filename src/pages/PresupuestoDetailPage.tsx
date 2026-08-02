@@ -17,6 +17,7 @@ import type {
   PresupuestoEstado,
   PresupuestoItemInput,
 } from '../types/presupuesto'
+import { getEffectivePresupuestoTotal } from '../utils/presupuestoTotal'
 import '../styles/presupuestos.css'
 
 const TRANSITIONS: Record<PresupuestoEstado, PresupuestoEstado[]> = {
@@ -271,7 +272,7 @@ export function PresupuestoDetailPage() {
                           </tr>
                         )}
                       </tbody>
-                      <tfoot><tr><td colSpan={3}>Total</td><td>{formatCurrency(presupuesto.total)}</td></tr></tfoot>
+                      <tfoot><tr><td colSpan={3}>Total</td><td>{formatCurrency(getEffectivePresupuestoTotal(presupuesto))}</td></tr></tfoot>
                     </table>
                   </div>
                 </section>

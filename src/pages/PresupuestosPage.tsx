@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { ApiError } from '../services/apiClient'
 import { getPresupuestos } from '../services/presupuestoApi'
+import { getEffectivePresupuestoTotal } from '../utils/presupuestoTotal'
 import type {
   PresupuestoEstado,
   PresupuestoResumen,
@@ -306,7 +307,7 @@ export function PresupuestosPage() {
                       <div><dt>Consulta</dt><dd>{presupuesto.consulta?.asunto || `#${presupuesto.consultaId.slice(0, 8)}`}</dd></div>
                       <div><dt>Emisión</dt><dd>{formatDate(presupuesto.fechaEmision)}</dd></div>
                       <div><dt>Vencimiento</dt><dd>{formatDate(presupuesto.fechaVencimiento)}</dd></div>
-                      <div><dt>Total</dt><dd>{formatCurrency(presupuesto.total)}</dd></div>
+                      <div><dt>Total</dt><dd>{formatCurrency(getEffectivePresupuestoTotal(presupuesto))}</dd></div>
                     </dl>
                     <div className="budget-card__footer">
                       <span className={presupuesto.linkPdf ? 'is-ready' : ''}>
