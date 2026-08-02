@@ -17,7 +17,6 @@ export interface OrderItem {
 import {
   clearChatHistory,
   clearChatState,
-  loadAwaitingInput,
   loadChatHistory,
   saveAwaitingInput,
   saveChatHistory,
@@ -301,15 +300,6 @@ interface PendingQuote {
   summary: QuoteSummaryMessageData
   customerName?: string
   customerPhone?: string
-}
-
-function loadPendingQuote(businessId: string): PendingQuote | null {
-  try {
-    const stored = sessionStorage.getItem(pendingQuoteStorageKey(businessId))
-    return stored ? JSON.parse(stored) as PendingQuote : null
-  } catch {
-    return null
-  }
 }
 
 function savePendingQuote(businessId: string, pendingQuote: PendingQuote | null): void {
