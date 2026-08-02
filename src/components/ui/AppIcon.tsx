@@ -23,6 +23,7 @@ export type AppIconName =
   | 'logout'
   | 'search'
   | 'chevronDown'
+  | 'arrowLeft'
 
 export function AppIcon({ name, size = 22, strokeWidth = 2 }: { name: AppIconName; size?: number; strokeWidth?: number }) {
   const common = {
@@ -39,6 +40,12 @@ export function AppIcon({ name, size = 22, strokeWidth = 2 }: { name: AppIconNam
         <path {...common} d="M4 7h16" />
         <path {...common} d="M4 12h16" />
         <path {...common} d="M4 17h16" />
+      </>
+    ),
+    arrowLeft: (
+      <>
+        <path {...common} d="m15 18-6-6 6-6" />
+        <path {...common} d="M9 12h10" />
       </>
     ),
     close: (

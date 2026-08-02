@@ -1,4 +1,5 @@
 import type { QuickReplyAction, QuickReplyOption } from '../../types'
+import { AppIcon } from '../ui/AppIcon'
 
 interface QuickRepliesProps {
   options: QuickReplyOption[]
@@ -49,6 +50,7 @@ export function QuickReplies({ options, onSelect }: QuickRepliesProps) {
               {icon && (
                 <img src={icon} alt="" style={{ width: 16, height: 16, objectFit: 'contain' }} />
               )}
+              {option.action === 'SHOW_MAIN_MENU' && <AppIcon name="arrowLeft" size={16} />}
               {option.label}
             </button>
           )

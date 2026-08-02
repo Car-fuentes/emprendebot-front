@@ -131,6 +131,8 @@ function PublicChat({ business, preview, onClose }: { business: Business; previe
     submitOrder,
     requestQuote,
     submittingQuoteMessageId,
+    awaitingInput,
+    cancelledQuoteMessageIds,
     reset,
   } = useChat(business)
   const appearance = resolveChatAppearance(business)
@@ -173,6 +175,7 @@ function PublicChat({ business, preview, onClose }: { business: Business; previe
 
   const lastProductsMessageId = [...messages].reverse().find(m => m.products?.length)?.id
   const lastFaqsMessageId = [...messages].reverse().find(m => m.faqs?.length)?.id
+  const lastConfirmMessageId = [...messages].reverse().find(message => message.confirmQuote)?.id
 
   const lastBotWithReplies = [...messages].reverse().find(
     message => message.role === 'bot' && message.quickReplies && message.quickReplies.length > 0
@@ -208,47 +211,59 @@ function PublicChat({ business, preview, onClose }: { business: Business; previe
               <QuoteSummaryCard
                 data={message.quoteSummary}
                 isSubmitting={submittingQuoteMessageId === message.id}
+                isCancelled={cancelledQuoteMessageIds.has(message.id)}
                 isSubmitted={messages.some(
                   candidate => candidate.generatedQuote?.sourceSummaryMessageId === message.id,
                 )}
-                onContinue={() => void requestQuote(message.id, message.quoteSummary!)}
+                onContinue={() => void requestQuote(message.id, message.quoteSummary!, {
+                  id: `request-budget-${message.id}`,
+                  label: 'Solicitar presupuesto',
+                  action: 'REQUEST_BUDGET',
+                  value: message.id,
+                })}
+                onCancel={() => handleQuickReply({
+                  id: `cancel-budget-${message.id}`,
+                  label: 'Cancelar presupuesto',
+                  action: 'CANCEL_BUDGET',
+                  value: message.id,
+                })}
               />
             )}
             {message.generatedQuote && (
               <GeneratedQuoteCard data={message.generatedQuote} businessName={business.nombre} />
             )}
             {message.confirmQuote &&
-              message.id === messages[messages.length - 1]?.id &&
+              message.id === lastConfirmMessageId &&
+              awaitingInput === 'quote-confirm' &&
               !isTyping && (
                 <div style={{ margin: '4px 0 12px 44px', width: 'calc(100% - 44px)', maxWidth: 520 }}>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickReply({
-                      id: 'confirm-budget',
-                      label: 'Confirmar presupuesto',
-                      action: 'CONFIRM_BUDGET',
-                    })}
-                    style={{
-                      width: '100%',
-                      minHeight: 42,
-                      padding: '10px 16px',
-                      border: 0,
-                      borderRadius: 'var(--radius-md)',
-                      background: 'var(--chat-gradient)',
-                      color: '#fff',
-                      font: '700 14px var(--font-family)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8,
-                    }}
-                  >
-                    Confirmar presupuesto
-                  </button>
+                  <div className="chat-quote-card__actions chat-quote-card__actions--stacked">
+                    <button
+                      type="button"
+                      className="chat-quote-card__primary"
+                      onClick={() => handleQuickReply({
+                        id: 'confirm-budget',
+                        label: 'Confirmar presupuesto',
+                        action: 'CONFIRM_BUDGET',
+                      })}
+                    >
+                      Confirmar presupuesto
+                    </button>
+                    <button
+                      type="button"
+                      className="chat-quote-card__secondary"
+                      onClick={() => handleQuickReply({
+                        id: 'cancel-confirm-budget',
+                        label: 'Cancelar presupuesto',
+                        action: 'CANCEL_BUDGET',
+                      })}
+                    >
+                      Cancelar presupuesto
+                    </button>
+                  </div>
                 </div>
               )}
-            {message.products && message.products.length > 0 && message.id === lastProductsMessageId && !isTyping && (
+            {message.products && message.products.length > 0 && message.id === lastProductsMessageId && message.id === messages[messages.length - 1]?.id && !isTyping && (
               <ProductCatalogMessage
                 products={message.products}
                 onConfirm={submitOrder}
@@ -283,7 +298,7 @@ function PublicChat({ business, preview, onClose }: { business: Business; previe
         <div ref={messagesEndRef} className="public-chat__end" aria-hidden="true" />
       </div>
 
-      {!isTyping && activeQuickReplies.length > 0 &&
+      {!isTyping && awaitingInput !== 'quote-confirm' && activeQuickReplies.length > 0 &&
         messages[messages.length - 1]?.role !== 'bot' && (
           <div className="public-chat__suggestions">
             <QuickReplies options={activeQuickReplies} onSelect={handleQuickReply} />

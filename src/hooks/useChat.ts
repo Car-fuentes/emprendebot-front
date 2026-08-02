@@ -233,7 +233,7 @@ function generateBotResponse(
 }
 
 function generateQuickReplyResponse(option: QuickReplyOption, business: Business): BotResponse {
-  const actions: Record<Exclude<QuickReplyAction, 'SEND_TEXT' | 'CONFIRM_BUDGET'>, () => BotResponse> = {
+  const actions: Record<Exclude<QuickReplyAction, 'SEND_TEXT' | 'REQUEST_BUDGET' | 'CONFIRM_BUDGET' | 'CANCEL_BUDGET'>, () => BotResponse> = {
     SHOW_MAIN_MENU: createMainMenuResponse,
     SHOW_FAQ_MENU: () => createFaqMenuResponse(business),
     SHOW_CATALOG: () => createCatalogResponse(business),
@@ -246,7 +246,7 @@ function generateQuickReplyResponse(option: QuickReplyOption, business: Business
   if (option.action === 'SEND_TEXT') {
     return generateBotResponse(option.value ?? option.label, business, null)
   }
-  if (option.action === 'CONFIRM_BUDGET') {
+  if (option.action === 'REQUEST_BUDGET' || option.action === 'CONFIRM_BUDGET' || option.action === 'CANCEL_BUDGET') {
     return generateBotResponse(option.label, business, null)
   }
   return actions[option.action]()
@@ -343,6 +343,11 @@ export function useChat(business: Business) {
   const [submittingQuoteMessageId, setSubmittingQuoteMessageId] = useState<string | null>(
     initialPendingQuote?.sourceSummaryMessageId ?? null,
   )
+  const cancelledQuoteMessageIds = new Set(
+    messages
+      .filter(message => message.action === 'CANCEL_BUDGET' && message.actionValue)
+      .map(message => message.actionValue!),
+  )
 
   const ensureConsultation = useCallback((): Promise<string | null> => {
     if (!consultationPromiseRef.current) {
@@ -411,12 +416,16 @@ export function useChat(business: Business) {
 
   const processMessage = useCallback(async (text: string, quickReply?: QuickReplyOption) => {
     if (isTyping) return
+    const actionValue = quickReply?.action === 'CANCEL_BUDGET'
+      ? quickReply.value ?? pendingQuoteRef.current?.sourceSummaryMessageId
+      : quickReply?.value
 
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: 'user',
       text,
       timestamp: new Date(),
+      ...(quickReply ? { action: quickReply.action, actionValue } : {}),
     }
 
     setMessages(previousMessages => {
@@ -442,6 +451,31 @@ export function useChat(business: Business) {
     })
 
     if (conversationVersion !== conversationVersionRef.current) return
+
+    if (quickReply?.action === 'CANCEL_BUDGET') {
+      const sourceSummaryMessageId = actionValue
+      if (sourceSummaryMessageId) quoteSubmissionRef.current.delete(sourceSummaryMessageId)
+      pendingQuoteRef.current = null
+      savePendingQuote(business.id, null)
+      setSubmittingQuoteMessageId(null)
+      setAwaitingInput(null)
+      saveAwaitingInput(business.id, null)
+      setContactName('')
+
+      const botMessages = createBotMessages(createMainMenuResponse())
+      setMessages(previousMessages => {
+        const nextMessages = [...previousMessages, ...botMessages]
+        saveChatHistory(business.id, nextMessages)
+        return nextMessages
+      })
+      if (consultationId) {
+        botMessages.forEach(message => {
+          void savePublicMessage(business.slug, consultationId, 'bot', message.text).catch(() => undefined)
+        })
+      }
+      setIsTyping(false)
+      return
+    }
 
     if (awaitingInput === 'quote-contact-name') {
       const name = text.trim()
@@ -591,6 +625,7 @@ export function useChat(business: Business) {
           quickReplies: [
             { id: 'quote-show-faq-menu', label: 'Preguntas frecuentes', action: 'SHOW_FAQ_MENU' },
             { id: 'quote-start-human-handoff', label: 'Hablar con una persona', action: 'START_HUMAN_HANDOFF' },
+            MAIN_MENU_REPLY,
           ],
         }
         setMessages(prev => {
@@ -616,6 +651,7 @@ export function useChat(business: Business) {
           role: 'bot',
           text: 'No pudimos registrar el cliente y el presupuesto. Intentá nuevamente.',
           timestamp: new Date(),
+          quickReplies: [MAIN_MENU_REPLY],
         }
         setMessages(prev => {
           const next = [...prev, errorMsg]
@@ -785,7 +821,9 @@ export function useChat(business: Business) {
   const requestQuote = useCallback(async (
     sourceSummaryMessageId: string,
     summary: QuoteSummaryMessageData,
+    option: QuickReplyOption,
   ) => {
+    if (option.action !== 'REQUEST_BUDGET') return
     if (quoteSubmissionRef.current.has(sourceSummaryMessageId)) return
     quoteSubmissionRef.current.add(sourceSummaryMessageId)
     setSubmittingQuoteMessageId(sourceSummaryMessageId)
@@ -797,8 +835,10 @@ export function useChat(business: Business) {
       const userMsg: Message = {
         id: crypto.randomUUID(),
         role: 'user',
-        text: 'Solicitar presupuesto',
+        text: option.label,
         timestamp: new Date(),
+        action: option.action,
+        actionValue: sourceSummaryMessageId,
       }
       await savePublicMessage(business.slug, consultationId, 'cliente', userMsg.text)
       const contactPrompt: Message = {
@@ -866,6 +906,8 @@ export function useChat(business: Business) {
     submitOrder,
     requestQuote,
     submittingQuoteMessageId,
+    awaitingInput,
+    cancelledQuoteMessageIds,
     reset,
   }
 }

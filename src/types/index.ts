@@ -182,7 +182,9 @@ export type QuickReplyAction =
   | 'START_HUMAN_HANDOFF'
   | 'START_BUDGET'
   | 'SELECT_FAQ'
+  | 'REQUEST_BUDGET'
   | 'CONFIRM_BUDGET'
+  | 'CANCEL_BUDGET'
   | 'SEND_TEXT'
 
 export interface QuickReplyOption {
@@ -237,6 +239,8 @@ export interface Message {
   role: MessageRole
   text: string
   timestamp: Date
+  action?: QuickReplyAction
+  actionValue?: string
   quickReplies?: QuickReplyOption[]
   confirmQuote?: boolean
   products?: Product[]

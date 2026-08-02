@@ -16,7 +16,9 @@ const QUICK_REPLY_ACTIONS = new Set<QuickReplyOption['action']>([
   'START_HUMAN_HANDOFF',
   'START_BUDGET',
   'SELECT_FAQ',
+  'REQUEST_BUDGET',
   'CONFIRM_BUDGET',
+  'CANCEL_BUDGET',
   'SEND_TEXT',
 ])
 
