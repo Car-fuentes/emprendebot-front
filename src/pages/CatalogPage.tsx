@@ -9,9 +9,11 @@ import { PageBackButton } from '../components/navigation/PageBackButton'
 import type { ProductApi } from '../types'
 import { deleteProductApi, getProductsApi } from '../services/productApi'
 import { openChatPreview } from '../utils/chatRoutes'
+import { filterCatalogProducts, normalizeSearchText } from '../utils/catalogSearch'
 import '../styles/catalog.css'
 
 const PAGE_SIZE = 10
+const SEARCH_FETCH_LIMIT = 100
 
 export function CatalogPage() {
   const navigate = useNavigate()
@@ -41,10 +43,36 @@ export function CatalogPage() {
     setIsLoading(true)
     setError('')
     try {
+      if (normalizeSearchText(search)) {
+        const firstPage = await getProductsApi({
+          page: 1,
+          limit: SEARCH_FETCH_LIMIT,
+          activo: activeFilter === 'all' ? undefined : activeFilter === 'active',
+        })
+        const remainingPages = await Promise.all(
+          Array.from(
+            { length: Math.max(0, firstPage.totalPaginas - 1) },
+            (_, index) => getProductsApi({
+              page: index + 2,
+              limit: SEARCH_FETCH_LIMIT,
+              activo: activeFilter === 'all' ? undefined : activeFilter === 'active',
+            }),
+          ),
+        )
+        const matches = filterCatalogProducts(
+          [firstPage, ...remainingPages].flatMap(result => result.productos),
+          search,
+        )
+        const start = (page - 1) * PAGE_SIZE
+
+        setProducts(matches.slice(start, start + PAGE_SIZE))
+        setTotalPages(Math.max(Math.ceil(matches.length / PAGE_SIZE), 1))
+        return
+      }
+
       const result = await getProductsApi({
         page,
         limit: PAGE_SIZE,
-        buscar: search,
         activo: activeFilter === 'all' ? undefined : activeFilter === 'active',
       })
       setProducts(result.productos)
