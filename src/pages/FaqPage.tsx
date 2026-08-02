@@ -233,7 +233,7 @@ export function FaqPage() {
           </section>
 
           {!isLoading && allFaqs.length > 0 && (
-            <section className="faq-toolbar" aria-label="Buscar y filtrar preguntas frecuentes">
+            <section className="faq-toolbar" aria-label="Filtrar preguntas frecuentes">
               <label className="faq-filter">
                 <span>Categoría</span>
                 <select value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)}>
