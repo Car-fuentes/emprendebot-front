@@ -174,6 +174,24 @@ export interface Business {
 
 // ===== CHAT =====
 export type MessageRole = 'bot' | 'user'
+export type QuickReplyAction =
+  | 'SHOW_MAIN_MENU'
+  | 'SHOW_FAQ_MENU'
+  | 'SHOW_CATALOG'
+  | 'SHOW_SCHEDULE'
+  | 'START_HUMAN_HANDOFF'
+  | 'START_BUDGET'
+  | 'SELECT_FAQ'
+  | 'CONFIRM_BUDGET'
+  | 'SEND_TEXT'
+
+export interface QuickReplyOption {
+  id: string
+  label: string
+  action: QuickReplyAction
+  value?: string
+}
+
 export type AwaitingInput =
   | 'budget'
   | 'faq-selection'
@@ -219,7 +237,7 @@ export interface Message {
   role: MessageRole
   text: string
   timestamp: Date
-  quickReplies?: string[]
+  quickReplies?: QuickReplyOption[]
   confirmQuote?: boolean
   products?: Product[]
   faqs?: FAQ[]

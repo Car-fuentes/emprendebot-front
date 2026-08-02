@@ -127,6 +127,7 @@ function PublicChat({ business, preview, onClose }: { business: Business; previe
     messages,
     isTyping,
     sendMessage,
+    handleQuickReply,
     submitOrder,
     requestQuote,
     submittingQuoteMessageId,
@@ -222,7 +223,11 @@ function PublicChat({ business, preview, onClose }: { business: Business; previe
                 <div style={{ margin: '4px 0 12px 44px', width: 'calc(100% - 44px)', maxWidth: 520 }}>
                   <button
                     type="button"
-                    onClick={() => sendMessage('Confirmar presupuesto')}
+                    onClick={() => handleQuickReply({
+                      id: 'confirm-budget',
+                      label: 'Confirmar presupuesto',
+                      action: 'CONFIRM_BUDGET',
+                    })}
                     style={{
                       width: '100%',
                       minHeight: 42,
@@ -244,16 +249,32 @@ function PublicChat({ business, preview, onClose }: { business: Business; previe
                 </div>
               )}
             {message.products && message.products.length > 0 && message.id === lastProductsMessageId && !isTyping && (
-              <ProductCatalogMessage products={message.products} onConfirm={submitOrder} onBack={() => sendMessage('Volver al menú principal')} />
+              <ProductCatalogMessage
+                products={message.products}
+                onConfirm={submitOrder}
+                onBack={() => handleQuickReply({
+                  id: 'catalog-back-main-menu',
+                  label: 'Volver al menú principal',
+                  action: 'SHOW_MAIN_MENU',
+                })}
+              />
             )}
             {message.faqs && message.faqs.length > 0 && message.id === lastFaqsMessageId && !isTyping && (
-              <FaqListMessage faqs={message.faqs} onSelect={sendMessage} />
+              <FaqListMessage
+                faqs={message.faqs}
+                onSelect={faq => handleQuickReply({
+                  id: `select-faq-${faq.id}`,
+                  label: faq.pregunta,
+                  action: 'SELECT_FAQ',
+                  value: faq.id,
+                })}
+              />
             )}
             {message.id === messages[messages.length - 1]?.id &&
               message.role === 'bot' &&
               !isTyping &&
               message.quickReplies && message.quickReplies.length > 0 && (
-                <QuickReplies options={message.quickReplies} onSelect={sendMessage} />
+                <QuickReplies options={message.quickReplies} onSelect={handleQuickReply} />
               )}
           </div>
         ))}
@@ -265,7 +286,7 @@ function PublicChat({ business, preview, onClose }: { business: Business; previe
       {!isTyping && activeQuickReplies.length > 0 &&
         messages[messages.length - 1]?.role !== 'bot' && (
           <div className="public-chat__suggestions">
-            <QuickReplies options={activeQuickReplies} onSelect={sendMessage} />
+            <QuickReplies options={activeQuickReplies} onSelect={handleQuickReply} />
           </div>
         )}
 

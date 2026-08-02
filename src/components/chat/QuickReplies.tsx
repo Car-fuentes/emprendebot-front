@@ -1,13 +1,15 @@
+import type { QuickReplyAction, QuickReplyOption } from '../../types'
+
 interface QuickRepliesProps {
-  options: string[]
-  onSelect: (option: string) => void
+  options: QuickReplyOption[]
+  onSelect: (option: QuickReplyOption) => void
 }
 
-const ICON_MAP: Record<string, string> = {
-  'Ver catálogo':           '/Package.png',
-  'Horarios de atención':   '/time.png',
-  'Preguntas frecuentes':   '/help.png',
-  'Hablar con una persona': '/agent.png',
+const ICON_MAP: Partial<Record<QuickReplyAction, string>> = {
+  SHOW_CATALOG: '/Package.png',
+  SHOW_SCHEDULE: '/time.png',
+  SHOW_FAQ_MENU: '/help.png',
+  START_HUMAN_HANDOFF: '/agent.png',
 }
 
 export function QuickReplies({ options, onSelect }: QuickRepliesProps) {
@@ -21,10 +23,10 @@ export function QuickReplies({ options, onSelect }: QuickRepliesProps) {
         gap: '8px',
       }}>
         {options.map(option => {
-          const icon = ICON_MAP[option]
+          const icon = ICON_MAP[option.action]
           return (
             <button
-              key={option}
+              key={option.id}
               type="button"
               onClick={() => onSelect(option)}
               style={{
@@ -47,7 +49,7 @@ export function QuickReplies({ options, onSelect }: QuickRepliesProps) {
               {icon && (
                 <img src={icon} alt="" style={{ width: 16, height: 16, objectFit: 'contain' }} />
               )}
-              {option}
+              {option.label}
             </button>
           )
         })}

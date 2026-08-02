@@ -5,6 +5,8 @@ import type {
   FAQ,
   Message,
   Product,
+  QuickReplyAction,
+  QuickReplyOption,
   QuoteSummaryMessageData,
 } from '../types'
 
@@ -28,16 +30,22 @@ import {
   updatePublicContact,
 } from '../services/publicConsultationApi'
 
-const QUICK_REPLIES_INICIAL = [
-  'Ver catálogo',
-  'Horarios de atención',
-  'Preguntas frecuentes',
-  'Hablar con una persona',
+const QUICK_REPLIES_INICIAL: QuickReplyOption[] = [
+  { id: 'show-catalog', label: 'Ver catálogo', action: 'SHOW_CATALOG' },
+  { id: 'show-schedule', label: 'Horarios de atención', action: 'SHOW_SCHEDULE' },
+  { id: 'show-faq-menu', label: 'Preguntas frecuentes', action: 'SHOW_FAQ_MENU' },
+  { id: 'start-human-handoff', label: 'Hablar con una persona', action: 'START_HUMAN_HANDOFF' },
 ]
+
+const MAIN_MENU_REPLY: QuickReplyOption = {
+  id: 'back-main-menu',
+  label: 'Volver al menú principal',
+  action: 'SHOW_MAIN_MENU',
+}
 
 interface BotResponse {
   text: string
-  quickReplies?: string[]
+  quickReplies?: QuickReplyOption[]
   continuation?: string
   awaitingInput?: AwaitingInput
   products?: Product[]
@@ -57,7 +65,10 @@ function normalizeMessage(message: string): string {
 }
 
 function isMenuCommand(message: string): boolean {
-  return MENU_COMMANDS.includes(message) || message === 'volver al menu' || message === 'menu principal'
+  return MENU_COMMANDS.includes(message)
+    || message === 'volver al menu'
+    || message === 'volver al menu principal'
+    || message === 'menu principal'
 }
 
 function isFaqMenuCommand(message: string): boolean {
@@ -79,7 +90,7 @@ function createFaqMenuResponse(business: Business): BotResponse {
   if (activeFaqs.length === 0) {
     return {
       text: 'No hay preguntas frecuentes disponibles en este momento. Podés volver al menú principal.',
-      quickReplies: ['Menú principal'],
+      quickReplies: [{ id: 'show-main-menu', label: 'Menú principal', action: 'SHOW_MAIN_MENU' }],
     }
   }
 
@@ -103,6 +114,56 @@ function findSelectedFaq(userMessage: string, faqs: FAQ[]): FAQ | null {
   return faqs.find(faq => normalizeMessage(faq.pregunta) === normalized) ?? null
 }
 
+function createSelectedFaqResponse(faqId: string | undefined, business: Business): BotResponse {
+  const selectedFaq = getFaqs(business).find(faq => faq.id === faqId)
+  if (!selectedFaq) return createFaqMenuResponse(business)
+  return {
+    text: selectedFaq.respuesta,
+    quickReplies: [
+      { id: 'repeat-faq-menu', label: 'Ver preguntas frecuentes', action: 'SHOW_FAQ_MENU' },
+      MAIN_MENU_REPLY,
+    ],
+  }
+}
+
+function createMainMenuResponse(): BotResponse {
+  return { text: '', quickReplies: QUICK_REPLIES_INICIAL }
+}
+
+function createCatalogResponse(business: Business): BotResponse {
+  const disponibles = business.productos.filter(product => product.disponible)
+  if (disponibles.length === 0) {
+    return {
+      text: 'Todavía no tenemos productos cargados. ¿Deseas realizar otra consulta?',
+      quickReplies: QUICK_REPLIES_INICIAL,
+    }
+  }
+  return {
+    text: '¡Perfecto! Te comparto las opciones disponibles. Seleccioná una o varias para continuar.',
+    products: disponibles,
+  }
+}
+
+function createScheduleResponse(business: Business): BotResponse {
+  return {
+    text: `🕐 Horario: ${business.horario || 'No especificado'}\n📞 Teléfono: ${business.telefono || 'No especificado'}\n\n${business.descripcion || ''}`,
+  }
+}
+
+function createHumanHandoffResponse(): BotResponse {
+  return {
+    text: '¡Perfecto! Para ponerte en contacto con una persona del negocio necesito un par de datos. 😊\n\n¿Cuál es tu nombre?',
+    awaitingInput: 'contact-name',
+  }
+}
+
+function createBudgetResponse(): BotResponse {
+  return {
+    text: "¡Perfecto! Para armar un presupuesto necesito algunos datos. ¿Podés contarme qué productos o servicios te interesan?\n\nSi querés volver al menú principal, escribí 'menú' u 'opciones'.",
+    awaitingInput: 'budget',
+  }
+}
+
 function generateBotResponse(
   userMessage: string,
   business: Business,
@@ -112,10 +173,7 @@ function generateBotResponse(
   const normalizedMessage = normalizeMessage(userMessage)
 
   if (isMenuCommand(normalizedMessage)) {
-    return {
-      text: '',
-      quickReplies: QUICK_REPLIES_INICIAL,
-    }
+    return createMainMenuResponse()
   }
 
   if (isFaqMenuCommand(normalizedMessage)) {
@@ -144,37 +202,19 @@ function generateBotResponse(
       }
     }
 
-    return {
-      text: selectedFaq.respuesta,
-      quickReplies: ['Ver preguntas frecuentes', 'Volver al menú principal'],
-    }
+    return createSelectedFaqResponse(selectedFaq.id, business)
   }
 
   if (msg.includes('producto') || msg.includes('catálogo') || msg.includes('catalogo')) {
-    const disponibles = business.productos.filter(p => p.disponible)
-    if (disponibles.length === 0) {
-      return {
-        text: 'Todavía no tenemos productos cargados. ¿Deseas realizar otra consulta?',
-        quickReplies: QUICK_REPLIES_INICIAL,
-      }
-    }
-    return {
-      text: '¡Perfecto! Te comparto las opciones disponibles. Seleccioná una o varias para continuar.',
-      products: disponibles,
-    }
+    return createCatalogResponse(business)
   }
 
   if (msg.includes('horario') || msg.includes('información') || msg.includes('informacion')) {
-    return {
-      text: `🕐 Horario: ${business.horario || 'No especificado'}\n📞 Teléfono: ${business.telefono || 'No especificado'}\n\n${business.descripcion || ''}`,
-    }
+    return createScheduleResponse(business)
   }
 
   if (msg.includes('presupuesto')) {
-    return {
-      text: "¡Perfecto! Para armar un presupuesto necesito algunos datos. ¿Podés contarme qué productos o servicios te interesan?\n\nSi querés volver al menú principal, escribí 'menú' u 'opciones'.",
-      awaitingInput: 'budget',
-    }
+    return createBudgetResponse()
   }
 
 
@@ -183,16 +223,33 @@ function generateBotResponse(
   }
 
   if (msg.includes('persona') || msg.includes('asesor') || msg.includes('hablar')) {
-    return {
-      text: '¡Perfecto! Para ponerte en contacto con una persona del negocio necesito un par de datos. 😊\n\n¿Cuál es tu nombre?',
-      awaitingInput: 'contact-name',
-    }
+    return createHumanHandoffResponse()
   }
 
   return {
     text: 'No encontré una respuesta para esa consulta.\nElegí por favor una opción para continuar',
     quickReplies: QUICK_REPLIES_INICIAL,
   }
+}
+
+function generateQuickReplyResponse(option: QuickReplyOption, business: Business): BotResponse {
+  const actions: Record<Exclude<QuickReplyAction, 'SEND_TEXT' | 'CONFIRM_BUDGET'>, () => BotResponse> = {
+    SHOW_MAIN_MENU: createMainMenuResponse,
+    SHOW_FAQ_MENU: () => createFaqMenuResponse(business),
+    SHOW_CATALOG: () => createCatalogResponse(business),
+    SHOW_SCHEDULE: () => createScheduleResponse(business),
+    START_HUMAN_HANDOFF: createHumanHandoffResponse,
+    START_BUDGET: createBudgetResponse,
+    SELECT_FAQ: () => createSelectedFaqResponse(option.value, business),
+  }
+
+  if (option.action === 'SEND_TEXT') {
+    return generateBotResponse(option.value ?? option.label, business, null)
+  }
+  if (option.action === 'CONFIRM_BUDGET') {
+    return generateBotResponse(option.label, business, null)
+  }
+  return actions[option.action]()
 }
 
 function createBotMessages(response: BotResponse): Message[] {
@@ -352,7 +409,7 @@ export function useChat(business: Business) {
     }
   }, [cancelPendingResponse])
 
-  const sendMessage = useCallback(async (text: string) => {
+  const processMessage = useCallback(async (text: string, quickReply?: QuickReplyOption) => {
     if (isTyping) return
 
     const userMessage: Message = {
@@ -474,7 +531,9 @@ export function useChat(business: Business) {
     }
 
     if (awaitingInput === 'quote-confirm') {
-      if (text.trim() !== 'Confirmar presupuesto') {
+      const isConfirmation = quickReply?.action === 'CONFIRM_BUDGET'
+        || (!quickReply && text.trim() === 'Confirmar presupuesto')
+      if (!isConfirmation) {
         setIsTyping(false)
         return
       }
@@ -529,7 +588,10 @@ export function useChat(business: Business) {
           role: 'bot',
           text: `Recibimos tu solicitud. Una persona del negocio se comunicará con vos a la brevedad. ¡Gracias por comunicarte con ${business.nombre}!`,
           timestamp: new Date(),
-          quickReplies: ['Preguntas frecuentes', 'Hablar con una persona'],
+          quickReplies: [
+            { id: 'quote-show-faq-menu', label: 'Preguntas frecuentes', action: 'SHOW_FAQ_MENU' },
+            { id: 'quote-start-human-handoff', label: 'Hablar con una persona', action: 'START_HUMAN_HANDOFF' },
+          ],
         }
         setMessages(prev => {
           const next = [...prev, generatedMsg, followUpMsg]
@@ -640,9 +702,9 @@ export function useChat(business: Business) {
       return
     }
 
-    // Si el usuario hace clic en un chip del menú principal, ignorar el awaitingInput actual
-    const isMenuQuickReply = QUICK_REPLIES_INICIAL.some(r => r.toLowerCase() === text.toLowerCase())
-    const response = generateBotResponse(text, business, isMenuQuickReply ? null : awaitingInput)
+    const response = quickReply
+      ? generateQuickReplyResponse(quickReply, business)
+      : generateBotResponse(text, business, awaitingInput)
     const botMessages = createBotMessages(response)
     const nextAwaitingInput = response.awaitingInput ?? null
 
@@ -660,6 +722,13 @@ export function useChat(business: Business) {
     saveAwaitingInput(business.id, nextAwaitingInput)
     setIsTyping(false)
   }, [awaitingInput, business, contactName, ensureConsultation, isTyping])
+
+  const sendMessage = useCallback((text: string) => processMessage(text), [processMessage])
+
+  const handleQuickReply = useCallback(
+    (option: QuickReplyOption) => processMessage(option.label, option),
+    [processMessage],
+  )
 
   const submitOrder = useCallback((items: OrderItem[]) => {
     if (items.length === 0) return
@@ -793,6 +862,7 @@ export function useChat(business: Business) {
     messages,
     isTyping,
     sendMessage,
+    handleQuickReply,
     submitOrder,
     requestQuote,
     submittingQuoteMessageId,
