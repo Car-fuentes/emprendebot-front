@@ -1,3 +1,5 @@
+import type { NavigateFunction } from 'react-router-dom'
+
 export const CHAT_PREVIEW_ROUTE = '/chat-preview/:slug'
 export const PUBLIC_CHAT_ROUTE = '/:slug'
 
@@ -12,6 +14,19 @@ export const getPublicChatPath = (slug: string) =>
 export const getPublicChatUrl = (slug: string, origin: string) =>
   `${origin.replace(/\/+$/, '')}${getPublicChatPath(slug)}`
 
-export const openChatPreview = (slug: string) => {
-  window.open(getChatPreviewPath(slug), '_blank', 'noopener,noreferrer')
+let previewTrigger: HTMLElement | null = null
+
+export const openChatPreview = (slug: string, navigate: NavigateFunction) => {
+  previewTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
+  navigate(getChatPreviewPath(slug), {
+    state: {
+      backgroundPath: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+    },
+  })
+}
+
+export const restoreChatPreviewFocus = () => {
+  const trigger = previewTrigger
+  previewTrigger = null
+  window.requestAnimationFrame(() => trigger?.focus())
 }

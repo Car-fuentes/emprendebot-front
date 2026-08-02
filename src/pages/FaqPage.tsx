@@ -303,7 +303,7 @@ export function FaqPage() {
         </main>
       </div>
 
-      <button className="faq-bot" type="button" disabled={!business?.slug} onClick={() => business?.slug && openChatPreview(business.slug)}>
+      <button className="faq-bot" type="button" disabled={!business?.slug} onClick={() => business?.slug && openChatPreview(business.slug, navigate)}>
         <span className="faq-bot__label"><i aria-hidden="true" />Probá tu chat</span>
         <span className="faq-bot__avatar" aria-hidden="true"><img src="/isoBot-transparente.png" alt="" /></span>
       </button>

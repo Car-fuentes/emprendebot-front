@@ -232,7 +232,7 @@ export function MetricsPage() {
           className="metrics-public-bot"
           disabled={!business?.slug}
           aria-label="Abrir modo de prueba del chatbot"
-          onClick={() => business?.slug && openChatPreview(business.slug)}
+          onClick={() => business?.slug && openChatPreview(business.slug, navigate)}
         >
           <span className="metrics-public-bot__label"><i aria-hidden="true" />Probá tu chat</span>
           <span className="metrics-public-bot__avatar" aria-hidden="true">

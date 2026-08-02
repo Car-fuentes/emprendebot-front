@@ -26,10 +26,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const location = useLocation()
-  const routeState = location.state as { backgroundLocation?: Location } | null
+  const routeState = location.state as { backgroundLocation?: Location; backgroundPath?: string } | null
   const isCatalogModalRoute = location.pathname === '/catalogo/agregar'
     || location.pathname.startsWith('/catalogo/editar/')
-  const backgroundLocation = routeState?.backgroundLocation
+  const isChatPreviewRoute = location.pathname.startsWith('/chat-preview/')
+  const backgroundLocation: Location | string | undefined = routeState?.backgroundLocation
+    ?? routeState?.backgroundPath
     ?? (isCatalogModalRoute
       ? {
           ...location,
@@ -39,7 +41,7 @@ function App() {
           state: null,
           key: 'catalog-modal-background',
         }
-      : undefined)
+      : isChatPreviewRoute ? '/dashboard' : undefined)
 
   return (
     <>
@@ -98,6 +100,9 @@ function App() {
           } />
           <Route path="/catalogo/editar/:id" element={
             <ProtectedRoute><ProductFormPage /></ProtectedRoute>
+          } />
+          <Route path={CHAT_PREVIEW_ROUTE} element={
+            <ProtectedRoute><ChatbotPage preview /></ProtectedRoute>
           } />
         </Routes>
       )}

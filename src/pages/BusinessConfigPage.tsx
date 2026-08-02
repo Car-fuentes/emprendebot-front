@@ -1015,7 +1015,7 @@ export function BusinessConfigPage() {
           className="business-config__public-chat-bot"
           disabled={!business?.slug}
           aria-label="Abrir modo de prueba del chatbot"
-          onClick={() => business?.slug && openChatPreview(business.slug)}
+          onClick={() => business?.slug && openChatPreview(business.slug, navigate)}
         >
           <span className="business-config__public-chat-label">
             <i aria-hidden="true" />

@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ChatHeader } from '../components/chat/ChatHeader'
 import { ChatInput } from '../components/chat/ChatInput'
 import { MessageBubble, TypingIndicator } from '../components/chat/MessageBubble'
@@ -13,15 +13,36 @@ import { useChat } from '../hooks/useChat'
 import type { Business, FAQ, Product } from '../types'
 import { getPublicBusinessApi, getPublicFaqsApi, getPublicProductsApi } from '../services/publicApi'
 import { resolveChatAppearance } from '../services/chatAppearance'
+import { FloatingChatWindow } from '../components/chat/FloatingChatWindow'
+import { PublicChatBackground } from '../components/chat/PublicChatBackground'
+import { useMediaQuery } from '../hooks/useMediaQuery'
+import { restoreChatPreviewFocus } from '../utils/chatRoutes'
 
 // Página pública: www.emprendebot/[slug]
 export function ChatbotPage({ preview = false }: { preview?: boolean }) {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const [business, setBusiness] = useState<Business | null>(null)
   const [isBusinessLoading, setIsBusinessLoading] = useState(Boolean(slug))
   const [publicFaqs, setPublicFaqs] = useState<FAQ[] | null>(null)
   const [publicProducts, setPublicProducts] = useState<Product[] | null>(null)
+
+  const closePreview = useCallback(() => {
+    const hasBackground = Boolean((location.state as { backgroundPath?: string } | null)?.backgroundPath)
+    if (hasBackground) navigate(-1)
+    else navigate('/dashboard')
+    restoreChatPreviewFocus()
+  }, [location.state, navigate])
+
+  useEffect(() => {
+    if (!preview) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closePreview()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [closePreview, preview])
 
   useEffect(() => {
     if (!slug) return
@@ -87,10 +108,21 @@ export function ChatbotPage({ preview = false }: { preview?: boolean }) {
     ...(publicProducts !== null ? { productos: publicProducts } : {}),
   }
 
-  return <PublicChat key={business.id} business={publicBusiness} preview={preview} />
+  const chat = (
+    <PublicChat
+      key={business.id}
+      business={publicBusiness}
+      preview={preview}
+      onClose={preview ? closePreview : undefined}
+    />
+  )
+
+  return preview
+    ? <div className="chat-preview-overlay">{chat}</div>
+    : <PublicChatBackground>{chat}</PublicChatBackground>
 }
 
-function PublicChat({ business, preview }: { business: Business; preview: boolean }) {
+function PublicChat({ business, preview, onClose }: { business: Business; preview: boolean; onClose?: () => void }) {
   const {
     messages,
     isTyping,
@@ -104,6 +136,7 @@ function PublicChat({ business, preview }: { business: Business; preview: boolea
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const isInitialScrollRef = useRef(true)
+  const isDesktop = useMediaQuery('(min-width: 481px)')
 
   useEffect(() => {
     document.documentElement.classList.add('public-chat-active')
@@ -146,9 +179,10 @@ function PublicChat({ business, preview }: { business: Business; preview: boolea
   const activeQuickReplies = isTyping ? [] : (lastBotWithReplies?.quickReplies ?? [])
 
   return (
-    <div
-      className="public-chat"
-      style={{
+    <FloatingChatWindow draggable={isDesktop} preview={preview}>
+      {dragHandleProps => <div
+        className="public-chat"
+        style={{
         '--chat-primary': appearance.primary,
         '--chat-secondary': appearance.secondary,
         '--chat-gradient': `linear-gradient(90deg, ${appearance.primary}, ${appearance.secondary})`,
@@ -157,7 +191,13 @@ function PublicChat({ business, preview }: { business: Business; preview: boolea
         '--color-bg-answer': appearance.primary,
       } as CSSProperties}
     >
-      <ChatHeader business={business} onRefresh={preview ? reset : undefined} />
+      <ChatHeader
+        business={business}
+        onRefresh={preview ? reset : undefined}
+        onClose={onClose}
+        dragHandleProps={dragHandleProps}
+        draggable={isDesktop}
+      />
 
       <div ref={messagesContainerRef} className="public-chat__messages">
         {messages.map(message => (
@@ -230,6 +270,7 @@ function PublicChat({ business, preview }: { business: Business; preview: boolea
         )}
 
       <ChatInput onSend={sendMessage} disabled={isTyping} />
-    </div>
+      </div>}
+    </FloatingChatWindow>
   )
 }
