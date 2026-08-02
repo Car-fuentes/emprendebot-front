@@ -5,6 +5,8 @@ import type {
   FAQ,
   Message,
   Product,
+  QuickReplyAction,
+  QuickReplyOption,
   QuoteSummaryMessageData,
 } from '../types'
 
@@ -27,17 +29,24 @@ import {
   savePublicMessage,
   updatePublicContact,
 } from '../services/publicConsultationApi'
+import { isNetworkError } from '../utils/networkError'
 
-const QUICK_REPLIES_INICIAL = [
-  'Ver catálogo',
-  'Horarios de atención',
-  'Preguntas frecuentes',
-  'Hablar con una persona',
+const QUICK_REPLIES_INICIAL: QuickReplyOption[] = [
+  { id: 'show-catalog', label: 'Ver catálogo', action: 'SHOW_CATALOG' },
+  { id: 'show-schedule', label: 'Horarios de atención', action: 'SHOW_SCHEDULE' },
+  { id: 'show-faq-menu', label: 'Preguntas frecuentes', action: 'SHOW_FAQ_MENU' },
+  { id: 'start-human-handoff', label: 'Hablar con una persona', action: 'START_HUMAN_HANDOFF' },
 ]
+
+const MAIN_MENU_REPLY: QuickReplyOption = {
+  id: 'back-main-menu',
+  label: 'Volver al menú principal',
+  action: 'SHOW_MAIN_MENU',
+}
 
 interface BotResponse {
   text: string
-  quickReplies?: string[]
+  quickReplies?: QuickReplyOption[]
   continuation?: string
   awaitingInput?: AwaitingInput
   products?: Product[]
@@ -57,7 +66,10 @@ function normalizeMessage(message: string): string {
 }
 
 function isMenuCommand(message: string): boolean {
-  return MENU_COMMANDS.includes(message) || message === 'volver al menu' || message === 'menu principal'
+  return MENU_COMMANDS.includes(message)
+    || message === 'volver al menu'
+    || message === 'volver al menu principal'
+    || message === 'menu principal'
 }
 
 function isFaqMenuCommand(message: string): boolean {
@@ -79,7 +91,7 @@ function createFaqMenuResponse(business: Business): BotResponse {
   if (activeFaqs.length === 0) {
     return {
       text: 'No hay preguntas frecuentes disponibles en este momento. Podés volver al menú principal.',
-      quickReplies: ['Menú principal'],
+      quickReplies: [{ id: 'show-main-menu', label: 'Menú principal', action: 'SHOW_MAIN_MENU' }],
     }
   }
 
@@ -103,6 +115,56 @@ function findSelectedFaq(userMessage: string, faqs: FAQ[]): FAQ | null {
   return faqs.find(faq => normalizeMessage(faq.pregunta) === normalized) ?? null
 }
 
+function createSelectedFaqResponse(faqId: string | undefined, business: Business): BotResponse {
+  const selectedFaq = getFaqs(business).find(faq => faq.id === faqId)
+  if (!selectedFaq) return createFaqMenuResponse(business)
+  return {
+    text: selectedFaq.respuesta,
+    quickReplies: [
+      { id: 'repeat-faq-menu', label: 'Ver preguntas frecuentes', action: 'SHOW_FAQ_MENU' },
+      MAIN_MENU_REPLY,
+    ],
+  }
+}
+
+function createMainMenuResponse(): BotResponse {
+  return { text: '', quickReplies: QUICK_REPLIES_INICIAL }
+}
+
+function createCatalogResponse(business: Business): BotResponse {
+  const disponibles = business.productos.filter(product => product.disponible)
+  if (disponibles.length === 0) {
+    return {
+      text: 'Todavía no tenemos productos cargados. ¿Deseas realizar otra consulta?',
+      quickReplies: QUICK_REPLIES_INICIAL,
+    }
+  }
+  return {
+    text: '¡Perfecto! Te comparto las opciones disponibles. Seleccioná una o varias para continuar.',
+    products: disponibles,
+  }
+}
+
+function createScheduleResponse(business: Business): BotResponse {
+  return {
+    text: `🕐 Horario: ${business.horario || 'No especificado'}\n📞 Teléfono: ${business.telefono || 'No especificado'}\n\n${business.descripcion || ''}`,
+  }
+}
+
+function createHumanHandoffResponse(): BotResponse {
+  return {
+    text: '¡Perfecto! Para ponerte en contacto con una persona del negocio necesito un par de datos. 😊\n\n¿Cuál es tu nombre?',
+    awaitingInput: 'contact-name',
+  }
+}
+
+function createBudgetResponse(): BotResponse {
+  return {
+    text: "¡Perfecto! Para armar un presupuesto necesito algunos datos. ¿Podés contarme qué productos o servicios te interesan?\n\nSi querés volver al menú principal, escribí 'menú' u 'opciones'.",
+    awaitingInput: 'budget',
+  }
+}
+
 function generateBotResponse(
   userMessage: string,
   business: Business,
@@ -112,10 +174,7 @@ function generateBotResponse(
   const normalizedMessage = normalizeMessage(userMessage)
 
   if (isMenuCommand(normalizedMessage)) {
-    return {
-      text: '',
-      quickReplies: QUICK_REPLIES_INICIAL,
-    }
+    return createMainMenuResponse()
   }
 
   if (isFaqMenuCommand(normalizedMessage)) {
@@ -144,37 +203,19 @@ function generateBotResponse(
       }
     }
 
-    return {
-      text: selectedFaq.respuesta,
-      quickReplies: ['Ver preguntas frecuentes', 'Volver al menú principal'],
-    }
+    return createSelectedFaqResponse(selectedFaq.id, business)
   }
 
   if (msg.includes('producto') || msg.includes('catálogo') || msg.includes('catalogo')) {
-    const disponibles = business.productos.filter(p => p.disponible)
-    if (disponibles.length === 0) {
-      return {
-        text: 'Todavía no tenemos productos cargados. ¿Deseas realizar otra consulta?',
-        quickReplies: QUICK_REPLIES_INICIAL,
-      }
-    }
-    return {
-      text: '¡Perfecto! Te comparto las opciones disponibles. Seleccioná una o varias para continuar.',
-      products: disponibles,
-    }
+    return createCatalogResponse(business)
   }
 
   if (msg.includes('horario') || msg.includes('información') || msg.includes('informacion')) {
-    return {
-      text: `🕐 Horario: ${business.horario || 'No especificado'}\n📞 Teléfono: ${business.telefono || 'No especificado'}\n\n${business.descripcion || ''}`,
-    }
+    return createScheduleResponse(business)
   }
 
   if (msg.includes('presupuesto')) {
-    return {
-      text: "¡Perfecto! Para armar un presupuesto necesito algunos datos. ¿Podés contarme qué productos o servicios te interesan?\n\nSi querés volver al menú principal, escribí 'menú' u 'opciones'.",
-      awaitingInput: 'budget',
-    }
+    return createBudgetResponse()
   }
 
 
@@ -183,16 +224,33 @@ function generateBotResponse(
   }
 
   if (msg.includes('persona') || msg.includes('asesor') || msg.includes('hablar')) {
-    return {
-      text: '¡Perfecto! Para ponerte en contacto con una persona del negocio necesito un par de datos. 😊\n\n¿Cuál es tu nombre?',
-      awaitingInput: 'contact-name',
-    }
+    return createHumanHandoffResponse()
   }
 
   return {
     text: 'No encontré una respuesta para esa consulta.\nElegí por favor una opción para continuar',
     quickReplies: QUICK_REPLIES_INICIAL,
   }
+}
+
+function generateQuickReplyResponse(option: QuickReplyOption, business: Business): BotResponse {
+  const actions: Record<Exclude<QuickReplyAction, 'SEND_TEXT' | 'REQUEST_BUDGET' | 'CONFIRM_BUDGET' | 'CANCEL_BUDGET'>, () => BotResponse> = {
+    SHOW_MAIN_MENU: createMainMenuResponse,
+    SHOW_FAQ_MENU: () => createFaqMenuResponse(business),
+    SHOW_CATALOG: () => createCatalogResponse(business),
+    SHOW_SCHEDULE: () => createScheduleResponse(business),
+    START_HUMAN_HANDOFF: createHumanHandoffResponse,
+    START_BUDGET: createBudgetResponse,
+    SELECT_FAQ: () => createSelectedFaqResponse(option.value, business),
+  }
+
+  if (option.action === 'SEND_TEXT') {
+    return generateBotResponse(option.value ?? option.label, business, null)
+  }
+  if (option.action === 'REQUEST_BUDGET' || option.action === 'CONFIRM_BUDGET' || option.action === 'CANCEL_BUDGET') {
+    return generateBotResponse(option.label, business, null)
+  }
+  return actions[option.action]()
 }
 
 function createBotMessages(response: BotResponse): Message[] {
@@ -265,7 +323,12 @@ function savePendingQuote(businessId: string, pendingQuote: PendingQuote | null)
   }
 }
 
-export function useChat(business: Business) {
+interface UseChatOptions {
+  isOnline?: boolean
+  onNetworkError?: () => void
+}
+
+export function useChat(business: Business, { isOnline = true, onNetworkError }: UseChatOptions = {}) {
   const [messages, setMessages] = useState<Message[]>(() => getInitialHistory(business))
   const [awaitingInput, setAwaitingInput] = useState<AwaitingInput | null>(() => loadAwaitingInput(business.id))
   const [isTyping, setIsTyping] = useState(false)
@@ -286,6 +349,11 @@ export function useChat(business: Business) {
   const [submittingQuoteMessageId, setSubmittingQuoteMessageId] = useState<string | null>(
     initialPendingQuote?.sourceSummaryMessageId ?? null,
   )
+  const cancelledQuoteMessageIds = new Set(
+    messages
+      .filter(message => message.action === 'CANCEL_BUDGET' && message.actionValue)
+      .map(message => message.actionValue!),
+  )
 
   const ensureConsultation = useCallback((): Promise<string | null> => {
     if (!consultationPromiseRef.current) {
@@ -302,10 +370,13 @@ export function useChat(business: Business) {
               await savePublicMessage(business.slug, consultationId, 'bot', createInitialMessage(business).text)
               return consultationId
             })
-            .catch(() => null)
+            .catch(error => {
+              if (isNetworkError(error)) onNetworkError?.()
+              return null
+            })
     }
     return consultationPromiseRef.current
-  }, [business])
+  }, [business, onNetworkError])
 
   const cancelPendingResponse = useCallback(() => {
     if (responseTimeoutRef.current) {
@@ -352,14 +423,22 @@ export function useChat(business: Business) {
     }
   }, [cancelPendingResponse])
 
-  const sendMessage = useCallback(async (text: string) => {
+  useEffect(() => {
+    if (!isOnline) consultationPromiseRef.current = null
+  }, [isOnline])
+
+  const processMessage = useCallback(async (text: string, quickReply?: QuickReplyOption) => {
     if (isTyping) return
+    const actionValue = quickReply?.action === 'CANCEL_BUDGET'
+      ? quickReply.value ?? pendingQuoteRef.current?.sourceSummaryMessageId
+      : quickReply?.value
 
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: 'user',
       text,
       timestamp: new Date(),
+      ...(quickReply ? { action: quickReply.action, actionValue } : {}),
     }
 
     setMessages(previousMessages => {
@@ -369,7 +448,7 @@ export function useChat(business: Business) {
     })
     setIsTyping(true)
 
-    const consultationId = await ensureConsultation()
+    const consultationId = isOnline ? await ensureConsultation() : null
     if (consultationId) {
       await savePublicMessage(business.slug, consultationId, 'cliente', text).catch(() => undefined)
     }
@@ -385,6 +464,31 @@ export function useChat(business: Business) {
     })
 
     if (conversationVersion !== conversationVersionRef.current) return
+
+    if (quickReply?.action === 'CANCEL_BUDGET') {
+      const sourceSummaryMessageId = actionValue
+      if (sourceSummaryMessageId) quoteSubmissionRef.current.delete(sourceSummaryMessageId)
+      pendingQuoteRef.current = null
+      savePendingQuote(business.id, null)
+      setSubmittingQuoteMessageId(null)
+      setAwaitingInput(null)
+      saveAwaitingInput(business.id, null)
+      setContactName('')
+
+      const botMessages = createBotMessages(createMainMenuResponse())
+      setMessages(previousMessages => {
+        const nextMessages = [...previousMessages, ...botMessages]
+        saveChatHistory(business.id, nextMessages)
+        return nextMessages
+      })
+      if (consultationId) {
+        botMessages.forEach(message => {
+          void savePublicMessage(business.slug, consultationId, 'bot', message.text).catch(() => undefined)
+        })
+      }
+      setIsTyping(false)
+      return
+    }
 
     if (awaitingInput === 'quote-contact-name') {
       const name = text.trim()
@@ -474,7 +578,9 @@ export function useChat(business: Business) {
     }
 
     if (awaitingInput === 'quote-confirm') {
-      if (text.trim() !== 'Confirmar presupuesto') {
+      const isConfirmation = quickReply?.action === 'CONFIRM_BUDGET'
+        || (!quickReply && text.trim() === 'Confirmar presupuesto')
+      if (!isConfirmation) {
         setIsTyping(false)
         return
       }
@@ -529,7 +635,11 @@ export function useChat(business: Business) {
           role: 'bot',
           text: `Recibimos tu solicitud. Una persona del negocio se comunicará con vos a la brevedad. ¡Gracias por comunicarte con ${business.nombre}!`,
           timestamp: new Date(),
-          quickReplies: ['Preguntas frecuentes', 'Hablar con una persona'],
+          quickReplies: [
+            { id: 'quote-show-faq-menu', label: 'Preguntas frecuentes', action: 'SHOW_FAQ_MENU' },
+            { id: 'quote-start-human-handoff', label: 'Hablar con una persona', action: 'START_HUMAN_HANDOFF' },
+            MAIN_MENU_REPLY,
+          ],
         }
         setMessages(prev => {
           const next = [...prev, generatedMsg, followUpMsg]
@@ -541,19 +651,21 @@ export function useChat(business: Business) {
         pendingQuoteRef.current = null
         savePendingQuote(business.id, null)
         setContactName('')
-      } catch {
-        if (pendingQuote) {
-          quoteSubmissionRef.current.delete(pendingQuote.sourceSummaryMessageId)
+      } catch (error) {
+        if (isNetworkError(error) || !navigator.onLine) {
+          onNetworkError?.()
+          if (pendingQuote) quoteSubmissionRef.current.delete(pendingQuote.sourceSummaryMessageId)
+          setSubmittingQuoteMessageId(null)
+          setIsTyping(false)
+          return
         }
-        pendingQuoteRef.current = null
-        savePendingQuote(business.id, null)
-        setAwaitingInput(null)
-        saveAwaitingInput(business.id, null)
+        if (pendingQuote) quoteSubmissionRef.current.delete(pendingQuote.sourceSummaryMessageId)
         const errorMsg: Message = {
           id: crypto.randomUUID(),
           role: 'bot',
           text: 'No pudimos registrar el cliente y el presupuesto. Intentá nuevamente.',
           timestamp: new Date(),
+          quickReplies: [MAIN_MENU_REPLY],
         }
         setMessages(prev => {
           const next = [...prev, errorMsg]
@@ -610,13 +722,33 @@ export function useChat(business: Business) {
       }
 
       if (consultationId) {
-        void updatePublicContact(
+        try {
+          await updatePublicContact(
           business.slug,
           consultationId,
           contactName,
           phone,
           'derivacion',
-        ).catch(() => undefined)
+          )
+        } catch (error) {
+          if (isNetworkError(error) || !navigator.onLine) onNetworkError?.()
+          const errorMsg: Message = {
+            id: crypto.randomUUID(), role: 'bot',
+            text: 'No pudimos registrar tu solicitud de contacto. Intentá nuevamente.',
+            timestamp: new Date(),
+          }
+          setMessages(prev => {
+            const next = [...prev, errorMsg]
+            saveChatHistory(business.id, next)
+            return next
+          })
+          setIsTyping(false)
+          return
+        }
+      } else {
+        onNetworkError?.()
+        setIsTyping(false)
+        return
       }
       // TODO: POST /api/consultas cuando el backend esté listo
       console.log('Derivación a asesor:', { nombre: contactName, telefono: phone, businessId: business.id })
@@ -640,9 +772,9 @@ export function useChat(business: Business) {
       return
     }
 
-    // Si el usuario hace clic en un chip del menú principal, ignorar el awaitingInput actual
-    const isMenuQuickReply = QUICK_REPLIES_INICIAL.some(r => r.toLowerCase() === text.toLowerCase())
-    const response = generateBotResponse(text, business, isMenuQuickReply ? null : awaitingInput)
+    const response = quickReply
+      ? generateQuickReplyResponse(quickReply, business)
+      : generateBotResponse(text, business, awaitingInput)
     const botMessages = createBotMessages(response)
     const nextAwaitingInput = response.awaitingInput ?? null
 
@@ -659,7 +791,14 @@ export function useChat(business: Business) {
     setAwaitingInput(nextAwaitingInput)
     saveAwaitingInput(business.id, nextAwaitingInput)
     setIsTyping(false)
-  }, [awaitingInput, business, contactName, ensureConsultation, isTyping])
+  }, [awaitingInput, business, contactName, ensureConsultation, isOnline, isTyping, onNetworkError])
+
+  const sendMessage = useCallback((text: string) => processMessage(text), [processMessage])
+
+  const handleQuickReply = useCallback(
+    (option: QuickReplyOption) => processMessage(option.label, option),
+    [processMessage],
+  )
 
   const submitOrder = useCallback((items: OrderItem[]) => {
     if (items.length === 0) return
@@ -716,7 +855,9 @@ export function useChat(business: Business) {
   const requestQuote = useCallback(async (
     sourceSummaryMessageId: string,
     summary: QuoteSummaryMessageData,
+    option: QuickReplyOption,
   ) => {
+    if (option.action !== 'REQUEST_BUDGET') return
     if (quoteSubmissionRef.current.has(sourceSummaryMessageId)) return
     quoteSubmissionRef.current.add(sourceSummaryMessageId)
     setSubmittingQuoteMessageId(sourceSummaryMessageId)
@@ -728,8 +869,10 @@ export function useChat(business: Business) {
       const userMsg: Message = {
         id: crypto.randomUUID(),
         role: 'user',
-        text: 'Solicitar presupuesto',
+        text: option.label,
         timestamp: new Date(),
+        action: option.action,
+        actionValue: sourceSummaryMessageId,
       }
       await savePublicMessage(business.slug, consultationId, 'cliente', userMsg.text)
       const contactPrompt: Message = {
@@ -750,8 +893,13 @@ export function useChat(business: Business) {
       savePendingQuote(business.id, pendingQuote)
       setAwaitingInput('quote-contact-name')
       saveAwaitingInput(business.id, 'quote-contact-name')
-    } catch {
+    } catch (error) {
       quoteSubmissionRef.current.delete(sourceSummaryMessageId)
+      if (isNetworkError(error) || !navigator.onLine) {
+        onNetworkError?.()
+        setSubmittingQuoteMessageId(null)
+        return
+      }
       const errorMessage: Message = {
         id: crypto.randomUUID(),
         role: 'bot',
@@ -765,7 +913,7 @@ export function useChat(business: Business) {
       })
       setSubmittingQuoteMessageId(null)
     }
-  }, [business.id, business.slug, ensureConsultation])
+  }, [business.id, business.slug, ensureConsultation, onNetworkError])
 
   const reset = useCallback(() => {
     conversationVersionRef.current += 1
@@ -793,9 +941,12 @@ export function useChat(business: Business) {
     messages,
     isTyping,
     sendMessage,
+    handleQuickReply,
     submitOrder,
     requestQuote,
     submittingQuoteMessageId,
+    awaitingInput,
+    cancelledQuoteMessageIds,
     reset,
   }
 }

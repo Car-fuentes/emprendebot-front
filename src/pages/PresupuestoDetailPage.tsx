@@ -17,6 +17,7 @@ import type {
   PresupuestoEstado,
   PresupuestoItemInput,
 } from '../types/presupuesto'
+import { getEffectivePresupuestoTotal } from '../utils/presupuestoTotal'
 import '../styles/presupuestos.css'
 
 const TRANSITIONS: Record<PresupuestoEstado, PresupuestoEstado[]> = {
@@ -165,13 +166,16 @@ export function PresupuestoDetailPage() {
     setError(null)
     setSuccess(null)
     try {
-      const response = await cotizarPresupuesto(presupuesto.id, {
+      await cotizarPresupuesto(presupuesto.id, {
         itemsCotizados: quoteItems,
         diasValidez,
       })
-      setPresupuesto(response.presupuesto)
-      setShowQuoteForm(false)
-      setSuccess('Cotización guardada y PDF generado correctamente.')
+      navigate('/presupuestos', {
+        replace: true,
+        state: {
+          successMessage: 'Presupuesto actualizado con éxito. Ya está listo para enviar al cliente.',
+        },
+      })
     } catch (quoteError) {
       setError(readableError(quoteError))
     } finally {
@@ -268,7 +272,7 @@ export function PresupuestoDetailPage() {
                           </tr>
                         )}
                       </tbody>
-                      <tfoot><tr><td colSpan={3}>Total</td><td>{formatCurrency(presupuesto.total)}</td></tr></tfoot>
+                      <tfoot><tr><td colSpan={3}>Total</td><td>{formatCurrency(getEffectivePresupuestoTotal(presupuesto))}</td></tr></tfoot>
                     </table>
                   </div>
                 </section>

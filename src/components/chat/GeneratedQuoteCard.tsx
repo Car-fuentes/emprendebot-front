@@ -92,7 +92,7 @@ export function GeneratedQuoteCard({ data, businessName }: GeneratedQuoteCardPro
         )}
 
         {data.pdfUrl ? (
-          <div className="chat-quote-card__actions">
+          <div className="chat-quote-card__actions chat-quote-card__actions--stacked">
             <button type="button" className="chat-quote-card__primary chat-quote-card__download-btn" onClick={openPdf}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path d="M8 1v9m0 0L5 7m3 3 3-3M2 11v1a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>

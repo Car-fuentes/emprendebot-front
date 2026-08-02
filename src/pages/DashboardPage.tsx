@@ -201,7 +201,7 @@ export function DashboardPage() {
           className="dashboard-bot"
           disabled={!business?.slug}
           aria-label="Abrir asistente: Probá tu Bot"
-          onClick={() => business?.slug && openChatPreview(business.slug)}
+          onClick={() => business?.slug && openChatPreview(business.slug, navigate)}
         >
           <span className="dashboard-bot__label">
             <i aria-hidden="true" />

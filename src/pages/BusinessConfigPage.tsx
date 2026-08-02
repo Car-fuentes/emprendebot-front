@@ -14,6 +14,7 @@ import { Switch } from '../components/ui/Switch'
 import { useTheme } from '../hooks/useTheme'
 import { DEFAULT_CHAT_APPEARANCE, isValidHexColor } from '../services/chatAppearance'
 import { getPublicChatUrl, openChatPreview } from '../utils/chatRoutes'
+import { getDefaultWelcomeMessage, syncDefaultWelcomeMessage } from '../utils/welcomeMessage'
 
 interface RubroApi {
   id: string
@@ -110,16 +111,6 @@ const selectStyle: React.CSSProperties = {
   width: '100%',
   cursor: 'pointer',
 }
-
-const mensajeBienvenidaAutomatico = (nombre: string) =>
-  `¡Hola! Soy el asistente de ${nombre} ¿En qué te puedo ayudar? Elige una opción para continuar.`
-
-const esMensajeBienvenidaAutomatico = (mensaje: string, nombre: string) =>
-  !mensaje.trim()
-  || mensaje === mensajeBienvenidaAutomatico(nombre)
-  || mensaje === '¡Hola! ¿En qué te puedo ayudar?'
-  || mensaje === '¡Hola! ¿En qué te puedo ayudar hoy?'
-  || mensaje.includes('{nombreNegocio}')
 
 export function BusinessConfigPage() {
   const navigate = useNavigate()
@@ -218,16 +209,14 @@ export function BusinessConfigPage() {
       setForm(prev => {
         if (field !== 'nombre') return { ...prev, [field]: value }
 
-        const actualizarMensaje = esMensajeBienvenidaAutomatico(
-          prev.mensajeBienvenida,
-          prev.nombre,
-        )
         return {
           ...prev,
           nombre: value,
-          ...(actualizarMensaje
-            ? { mensajeBienvenida: mensajeBienvenidaAutomatico(value || 'tu negocio') }
-            : {}),
+          mensajeBienvenida: syncDefaultWelcomeMessage(
+            prev.mensajeBienvenida,
+            prev.nombre,
+            value,
+          ),
         }
       })
     }
@@ -738,7 +727,7 @@ export function BusinessConfigPage() {
                 onClick={() =>
                   setForm(prev => ({
                     ...prev,
-                    mensajeBienvenida: mensajeBienvenidaAutomatico(prev.nombre),
+                    mensajeBienvenida: getDefaultWelcomeMessage(prev.nombre),
                   }))
                 }
                 style={{
@@ -1015,7 +1004,7 @@ export function BusinessConfigPage() {
           className="business-config__public-chat-bot"
           disabled={!business?.slug}
           aria-label="Abrir modo de prueba del chatbot"
-          onClick={() => business?.slug && openChatPreview(business.slug)}
+          onClick={() => business?.slug && openChatPreview(business.slug, navigate)}
         >
           <span className="business-config__public-chat-label">
             <i aria-hidden="true" />

@@ -3,8 +3,10 @@ import type { QuoteSummaryMessageData } from '../../types'
 interface QuoteSummaryCardProps {
   data: QuoteSummaryMessageData
   onContinue: () => void
+  onCancel: () => void
   isSubmitting: boolean
   isSubmitted: boolean
+  isCancelled: boolean
 }
 
 const formatCurrency = (value: number) =>
@@ -14,7 +16,7 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 2,
   }).format(value)
 
-export function QuoteSummaryCard({ data, onContinue, isSubmitting, isSubmitted }: QuoteSummaryCardProps) {
+export function QuoteSummaryCard({ data, onContinue, onCancel, isSubmitting, isSubmitted, isCancelled }: QuoteSummaryCardProps) {
   const fixedItems = data.items.filter(item => !item.requiresQuote)
   const quoteItems = data.items.filter(item => item.requiresQuote)
 
@@ -65,19 +67,28 @@ export function QuoteSummaryCard({ data, onContinue, isSubmitting, isSubmitted }
           </p>
         )}
 
-        <button
-          type="button"
-          className="chat-quote-card__primary"
-          onClick={onContinue}
-          disabled={isSubmitting || isSubmitted}
-          aria-busy={isSubmitting}
-        >
-          {isSubmitting
-            ? 'Registrando solicitud…'
-            : isSubmitted
-              ? 'Solicitud registrada'
-              : 'Solicitar presupuesto'}
-        </button>
+        {!isCancelled && (
+          <div className="chat-quote-card__actions chat-quote-card__actions--stacked">
+            <button
+              type="button"
+              className="chat-quote-card__primary"
+              onClick={onContinue}
+              disabled={isSubmitting || isSubmitted}
+              aria-busy={isSubmitting}
+            >
+              {isSubmitting
+                ? 'Registrando solicitud…'
+                : isSubmitted
+                  ? 'Solicitud registrada'
+                  : 'Solicitar presupuesto'}
+            </button>
+            {!isSubmitted && (
+              <button type="button" className="chat-quote-card__secondary" onClick={onCancel} disabled={isSubmitting}>
+                Cancelar presupuesto
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </article>
   )

@@ -18,8 +18,8 @@ import '../styles/consultas.css'
 
 const ESTADO_OPTIONS: Array<{ value: ConsultaEstadoFilter; label: string }> = [
   { value: 'todas', label: 'Todas' },
-  { value: 'pendientes_atencion', label: 'Requieren mi atención' },
-  { value: 'resuelta_por_bot', label: 'Resueltas por el bot' },
+  { value: 'pendientes_atencion', label: 'Pendientes de atención humana' },
+  { value: 'resuelta_por_bot', label: 'Resueltas automáticamente' },
   { value: 'cerrada', label: 'Cerradas' },
 ]
 
@@ -256,13 +256,13 @@ export function ConsultasPage() {
 
               {estadoFilter === 'pendientes_atencion' && (
                 <div className="consultas-active-filters" aria-label="Filtros activos">
-                  <span>Requiere atención humana</span>
+                  <span>Pendientes de atención humana</span>
                   <span>En proceso</span>
                 </div>
               )}
               {estadoFilter === 'resuelta_por_bot' && (
                 <div className="consultas-active-filters" aria-label="Filtros activos">
-                  <span>Resueltas por el bot</span>
+                  <span>Resueltas automáticamente</span>
                 </div>
               )}
 
@@ -308,7 +308,7 @@ export function ConsultasPage() {
           className="consultas-bot"
           disabled={!business?.slug}
           aria-label="Abrir asistente: Probá tu chat"
-          onClick={() => business?.slug && openChatPreview(business.slug)}
+          onClick={() => business?.slug && openChatPreview(business.slug, navigate)}
         >
           <span className="consultas-bot__label"><i aria-hidden="true" />Probá tu chat</span>
           <span className="consultas-bot__avatar" aria-hidden="true"><img src="/isoBot-transparente.png" alt="" /></span>

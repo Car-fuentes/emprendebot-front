@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Drawer } from '../components/layout/Drawer'
 import { PageBackButton } from '../components/navigation/PageBackButton'
 import { PresupuestoStatusBadge } from '../components/presupuestos/PresupuestoStatusBadge'
@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext'
 import { useBusiness } from '../context/BusinessContext'
 import { ApiError } from '../services/apiClient'
 import { getPresupuestos } from '../services/presupuestoApi'
+import { getEffectivePresupuestoTotal } from '../utils/presupuestoTotal'
 import type {
   PresupuestoEstado,
   PresupuestoResumen,
@@ -111,6 +112,8 @@ const errorMessage = (error: unknown) => {
 
 export function PresupuestosPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const routeSuccessMessage = (location.state as { successMessage?: string } | null)?.successMessage
   const [searchParams, setSearchParams] = useSearchParams()
   const { user } = useAuth()
   const { business, loadBusiness } = useBusiness()
@@ -123,6 +126,19 @@ export function PresupuestosPage() {
   const [page, setPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState(routeSuccessMessage ?? '')
+
+  useEffect(() => {
+    if (!routeSuccessMessage) return
+
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
+  }, [location.pathname, location.search, navigate, routeSuccessMessage])
+
+  useEffect(() => {
+    if (!successMessage) return
+    const timeoutId = window.setTimeout(() => setSuccessMessage(''), 4000)
+    return () => window.clearTimeout(timeoutId)
+  }, [successMessage])
 
   useEffect(() => {
     if (user) void loadBusiness(user.id)
@@ -243,6 +259,13 @@ export function PresupuestosPage() {
             </label>
           </section>
 
+          {successMessage && (
+            <div className="budget-feedback budget-feedback--success" role="status" aria-live="polite">
+              <AppIcon name="check" size={18} />
+              {successMessage}
+            </div>
+          )}
+
           {isLoading ? (
             <section className="budgets-loading" aria-label="Cargando presupuestos" aria-busy="true">
               {[1, 2, 3].map(item => <div key={item} />)}
@@ -284,7 +307,7 @@ export function PresupuestosPage() {
                       <div><dt>Consulta</dt><dd>{presupuesto.consulta?.asunto || `#${presupuesto.consultaId.slice(0, 8)}`}</dd></div>
                       <div><dt>Emisión</dt><dd>{formatDate(presupuesto.fechaEmision)}</dd></div>
                       <div><dt>Vencimiento</dt><dd>{formatDate(presupuesto.fechaVencimiento)}</dd></div>
-                      <div><dt>Total</dt><dd>{formatCurrency(presupuesto.total)}</dd></div>
+                      <div><dt>Total</dt><dd>{formatCurrency(getEffectivePresupuestoTotal(presupuesto))}</dd></div>
                     </dl>
                     <div className="budget-card__footer">
                       <span className={presupuesto.linkPdf ? 'is-ready' : ''}>
