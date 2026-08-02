@@ -59,6 +59,13 @@ test('los controles técnicos se habilitan solamente en preview', () => {
   assert.match(chatHeader, /aria-label="Cerrar vista previa"/)
 })
 
+test('el preview inicia con la configuracion actual y no restaura un saludo anterior', () => {
+  assert.match(
+    chatbotPage,
+    /if \(!preview \|\| previewInitializedRef\.current\) return[\s\S]*previewInitializedRef\.current = true[\s\S]*reset\(\)/,
+  )
+})
+
 test('la ventana usa Pointer Events y limita su posición al viewport', () => {
   assert.match(draggableHook, /onPointerDown/)
   assert.match(draggableHook, /onPointerMove/)

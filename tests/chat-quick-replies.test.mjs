@@ -90,6 +90,14 @@ test('un presupuesto creado no ofrece cancelación y sí permite volver al menú
   assert.doesNotMatch(successBranch, /CANCEL_BUDGET|Cancelar presupuesto/)
 })
 
+test('el presupuesto generado apila descargar PDF y compartir', () => {
+  const generatedQuoteCard = readSource('src/components/chat/GeneratedQuoteCard.tsx')
+  assert.match(
+    generatedQuoteCard,
+    /chat-quote-card__actions chat-quote-card__actions--stacked/,
+  )
+})
+
 test('los historiales antiguos y las nuevas acciones siguen siendo válidos', () => {
   assert.match(storage, /typeof reply === 'string' \? migrateLegacyQuickReply/)
   assert.match(storage, /'REQUEST_BUDGET'/)

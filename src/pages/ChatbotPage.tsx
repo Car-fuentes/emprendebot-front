@@ -135,11 +135,18 @@ function PublicChat({ business, preview, onClose }: { business: Business; previe
     cancelledQuoteMessageIds,
     reset,
   } = useChat(business)
+  const previewInitializedRef = useRef(false)
   const appearance = resolveChatAppearance(business)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const isInitialScrollRef = useRef(true)
   const isDesktop = useMediaQuery('(min-width: 481px)')
+
+  useEffect(() => {
+    if (!preview || previewInitializedRef.current) return
+    previewInitializedRef.current = true
+    reset()
+  }, [preview, reset])
 
   useEffect(() => {
     document.documentElement.classList.add('public-chat-active')
