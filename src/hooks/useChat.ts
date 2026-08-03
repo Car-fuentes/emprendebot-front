@@ -338,11 +338,6 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
       .filter(message => message.action === 'CANCEL_BUDGET' && message.actionValue)
       .map(message => message.actionValue!),
   )
-  const cancelledQuoteMessageIds = new Set(
-    messages
-      .filter(message => message.action === 'CANCEL_BUDGET' && message.actionValue)
-      .map(message => message.actionValue!),
-  )
 
   const ensureConsultation = useCallback((): Promise<string | null> => {
     if (!consultationPromiseRef.current) {
