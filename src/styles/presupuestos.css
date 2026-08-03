@@ -298,6 +298,21 @@
   .budget-panel--summary dd {
     text-align: left;
   }
+
+  .budget-table { min-width: 0; }
+  .budget-table th:nth-child(4),
+  .budget-table tbody td:nth-child(4) { display: none; }
+  .budget-table tfoot tr { display: flex; justify-content: space-between; }
+  .budget-table tfoot td { display: block; }
+}
+
+@media (max-width: 360px) {
+  .budgets-main { padding: 12px 12px 96px; }
+  .budget-detail__heading h1 { font-size: 22px; }
+  .budget-table th, .budget-table td { padding: 8px 6px; }
+  .budget-table tfoot td { font-size: 13px; }
+  .budget-table th:nth-child(2),
+  .budget-table tbody td:nth-child(2) { display: none; }
 }
 
 @media (min-width: 700px) {
