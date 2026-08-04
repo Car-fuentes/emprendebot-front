@@ -12,11 +12,13 @@ export interface ConsultationResolution {
   requiresHumanAction: boolean
   resolvedByBot: boolean
   reason: ConsultationResolutionReason
+  overrideLabel?: string
 }
 
 export interface ConsultationResolutionContext {
   budgetConsultationIds: ReadonlySet<string>
   budgetDataComplete: boolean
+  budgetEstadoByConsultaId?: ReadonlyMap<string, string>
 }
 
 const normalize = (value?: string | null) =>
@@ -46,6 +48,15 @@ export function classifyConsultationResolution(
     const emisor = normalize(mensaje.emisor)
     return emisor === 'EMPRENDEDOR' || emisor === 'USUARIO'
   })
+
+  // RESUELTA con presupuesto activo (no concretado ni rechazado) → mostrar "En seguimiento"
+  // Va primero porque puede coexistir con derivada=true cuando la consulta incluía un presupuesto
+  if (normalize(consulta.estado) === 'RESUELTA') {
+    const presupuestoEstado = context.budgetEstadoByConsultaId?.get(consulta.id)
+    if (presupuestoEstado && !['CONCRETADO', 'RECHAZADO'].includes(presupuestoEstado)) {
+      return { requiresHumanAction: true, resolvedByBot: false, reason: 'quote', overrideLabel: 'En seguimiento' }
+    }
+  }
 
   if (consulta.derivada || tipoConsulta === 'DERIVAR_HUMANO') {
     return { requiresHumanAction: true, resolvedByBot: false, reason: 'human_handoff' }

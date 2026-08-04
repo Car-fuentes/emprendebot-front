@@ -19,10 +19,13 @@ import '../styles/consultas.css'
 const ESTADO_OPTIONS: Array<{ value: ConsultaEstadoFilter; label: string }> = [
   { value: 'todas', label: 'Todas' },
   { value: 'nueva', label: 'Nueva' },
-  { value: 'en_proceso', label: 'En proceso' },
+  { value: 'en_proceso', label: 'En seguimiento' },
   { value: 'resuelta', label: 'Resuelta' },
   { value: 'cerrada', label: 'Cerrada' },
 ]
+
+// Valores válidos de URL que no se muestran en el dropdown (ej: filtros de acceso rápido desde dashboard)
+const VALID_ESTADO_VALUES: ConsultaEstadoFilter[] = [...ESTADO_OPTIONS.map(o => o.value), 'activas', 'resuelta_bot']
 
 const SORT_OPTIONS: Array<{ value: ConsultaSortOption; label: string }> = [
   { value: 'recentes', label: 'Más recientes' },
@@ -74,7 +77,7 @@ export function ConsultasPage() {
     sanitizedParams.delete('canal')
     sanitizedParams.delete('atencion')
     sanitizedParams.delete('resolucion')
-    if (!isOptionValue(ESTADO_OPTIONS, sanitizedParams.get('estado'))) sanitizedParams.delete('estado')
+    if (!VALID_ESTADO_VALUES.includes(sanitizedParams.get('estado') as ConsultaEstadoFilter)) sanitizedParams.delete('estado')
     if (!isOptionValue(SORT_OPTIONS, sanitizedParams.get('orden'))) sanitizedParams.delete('orden')
 
     if (sanitizedParams.toString() !== searchParams.toString()) {
@@ -85,7 +88,7 @@ export function ConsultasPage() {
     const requestedStatus = searchParams.get('estado')
     const requestedSort = searchParams.get('orden')
 
-    setEstadoFilter(isOptionValue(ESTADO_OPTIONS, requestedStatus) ? requestedStatus : 'todas')
+    setEstadoFilter(VALID_ESTADO_VALUES.includes(requestedStatus as ConsultaEstadoFilter) ? requestedStatus as ConsultaEstadoFilter : 'todas')
     setSortOption(isOptionValue(SORT_OPTIONS, requestedSort) ? requestedSort : 'recentes')
     setSearchQuery(searchParams.get('buscar') ?? '')
   }, [
