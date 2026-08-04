@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ChatHeader } from '../components/chat/ChatHeader'
 import { ChatInput } from '../components/chat/ChatInput'
@@ -34,6 +34,10 @@ export function ChatbotPage({ preview = false }: { preview?: boolean }) {
   const [hasNetworkError, setHasNetworkError] = useState(false)
   const [isRetrying, setIsRetrying] = useState(false)
   const [retryStatus, setRetryStatus] = useState<'offline' | 'server' | null>(null)
+
+  const renderRouteExperience = (content: ReactNode) => preview
+    ? content
+    : <div className="public-chat-theme--light">{content}</div>
 
   const closePreview = useCallback(() => {
     const hasBackground = Boolean((location.state as { backgroundPath?: string } | null)?.backgroundPath)
@@ -119,7 +123,7 @@ export function ChatbotPage({ preview = false }: { preview?: boolean }) {
   }, [isRetrying, slug])
 
   if (isBusinessLoading && !business) {
-    return (
+    return renderRouteExperience(
       <div style={{
         minHeight: '100vh', display: 'grid', placeItems: 'center',
         color: 'var(--color-text-secondary)', fontSize: '14px',
@@ -130,11 +134,11 @@ export function ChatbotPage({ preview = false }: { preview?: boolean }) {
   }
 
   if (!business && (!isBrowserOnline || hasNetworkError)) {
-    return <main className="public-chat__load-error"><ConnectionNotice isRetrying={isRetrying} retryStatus={retryStatus} onRetry={() => void retryConnection()} /></main>
+    return renderRouteExperience(<main className="public-chat__load-error"><ConnectionNotice isRetrying={isRetrying} retryStatus={retryStatus} onRetry={() => void retryConnection()} /></main>)
   }
 
   if (!business) {
-    return (
+    return renderRouteExperience(
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
@@ -178,10 +182,11 @@ export function ChatbotPage({ preview = false }: { preview?: boolean }) {
       onRetry={() => void retryConnection()}
     />
   )
+  const publicBackgroundVariant = 'light'
 
   return preview
     ? <div className="chat-preview-overlay">{chat}</div>
-    : <PublicChatBackground>{chat}</PublicChatBackground>
+    : renderRouteExperience(<PublicChatBackground variant={publicBackgroundVariant}>{chat}</PublicChatBackground>)
 }
 
 interface PublicChatProps {
