@@ -218,9 +218,6 @@ export function CatalogPage() {
                         ? <img src={product.urlImagen} alt={product.nombre} />
                         : <AppIcon name="catalog" size={48} />
                       }
-                      <span className={`product-card__status${product.activo ? '' : ' product-card__status--inactive'}`}>
-                        {product.activo ? 'Activo' : 'Inactivo'}
-                      </span>
                     </div>
                     <div className="product-card__body">
                       <div className="product-card__title-row">
