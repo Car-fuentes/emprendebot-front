@@ -101,7 +101,7 @@ test('la frontera publica fija tokens neutrales y conserva los colores del negoc
 })
 
 test('los controles técnicos se habilitan solamente en preview', () => {
-  assert.match(chatbotPage, /onRefresh={preview \? reset : undefined}/)
+  assert.match(chatbotPage, /onRefresh={preview \? \(\) => setPendingConfirmation\([\s\S]*action: reset/)
   assert.match(chatbotPage, /onClose={preview \? closePreview : undefined}/)
   assert.match(chatHeader, /{onClose && \(/)
   assert.match(chatHeader, /aria-label="Cerrar vista previa"/)

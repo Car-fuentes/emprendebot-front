@@ -20,6 +20,7 @@ import { restoreChatPreviewFocus } from '../utils/chatRoutes'
 import { useNetworkStatus } from '../hooks/useNetworkStatus'
 import { isNetworkError } from '../utils/networkError'
 import { ConnectionNotice } from '../components/chat/ConnectionNotice'
+import { ConfirmationDialog } from '../components/ui/ConfirmationDialog'
 
 // Página pública: www.emprendebot/[slug]
 export function ChatbotPage({ preview = false }: { preview?: boolean }) {
@@ -201,6 +202,12 @@ interface PublicChatProps {
 }
 
 function PublicChat({ business, preview, onClose, isOnline, isRetrying, retryStatus, onNetworkError, onRetry }: PublicChatProps) {
+  const [pendingConfirmation, setPendingConfirmation] = useState<{
+    title: string
+    confirmLabel: string
+    cancelLabel: string
+    action: () => void
+  } | null>(null)
   const {
     messages,
     isTyping,
@@ -282,7 +289,12 @@ function PublicChat({ business, preview, onClose, isOnline, isRetrying, retrySta
     >
       <ChatHeader
         business={business}
-        onRefresh={preview ? reset : undefined}
+        onRefresh={preview ? () => setPendingConfirmation({
+          title: '¿Reiniciar chat?',
+          confirmLabel: 'Reiniciar',
+          cancelLabel: 'Cancelar',
+          action: reset,
+        }) : undefined}
         onClose={onClose}
         dragHandleProps={dragHandleProps}
         draggable={isDesktop}
@@ -309,11 +321,16 @@ function PublicChat({ business, preview, onClose, isOnline, isRetrying, retrySta
                   action: 'REQUEST_BUDGET',
                   value: message.id,
                 }) : onNetworkError()}
-                onCancel={() => handleQuickReply({
-                  id: `cancel-budget-${message.id}`,
-                  label: 'Cancelar presupuesto',
-                  action: 'CANCEL_BUDGET',
-                  value: message.id,
+                onCancel={() => setPendingConfirmation({
+                  title: '¿Cancelar presupuesto?',
+                  confirmLabel: 'Cancelar',
+                  cancelLabel: 'Volver',
+                  action: () => handleQuickReply({
+                    id: `cancel-budget-${message.id}`,
+                    label: 'Cancelar presupuesto',
+                    action: 'CANCEL_BUDGET',
+                    value: message.id,
+                  }),
                 })}
               />
             )}
@@ -340,10 +357,15 @@ function PublicChat({ business, preview, onClose, isOnline, isRetrying, retrySta
                     <button
                       type="button"
                       className="chat-quote-card__secondary"
-                      onClick={() => handleQuickReply({
-                        id: 'cancel-confirm-budget',
-                        label: 'Cancelar presupuesto',
-                        action: 'CANCEL_BUDGET',
+                      onClick={() => setPendingConfirmation({
+                        title: '¿Cancelar presupuesto?',
+                        confirmLabel: 'Cancelar',
+                        cancelLabel: 'Volver',
+                        action: () => handleQuickReply({
+                          id: 'cancel-confirm-budget',
+                          label: 'Cancelar presupuesto',
+                          action: 'CANCEL_BUDGET',
+                        }),
                       })}
                     >
                       Cancelar presupuesto
@@ -394,6 +416,19 @@ function PublicChat({ business, preview, onClose, isOnline, isRetrying, retrySta
         )}
 
       <ChatInput onSend={sendMessage} disabled={isTyping || !isOnline} />
+      <ConfirmationDialog
+        open={Boolean(pendingConfirmation)}
+        title={pendingConfirmation?.title ?? ''}
+        confirmLabel={pendingConfirmation?.confirmLabel ?? ''}
+        cancelLabel={pendingConfirmation?.cancelLabel ?? 'Cancelar'}
+        onOpenChange={open => { if (!open) setPendingConfirmation(null) }}
+        onConfirm={() => {
+          if (!pendingConfirmation) return
+          const action = pendingConfirmation.action
+          setPendingConfirmation(null)
+          action()
+        }}
+      />
       </div>}
     </FloatingChatWindow>
   )
