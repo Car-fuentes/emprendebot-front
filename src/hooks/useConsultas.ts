@@ -10,7 +10,7 @@ import {
   type ConsultationResolution,
 } from '../utils/consultationResolution'
 
-export type ConsultaEstadoFilter = 'todas' | ConsultaEstado
+export type ConsultaEstadoFilter = 'todas' | 'activas' | 'resuelta_bot' | ConsultaEstado
 export type ConsultaSortOption = 'recentes' | 'antiguas'
 
 interface UseConsultasResult {
@@ -71,6 +71,7 @@ export function useConsultas(userId?: string): UseConsultasResult {
   const [updateError, setUpdateError] = useState('')
   const [updatingConsultaId, setUpdatingConsultaId] = useState<string | null>(null)
   const [budgetConsultationIds, setBudgetConsultationIds] = useState<Set<string>>(new Set())
+  const [budgetEstadoByConsultaId, setBudgetEstadoByConsultaId] = useState<ReadonlyMap<string, string>>(new Map())
   const [budgetDataComplete, setBudgetDataComplete] = useState(false)
 
   const reloadConsultas = useCallback(async () => {
@@ -86,14 +87,15 @@ export function useConsultas(userId?: string): UseConsultasResult {
       const data = consultasResult.value
       setAllConsultas(data)
       if (budgetsResult.status === 'fulfilled') {
-        setBudgetConsultationIds(new Set(
-          budgetsResult.value.presupuestos.map(presupuesto => presupuesto.consultaId),
-        ))
+        const presupuestos = budgetsResult.value.presupuestos
+        setBudgetConsultationIds(new Set(presupuestos.map(p => p.consultaId)))
+        setBudgetEstadoByConsultaId(new Map(presupuestos.map(p => [p.consultaId, p.estado])))
         setBudgetDataComplete(
-          (budgetsResult.value.pagination.total ?? 0) <= budgetsResult.value.presupuestos.length,
+          (budgetsResult.value.pagination.total ?? 0) <= presupuestos.length,
         )
       } else {
         setBudgetConsultationIds(new Set())
+        setBudgetEstadoByConsultaId(new Map())
         setBudgetDataComplete(false)
       }
       setSelectedConsultaId(current => (
@@ -124,9 +126,10 @@ export function useConsultas(userId?: string): UseConsultasResult {
       classifyConsultationResolution(consulta, {
         budgetConsultationIds,
         budgetDataComplete,
+        budgetEstadoByConsultaId,
       }),
     ]),
-  ), [budgetConsultationIds, budgetDataComplete, consultas])
+  ), [budgetConsultationIds, budgetDataComplete, budgetEstadoByConsultaId, consultas])
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => void reloadConsultas(), 0)
@@ -137,6 +140,8 @@ export function useConsultas(userId?: string): UseConsultasResult {
     return consultas
       .filter(consulta => {
         if (estadoFilter === 'todas') return true
+        if (estadoFilter === 'activas') return consulta.estado === 'nueva' || consulta.estado === 'en_proceso'
+        if (estadoFilter === 'resuelta_bot') return resolutionByConsultaId.get(consulta.id)?.resolvedByBot === true
         return consulta.estado === estadoFilter
       })
       .filter(consulta => matchesSearch(consulta, searchQuery))
@@ -158,7 +163,16 @@ export function useConsultas(userId?: string): UseConsultasResult {
 
   const selectConsulta = useCallback((consultaId: string) => {
     setSelectedConsultaId(consultaId)
-  }, [])
+    // Si el emprendedor abre una consulta nueva/iniciada, transicionarla a en_proceso
+    const consulta = allConsultas.find(c => c.id === consultaId)
+    if (consulta?.estado === 'nueva' || consulta?.estado === 'iniciada') {
+      void updateConsultaEstado(consultaId, 'en_proceso', userId)
+        .then(updated => {
+          if (updated) setAllConsultas(current => current.map(c => c.id === consultaId ? updated : c))
+        })
+        .catch(() => { /* ignorar si el back rechaza la transición */ })
+    }
+  }, [allConsultas, userId])
 
   const clearSelection = useCallback(() => {
     setSelectedConsultaId(null)

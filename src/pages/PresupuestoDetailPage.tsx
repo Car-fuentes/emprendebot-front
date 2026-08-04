@@ -13,6 +13,7 @@ import {
   getPresupuestoById,
   updatePresupuestoEstado,
 } from '../services/presupuestoApi'
+import { updateConsultaEstado } from '../services/consultaStorage'
 import type {
   PresupuestoDetalle,
   PresupuestoEstado,
@@ -114,6 +115,12 @@ export function PresupuestoDetailPage() {
     const timeoutId = window.setTimeout(() => void loadBudget(), 0)
     return () => window.clearTimeout(timeoutId)
   }, [loadBudget])
+
+  // Si el emprendedor ve el presupuesto y la consulta es nueva/iniciada, transicionarla a en_proceso
+  useEffect(() => {
+    if (!presupuesto?.consultaId || !user) return
+    void updateConsultaEstado(presupuesto.consultaId, 'en_proceso', user.id).catch(() => { /* ignorar */ })
+  }, [presupuesto?.consultaId, user])
 
   if (!user) return null
 
@@ -309,6 +316,7 @@ export function PresupuestoDetailPage() {
                       <button
                         type="button"
                         disabled={isSaving}
+                        className={showQuoteForm ? 'is-danger' : ''}
                         onClick={() => {
                           if (showQuoteForm && quoteItems.length > 0) setShowCancelQuoteConfirmation(true)
                           else setShowQuoteForm(value => !value)
