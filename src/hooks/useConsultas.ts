@@ -7,11 +7,10 @@ import {
 import { getPresupuestos } from '../services/presupuestoApi'
 import {
   classifyConsultationResolution,
-  isPendingHumanConsultation,
   type ConsultationResolution,
 } from '../utils/consultationResolution'
 
-export type ConsultaEstadoFilter = 'todas' | ConsultaEstado | 'pendientes_atencion' | 'resuelta_por_bot'
+export type ConsultaEstadoFilter = 'todas' | ConsultaEstado
 export type ConsultaSortOption = 'recentes' | 'antiguas'
 
 interface UseConsultasResult {
@@ -62,7 +61,7 @@ function matchesSearch(consulta: Consulta, query: string): boolean {
 }
 
 export function useConsultas(userId?: string): UseConsultasResult {
-  const [consultas, setConsultas] = useState<Consulta[]>([])
+  const [allConsultas, setAllConsultas] = useState<Consulta[]>([])
   const [selectedConsultaId, setSelectedConsultaId] = useState<string | null>(null)
   const [estadoFilter, setEstadoFilter] = useState<ConsultaEstadoFilter>('todas')
   const [sortOption, setSortOption] = useState<ConsultaSortOption>('recentes')
@@ -85,7 +84,7 @@ export function useConsultas(userId?: string): UseConsultasResult {
       if (consultasResult.status === 'rejected') throw consultasResult.reason
 
       const data = consultasResult.value
-      setConsultas(data)
+      setAllConsultas(data)
       if (budgetsResult.status === 'fulfilled') {
         setBudgetConsultationIds(new Set(
           budgetsResult.value.presupuestos.map(presupuesto => presupuesto.consultaId),
@@ -98,7 +97,7 @@ export function useConsultas(userId?: string): UseConsultasResult {
         setBudgetDataComplete(false)
       }
       setSelectedConsultaId(current => (
-        current && data.some(consulta => consulta.id === current) ? current : null
+        current && data.some((consulta: Consulta) => consulta.id === current) ? current : null
       ))
     } catch {
       setError('No pudimos cargar las consultas.')
@@ -106,6 +105,18 @@ export function useConsultas(userId?: string): UseConsultasResult {
       setIsLoading(false)
     }
   }, [])
+
+  // Consultas visibles: ocultar INICIADA y NUEVA sin acción accionable
+  // (sin derivación y sin presupuesto asociado — el cliente solo navegó el bot)
+  const consultas = useMemo(() =>
+    allConsultas.filter(consulta => {
+      if (consulta.estado === 'iniciada' || consulta.estado === 'nueva') {
+        return consulta.derivada || budgetConsultationIds.has(consulta.id)
+      }
+      return true
+    }),
+    [allConsultas, budgetConsultationIds],
+  )
 
   const resolutionByConsultaId = useMemo(() => new Map(
     consultas.map(consulta => [
@@ -126,13 +137,6 @@ export function useConsultas(userId?: string): UseConsultasResult {
     return consultas
       .filter(consulta => {
         if (estadoFilter === 'todas') return true
-        if (estadoFilter === 'resuelta_por_bot') {
-          return resolutionByConsultaId.get(consulta.id)?.resolvedByBot === true
-        }
-        if (estadoFilter === 'pendientes_atencion') {
-          const resolution = resolutionByConsultaId.get(consulta.id)
-          return resolution ? isPendingHumanConsultation(consulta, resolution) : false
-        }
         return consulta.estado === estadoFilter
       })
       .filter(consulta => matchesSearch(consulta, searchQuery))
@@ -149,8 +153,8 @@ export function useConsultas(userId?: string): UseConsultasResult {
   }, [consultas, selectedConsultaId])
 
   const isShowingDemo = useMemo(() => (
-    consultas.length > 0 && consultas.every(consulta => !consulta.id.includes('-'))
-  ), [consultas])
+    allConsultas.length > 0 && allConsultas.every(consulta => !consulta.id.includes('-'))
+  ), [allConsultas])
 
   const selectConsulta = useCallback((consultaId: string) => {
     setSelectedConsultaId(consultaId)
@@ -167,7 +171,7 @@ export function useConsultas(userId?: string): UseConsultasResult {
     try {
       const updated = await updateConsultaEstado(consultaId, estado, userId)
       if (!updated) return
-      setConsultas(current => current.map(consulta => (
+      setAllConsultas(current => current.map(consulta => (
         consulta.id === consultaId ? updated : consulta
       )))
       setSelectedConsultaId(consultaId)

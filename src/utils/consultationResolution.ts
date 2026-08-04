@@ -71,5 +71,11 @@ export function classifyConsultationResolution(
     return { requiresHumanAction: true, resolvedByBot: false, reason: 'unknown' }
   }
 
+  // NUEVA = el bot interactuó pero el emprendedor todavía no abrió la consulta
+  // No clasificar como resuelta por el bot — debe mostrar su badge real
+  if (normalize(consulta.estado) === 'NUEVA') {
+    return { requiresHumanAction: false, resolvedByBot: false, reason: 'unknown' }
+  }
+
   return { requiresHumanAction: false, resolvedByBot: true, reason: 'bot_resolved' }
 }

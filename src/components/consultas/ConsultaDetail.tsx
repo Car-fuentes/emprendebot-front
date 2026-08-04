@@ -14,6 +14,7 @@ interface ConsultaDetailProps {
 }
 
 const ESTADO_STYLES: Record<ConsultaEstado, { label: string; color: string; background: string }> = {
+  iniciada: { label: 'Iniciada', color: 'var(--status-new-text)', background: 'var(--status-new-bg)' },
   nueva: { label: 'Nueva', color: 'var(--status-new-text)', background: 'var(--status-new-bg)' },
   en_proceso: { label: 'En proceso', color: 'var(--status-progress-text)', background: 'var(--status-progress-bg)' },
   resuelta: { label: 'Resuelta', color: 'var(--status-closed-text)', background: 'var(--status-closed-bg)' },
@@ -45,6 +46,7 @@ function getMessagePresentation(emisor: Mensaje['emisor']) {
 }
 
 function getStatusAction(estado: ConsultaEstado): { label: string; nextEstado: ConsultaEstado } {
+  if (estado === 'iniciada') return { label: 'Marcar en proceso', nextEstado: 'en_proceso' }
   if (estado === 'nueva') return { label: 'Marcar en proceso', nextEstado: 'en_proceso' }
   if (estado === 'en_proceso') return { label: 'Marcar cerrada', nextEstado: 'cerrada' }
   if (estado === 'resuelta') return { label: 'Marcar cerrada', nextEstado: 'cerrada' }

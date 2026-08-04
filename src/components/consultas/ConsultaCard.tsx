@@ -11,6 +11,7 @@ interface ConsultaCardProps {
 }
 
 const ESTADO_STYLES: Record<ConsultaEstado, { label: string; color: string; background: string }> = {
+  iniciada: { label: 'Iniciada', color: 'var(--status-new-text)', background: 'var(--status-new-bg)' },
   nueva: { label: 'Nueva', color: 'var(--status-new-text)', background: 'var(--status-new-bg)' },
   en_proceso: { label: 'En proceso', color: 'var(--status-progress-text)', background: 'var(--status-progress-bg)' },
   resuelta: { label: 'Resuelta', color: 'var(--status-closed-text)', background: 'var(--status-closed-bg)' },
