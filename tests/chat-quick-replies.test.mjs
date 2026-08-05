@@ -89,10 +89,30 @@ test('la pregunta y sus respuestas de utilidad no llaman al backend ni se duplic
 
 test('una sesión nueva conserva el historial pero retira controles incompatibles', () => {
   assert.match(useChat, /function withoutConversationControls/)
-  assert.match(useChat, /business\.chatSessionChanged[\s\S]*storedMessages\.map\(withoutConversationControls\)/)
-  assert.match(useChat, /previousMessages\.map\(withoutConversationControls\)/)
+  assert.match(useChat, /function createNewSessionMessages[\s\S]*history\.map\(withoutConversationControls\)/)
+  assert.match(useChat, /business\.chatSessionChanged[\s\S]*createNewSessionMessages\(storedMessages, business\)/)
+  assert.match(useChat, /createNewSessionMessages\(previousMessages, business\)/)
   assert.match(useChat, /setAwaitingInput\(null\)[\s\S]*setContactName\(''\)[\s\S]*setIsTyping\(false\)/)
   assert.doesNotMatch(useChat, /chatSessionChanged[\s\S]{0,200}clearChatHistory/)
+})
+
+test('una sesión nueva agrega quick replies nuevas sin duplicar un saludo consecutivo', () => {
+  assert.match(useChat, /const initialMessage = createInitialMessage\(business\)/)
+  assert.match(useChat, /lastMessage\?\.role === 'bot' && lastMessage\.text === initialMessage\.text/)
+  assert.match(useChat, /return \[\.\.\.previousMessages\.slice\(0, -1\), initialMessage\]/)
+  assert.match(useChat, /return \[\.\.\.previousMessages, initialMessage\]/)
+  assert.match(useChat, /createInitialMessage[\s\S]*quickReplies: QUICK_REPLIES_INICIAL/)
+})
+
+test('la restauración remota no reactiva controles históricos ni pisa un reset', () => {
+  const restoration = useChat.slice(
+    useChat.indexOf('const restorationVersion'),
+    useChat.indexOf('return () =>', useChat.indexOf('const restorationVersion')),
+  )
+  assert.match(restoration, /restorationVersion !== conversationVersionRef\.current/)
+  assert.match(restoration, /createNewSessionMessages\(historicalMessages, business\)/)
+  assert.doesNotMatch(restoration, /quickReplies: QUICK_REPLIES_INICIAL/)
+  assert.match(useChat, /const reset = useCallback[\s\S]*conversationVersionRef\.current \+= 1/)
 })
 
 test('la confirmación de presupuesto usa una acción interna estable', () => {

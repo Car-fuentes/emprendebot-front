@@ -341,11 +341,23 @@ function withoutConversationControls(message: Message): Message {
   return visualMessage
 }
 
+function createNewSessionMessages(history: Message[], business: Business): Message[] {
+  const previousMessages = history.map(withoutConversationControls)
+  const initialMessage = createInitialMessage(business)
+  const lastMessage = previousMessages[previousMessages.length - 1]
+
+  if (lastMessage?.role === 'bot' && lastMessage.text === initialMessage.text) {
+    return [...previousMessages.slice(0, -1), initialMessage]
+  }
+
+  return [...previousMessages, initialMessage]
+}
+
 function getInitialHistory(business: Business): Message[] {
   const storedMessages = loadChatHistory(business.id)
   if (storedMessages.length > 0) {
     const initialMessages = business.chatSessionChanged
-      ? storedMessages.map(withoutConversationControls)
+      ? createNewSessionMessages(storedMessages, business)
       : storedMessages
     saveChatHistory(business.id, initialMessages)
     return initialMessages
@@ -438,23 +450,23 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
 
   useEffect(() => {
     if (!business.chatHasHistory || !business.chatSessionId) return
+    if (business.chatSessionChanged) return
 
     const storedMessages = loadChatHistory(business.id)
     if (storedMessages.length > 1) return
 
     let active = true
+    const restorationVersion = conversationVersionRef.current
     void getPublicHistory(business.slug, business.chatSessionId)
       .then(history => {
-        if (!active || history.mensajes.length === 0) return
-        const restoredMessages: Message[] = history.mensajes.map((message, index, all) => ({
+        if (!active || restorationVersion !== conversationVersionRef.current || history.mensajes.length === 0) return
+        const historicalMessages: Message[] = history.mensajes.map(message => ({
           id: message.id,
           role: message.emisor === 'CLIENTE' ? 'user' : 'bot',
           text: message.contenido,
           timestamp: new Date(message.fechaCreacion),
-          ...(index === all.length - 1 && message.emisor !== 'CLIENTE'
-            ? { quickReplies: QUICK_REPLIES_INICIAL }
-            : {}),
         }))
+        const restoredMessages = createNewSessionMessages(historicalMessages, business)
         setMessages(restoredMessages)
         saveChatHistory(business.id, restoredMessages)
       })
@@ -463,7 +475,7 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
     return () => {
       active = false
     }
-  }, [business.chatHasHistory, business.chatSessionId, business.id, business.slug])
+  }, [business])
 
   useEffect(() => {
     return () => {
@@ -492,11 +504,11 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
     setIsTyping(false)
     clearTemporaryConversationState(business.id)
     setMessages(previousMessages => {
-      const nextMessages = previousMessages.map(withoutConversationControls)
+      const nextMessages = createNewSessionMessages(previousMessages, business)
       saveChatHistory(business.id, nextMessages)
       return nextMessages
     })
-  }, [business.chatSessionId, business.id, cancelPendingResponse])
+  }, [business, cancelPendingResponse])
 
   const processMessage = useCallback(async (text: string, quickReply?: QuickReplyOption) => {
     if (isTyping) return
