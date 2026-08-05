@@ -19,7 +19,7 @@ import type {
   PresupuestoEstado,
   PresupuestoItemInput,
 } from '../types/presupuesto'
-import { getEffectivePresupuestoTotal } from '../utils/presupuestoTotal'
+import { getEffectivePresupuestoTotal, isPresupuestoReadyToSend } from '../utils/presupuestoTotal'
 import '../styles/presupuestos.css'
 
 const TRANSITIONS: Record<PresupuestoEstado, PresupuestoEstado[]> = {
@@ -198,6 +198,7 @@ export function PresupuestoDetailPage() {
     ? ['PENDIENTE', 'EN_PROCESO', 'ENVIADO'].includes(presupuesto.estado)
     : false
   const items = presupuesto?.items ?? []
+  const canMarkAsSent = presupuesto ? isPresupuestoReadyToSend(presupuesto) : false
 
   return (
     <div className="budgets-page">
@@ -329,13 +330,18 @@ export function PresupuestoDetailPage() {
                       <button
                         type="button"
                         key={estado}
-                        disabled={isSaving}
+                        disabled={isSaving || (estado === 'ENVIADO' && !canMarkAsSent)}
                         className={estado === 'RECHAZADO' ? 'is-danger' : ''}
                         onClick={() => estado === 'RECHAZADO' ? setPendingStatus(estado) : void handleStatus(estado)}
                       >
                         {ACTION_LABELS[estado]}
                       </button>
                     ))}
+                    {TRANSITIONS[presupuesto.estado].includes('ENVIADO') && !canMarkAsSent && (
+                      <p className="budget-actions__help">
+                        Completá el precio de todos los productos antes de marcar el presupuesto como enviado.
+                      </p>
+                    )}
                   </div>
                 </section>
               )}
