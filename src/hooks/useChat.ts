@@ -34,6 +34,11 @@ import {
   savePublicMessage,
   updatePublicContact,
 } from '../services/publicConsultationApi'
+import {
+  createSessionStartTexts,
+  mergeSessionStartMessages,
+  sendWithConsultationRecovery,
+} from '../services/publicChatLifecycle'
 import { isNetworkError } from '../utils/networkError'
 
 const QUICK_REPLIES_INICIAL: QuickReplyOption[] = [
@@ -283,36 +288,38 @@ function createBotMessages(response: BotResponse): Message[] {
   return [responseMessage, continuationMessage]
 }
 
-function createInitialMessage(business: Business): Message {
+function createInitialMessage(
+  business: Business,
+  text = business.mensajeBienvenida
+    || `¡Hola! Soy el asistente virtual de ${business.nombre}. ¿En qué te puedo ayudar?`,
+): Message {
   return {
     id: crypto.randomUUID(),
     role: 'bot',
-    text: business.mensajeBienvenida || `¡Hola! Soy el asistente virtual de ${business.nombre}. ¿En qué te puedo ayudar?`,
+    text,
     timestamp: new Date(),
     quickReplies: QUICK_REPLIES_INICIAL,
   }
 }
 
-function withoutConversationControls(message: Message): Message {
-  const { quickReplies, products, faqs, confirmQuote, quoteSummary, ...visualMessage } = message
-  void quickReplies
-  void products
-  void faqs
-  void confirmQuote
-  void quoteSummary
-  return visualMessage
+function createSessionStartMessages(business: Business): Message[] {
+  const welcomeMessage = business.mensajeBienvenida
+    || `¡Hola! Soy el asistente virtual de ${business.nombre}. ¿En qué te puedo ayudar?`
+  const texts = createSessionStartTexts(
+    welcomeMessage,
+    business.chatSessionChanged ? business.chatLifecycleEvent : null,
+  )
+
+  return texts.map((text, index) => {
+    const message = createInitialMessage(business, text)
+    if (index < texts.length - 1) delete message.quickReplies
+    return message
+  })
 }
 
 function createNewSessionMessages(history: Message[], business: Business): Message[] {
-  const previousMessages = history.map(withoutConversationControls)
-  const initialMessage = createInitialMessage(business)
-  const lastMessage = previousMessages[previousMessages.length - 1]
-
-  if (lastMessage?.role === 'bot' && lastMessage.text === initialMessage.text) {
-    return [...previousMessages.slice(0, -1), initialMessage]
-  }
-
-  return [...previousMessages, initialMessage]
+  const initialMessages = createSessionStartMessages(business)
+  return mergeSessionStartMessages(history, initialMessages)
 }
 
 function getInitialHistory(business: Business): Message[] {
@@ -324,7 +331,7 @@ function getInitialHistory(business: Business): Message[] {
     saveChatHistory(business.id, initialMessages)
     return initialMessages
   }
-  const initialMessages = [createInitialMessage(business)]
+  const initialMessages = createSessionStartMessages(business)
   saveChatHistory(business.id, initialMessages)
   return initialMessages
 }
@@ -400,6 +407,29 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
     }
     return consultationPromiseRef.current
   }, [business, onNetworkError])
+
+  const persistPublicMessage = useCallback((
+    consultationId: string,
+    emisor: 'cliente' | 'bot',
+    contenido: string,
+  ): Promise<string> => sendWithConsultationRecovery({
+    consultationId,
+    send: activeConsultationId => savePublicMessage(
+      business.slug,
+      activeConsultationId,
+      emisor,
+      contenido,
+    ),
+    getCurrentConsultationId: async () => (
+      consultationPromiseRef.current ? consultationPromiseRef.current : null
+    ),
+    invalidateConsultation: () => {
+      clearStoredConsultation(business.slug)
+      consultationPromiseRef.current = null
+      canReuseInitialConsultationRef.current = false
+    },
+    createReplacementConsultation: ensureConsultation,
+  }), [business.slug, ensureConsultation])
 
   const cancelPendingResponse = useCallback(() => {
     if (responseTimeoutRef.current) {
@@ -493,9 +523,10 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
     })
     setIsTyping(true)
 
-    const consultationId = isOnline ? await ensureConsultation() : null
+    let consultationId = isOnline ? await ensureConsultation() : null
     if (consultationId) {
-      await savePublicMessage(business.slug, consultationId, 'cliente', text).catch(() => undefined)
+      consultationId = await persistPublicMessage(consultationId, 'cliente', text)
+        .catch(() => consultationId)
     }
 
     const conversationVersion = conversationVersionRef.current
@@ -528,7 +559,7 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
       })
       if (consultationId) {
         botMessages.forEach(message => {
-          void savePublicMessage(business.slug, consultationId, 'bot', message.text).catch(() => undefined)
+          void persistPublicMessage(consultationId, 'bot', message.text).catch(() => undefined)
         })
       }
       setIsTyping(false)
@@ -549,7 +580,7 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
           saveChatHistory(business.id, next)
           return next
         })
-        if (consultationId) await savePublicMessage(business.slug, consultationId, 'bot', botMsg.text).catch(() => undefined)
+        if (consultationId) await persistPublicMessage(consultationId, 'bot', botMsg.text).catch(() => undefined)
         setIsTyping(false)
         return
       }
@@ -570,7 +601,7 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
         saveChatHistory(business.id, next)
         return next
       })
-      if (consultationId) await savePublicMessage(business.slug, consultationId, 'bot', botMsg.text).catch(() => undefined)
+      if (consultationId) await persistPublicMessage(consultationId, 'bot', botMsg.text).catch(() => undefined)
       setAwaitingInput('quote-contact-phone')
       saveAwaitingInput(business.id, 'quote-contact-phone')
       setIsTyping(false)
@@ -592,7 +623,7 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
           saveChatHistory(business.id, next)
           return next
         })
-        if (consultationId) await savePublicMessage(business.slug, consultationId, 'bot', botMsg.text).catch(() => undefined)
+        if (consultationId) await persistPublicMessage(consultationId, 'bot', botMsg.text).catch(() => undefined)
         setIsTyping(false)
         return
       }
@@ -615,7 +646,7 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
         saveChatHistory(business.id, next)
         return next
       })
-      if (consultationId) await savePublicMessage(business.slug, consultationId, 'bot', confirmMsg.text).catch(() => undefined)
+      if (consultationId) await persistPublicMessage(consultationId, 'bot', confirmMsg.text).catch(() => undefined)
       setAwaitingInput('quote-confirm')
       saveAwaitingInput(business.id, 'quote-confirm')
       setIsTyping(false)
@@ -655,7 +686,7 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
           idempotencyKey: pendingQuote.sourceSummaryMessageId,
         })
         const confirmationText = 'Tu solicitud de presupuesto fue registrada correctamente.'
-        await savePublicMessage(business.slug, consultationId, 'bot', confirmationText)
+        await persistPublicMessage(consultationId, 'bot', confirmationText)
 
         const generatedMsg: Message = {
           id: crypto.randomUUID(),
@@ -739,7 +770,7 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
         saveChatHistory(business.id, next)
         return next
       })
-      if (consultationId) void savePublicMessage(business.slug, consultationId, 'bot', botMsg.text).catch(() => undefined)
+      if (consultationId) void persistPublicMessage(consultationId, 'bot', botMsg.text).catch(() => undefined)
       setAwaitingInput('contact-phone')
       saveAwaitingInput(business.id, 'contact-phone')
       setIsTyping(false)
@@ -761,7 +792,7 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
           saveChatHistory(business.id, next)
           return next
         })
-        if (consultationId) await savePublicMessage(business.slug, consultationId, 'bot', botMsg.text).catch(() => undefined)
+        if (consultationId) await persistPublicMessage(consultationId, 'bot', botMsg.text).catch(() => undefined)
         setIsTyping(false)
         return
       }
@@ -809,7 +840,7 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
         saveChatHistory(business.id, next)
         return next
       })
-      if (consultationId) void savePublicMessage(business.slug, consultationId, 'bot', botMsg.text).catch(() => undefined)
+      if (consultationId) void persistPublicMessage(consultationId, 'bot', botMsg.text).catch(() => undefined)
       setAwaitingInput(null)
       saveAwaitingInput(business.id, null)
       setContactName('')
@@ -830,13 +861,13 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
     })
     if (consultationId) {
       botMessages.forEach(message => {
-        void savePublicMessage(business.slug, consultationId, 'bot', message.text).catch(() => undefined)
+        void persistPublicMessage(consultationId, 'bot', message.text).catch(() => undefined)
       })
     }
     setAwaitingInput(nextAwaitingInput)
     saveAwaitingInput(business.id, nextAwaitingInput)
     setIsTyping(false)
-  }, [awaitingInput, business, contactName, ensureConsultation, isOnline, isTyping, onNetworkError])
+  }, [awaitingInput, business, contactName, ensureConsultation, isOnline, isTyping, onNetworkError, persistPublicMessage])
 
   const sendMessage = useCallback((text: string) => processMessage(text), [processMessage])
 
@@ -892,10 +923,10 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
     })
     void ensureConsultation().then(async consultationId => {
       if (!consultationId) return
-      await savePublicMessage(business.slug, consultationId, 'cliente', userMsg.text)
-      await savePublicMessage(business.slug, consultationId, 'bot', 'Resumen del pedido listo para confirmar.')
+      const activeConsultationId = await persistPublicMessage(consultationId, 'cliente', userMsg.text)
+      await persistPublicMessage(activeConsultationId, 'bot', 'Resumen del pedido listo para confirmar.')
     }).catch(() => undefined)
-  }, [business, ensureConsultation])
+  }, [business, ensureConsultation, persistPublicMessage])
 
   const requestQuote = useCallback(async (
     sourceSummaryMessageId: string,
@@ -919,14 +950,14 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
         action: option.action,
         actionValue: sourceSummaryMessageId,
       }
-      await savePublicMessage(business.slug, consultationId, 'cliente', userMsg.text)
+      const activeConsultationId = await persistPublicMessage(consultationId, 'cliente', userMsg.text)
       const contactPrompt: Message = {
         id: crypto.randomUUID(),
         role: 'bot',
         text: '¡Genial! Voy a preparar el presupuesto con los productos seleccionados.\nAntes necesito registrar tus datos:\n¿Cuál es tu nombre?',
         timestamp: new Date(),
       }
-      await savePublicMessage(business.slug, consultationId, 'bot', contactPrompt.text)
+      await persistPublicMessage(activeConsultationId, 'bot', contactPrompt.text)
 
       setMessages(previousMessages => {
         const nextMessages = [...previousMessages, userMsg, contactPrompt]
@@ -958,7 +989,7 @@ export function useChat(business: Business, { isOnline = true, onNetworkError }:
       })
       setSubmittingQuoteMessageId(null)
     }
-  }, [business.id, business.slug, ensureConsultation, onNetworkError])
+  }, [business.id, ensureConsultation, onNetworkError, persistPublicMessage])
 
   const reset = useCallback(() => {
     conversationVersionRef.current += 1

@@ -40,8 +40,7 @@ test('las acciones de FAQ y catálogo están migradas', () => {
 })
 
 test('una sesión nueva conserva el historial pero retira controles incompatibles', () => {
-  assert.match(useChat, /function withoutConversationControls/)
-  assert.match(useChat, /function createNewSessionMessages[\s\S]*history\.map\(withoutConversationControls\)/)
+  assert.match(useChat, /function createNewSessionMessages[\s\S]*mergeSessionStartMessages\(history, initialMessages\)/)
   assert.match(useChat, /business\.chatSessionChanged[\s\S]*createNewSessionMessages\(storedMessages, business\)/)
   assert.match(useChat, /createNewSessionMessages\(previousMessages, business\)/)
   assert.match(useChat, /setAwaitingInput\(null\)[\s\S]*setContactName\(''\)[\s\S]*setIsTyping\(false\)/)
@@ -49,10 +48,8 @@ test('una sesión nueva conserva el historial pero retira controles incompatible
 })
 
 test('una sesión nueva agrega quick replies nuevas sin duplicar un saludo consecutivo', () => {
-  assert.match(useChat, /const initialMessage = createInitialMessage\(business\)/)
-  assert.match(useChat, /lastMessage\?\.role === 'bot' && lastMessage\.text === initialMessage\.text/)
-  assert.match(useChat, /return \[\.\.\.previousMessages\.slice\(0, -1\), initialMessage\]/)
-  assert.match(useChat, /return \[\.\.\.previousMessages, initialMessage\]/)
+  assert.match(useChat, /const initialMessages = createSessionStartMessages\(business\)/)
+  assert.match(useChat, /mergeSessionStartMessages\(history, initialMessages\)/)
   assert.match(useChat, /createInitialMessage[\s\S]*quickReplies: QUICK_REPLIES_INICIAL/)
 })
 
@@ -140,7 +137,7 @@ test('el texto libre conserva los comandos de menú', () => {
 test('seleccionar una quick reply registra una sola vez el label y no altera el contrato API', () => {
   assert.match(useChat, /const processMessage = useCallback\(async \(text: string, quickReply\?: QuickReplyOption\)/)
   assert.match(useChat, /const userMessage: Message = \{[\s\S]*text,[\s\S]*\}/)
-  assert.match(useChat, /savePublicMessage\(business\.slug, consultationId, 'cliente', text\)/)
+  assert.match(useChat, /persistPublicMessage\(consultationId, 'cliente', text\)/)
   assert.equal((useChat.match(/processMessage\(option\.label, option\)/g) ?? []).length, 1)
   assert.match(publicApi, /body: JSON\.stringify\(\{ emisor, contenido, tipoMensaje: 'texto' \}\)/)
 })
